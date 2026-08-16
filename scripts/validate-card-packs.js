@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { CARD_DEFINITIONS, CARD_DEFINITION_BY_ID, CARD_PACKS } = require('../cards.js');
+const { TRIGGERS, ACTIONS, handlers } = require('../effects.js');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -12,6 +13,18 @@ const errors = [];
 const ids = CARD_DEFINITIONS.map(card => card.id);
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 if (duplicateIds.length) errors.push(`중복 카드 ID: ${duplicateIds.join(', ')}`);
+for (const card of CARD_DEFINITIONS) {
+  if (typeof card.implemented !== 'boolean') errors.push(`${card.id}: implemented 누락`);
+  if (!Array.isArray(card.effects)) errors.push(`${card.id}: effects 누락`);
+  if (card.implemented && !card.effects.length) errors.push(`${card.id}: 구현 카드에 효과 없음`);
+  if (!card.implemented && card.effects.length) errors.push(`${card.id}: 미구현 카드에 효과가 등록됨`);
+  for (const effect of card.effects || []) {
+    if (!TRIGGERS.includes(effect.trigger)) errors.push(`${card.id}: 유효하지 않은 trigger ${effect.trigger}`);
+    if (effect.action && !ACTIONS.includes(effect.action)) errors.push(`${card.id}: 유효하지 않은 action ${effect.action}`);
+    if (!effect.action && !effect.handler) errors.push(`${card.id}: action 또는 handler 누락`);
+    if (effect.handler && typeof handlers[effect.handler] !== 'function') errors.push(`${card.id}: handler 없음 ${effect.handler}`);
+  }
+}
 
 for (const pack of Object.values(CARD_PACKS)) {
   if (pack.cardIds.length !== 10) errors.push(`${pack.id}: ${pack.cardIds.length}장 (정확히 10장이어야 함)`);
@@ -24,4 +37,4 @@ for (const pack of Object.values(CARD_PACKS)) {
   }
 }
 if (errors.length) { console.error(errors.map(error => `✗ ${error}`).join('\n')); process.exit(1); }
-console.log(`✓ ${Object.keys(CARD_PACKS).length}개 팩 / ${ids.length}개 카드 검증 완료`);
+console.log(`✓ ${Object.keys(CARD_PACKS).length}개 팩 / ${ids.length}개 카드 검증 완료 (${CARD_DEFINITIONS.filter(c=>c.implemented).length} 구현, ${CARD_DEFINITIONS.filter(c=>!c.implemented).length} 미구현)`);

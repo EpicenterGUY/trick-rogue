@@ -757,6 +757,34 @@ const CARD_DEFINITIONS = [
     "art": "gauntlet"
   }
 ];
+
+// Phase 3 effect metadata. Cards outside this registry are intentionally documented-only.
+const IMPLEMENTED_CARD_EFFECTS = {
+  'pack01.black_bullet': [{trigger:'on_trick_win',action:'damage_enemy',value:3},{trigger:'on_showdown_score',action:'showdown_power',value:4}],
+  'pack01.phoenix': [{trigger:'on_trick_win',action:'heal_player',value:4}],
+  'pack01.golden_hand': [{trigger:'on_trick_win',action:'gain_chips',value:1,condition:'tactic_or_chip_used'}],
+  'pack01.dirty_gambler': [{trigger:'on_trick_win',action:'gain_chips',value:2,condition:'effective_rank_at_most',conditionValue:5}],
+  'pack01.recursive_function': [{trigger:'on_trick_win',handler:'repeat_last_named'}],
+  'pack01.scheduled_delivery': [{trigger:'on_play',action:'reserve_next_win_damage',value:6}],
+  'pack01.emergency_guard': [{trigger:'on_play',action:'gain_shield',value:5}],
+  'pack01.sharp_glass': [{trigger:'on_trick_win',action:'apply_enemy_bleed',value:2}],
+  'pack01.ambush_observer': [{trigger:'after_card_slotted',action:'increase_enemy_forecast',value:2,condition:'slot_is',conditionValue:3},{trigger:'on_showdown_score',action:'showdown_power',value:4,condition:'slot_is',conditionValue:3}],
+  'pack01.battery_1pct': [{trigger:'on_showdown_score',action:'showdown_power',value:15}],
+  'legacy.d8': [{trigger:'on_play',handler:'lucky_dice'}],
+  'legacy.c4': [{trigger:'on_play',action:'draw_tactic',value:1},{trigger:'on_trick_win',action:'gain_chips',value:1}],
+  'legacy.s9': [{trigger:'on_trick_win',handler:'sheathed_blade'}],
+  'legacy.h5': [{trigger:'on_trick_loss',action:'heal_player',value:3},{trigger:'on_showdown_score',action:'showdown_power',value:3}],
+  'legacy.dq': [{trigger:'on_showdown_score',action:'showdown_power',value:8,condition:'slot_at_least',conditionValue:4}],
+  'legacy.c6': [{trigger:'on_trick_win',action:'gain_edge',value:1,condition:'same_suit'}],
+  'legacy.sj': [{trigger:'on_trick_win',handler:'black_signature'}],
+  'legacy.hk': [{trigger:'on_play',action:'gain_shield',value:4},{trigger:'on_trick_win',action:'heal_player',value:2}],
+  'legacy.da': [{trigger:'on_showdown_score',handler:'royal_seal'}],
+  'legacy.c10': [{trigger:'on_play',action:'draw_tactic',value:1},{trigger:'on_play',action:'gain_chips',value:1,condition:'no_tactic_modifier'}]
+};
+for (const card of CARD_DEFINITIONS) {
+  card.implemented = Object.hasOwn(IMPLEMENTED_CARD_EFFECTS, card.id);
+  card.effects = IMPLEMENTED_CARD_EFFECTS[card.id] || [];
+}
 const CARD_DEFINITION_BY_ID = Object.fromEntries(CARD_DEFINITIONS.map(card => [card.id, card]));
 const CARD_DEFINITION_BY_BASE = Object.fromEntries(CARD_DEFINITIONS.map(card => [`${card.suit}${card.rank}`, card]));
 const CARD_PACKS = Object.freeze({ pack01: Object.freeze({ id: 'pack01', name: '신규 1팩', cardIds: Object.freeze(CARD_DEFINITIONS.filter(card => card.packId === 'pack01').map(card => card.id)) }) });
