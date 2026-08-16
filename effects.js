@@ -10,11 +10,7 @@
     no_tactic_modifier:c=>!c.mods.paint&&!c.mods.plus&&!c.mods.reverse&&!c.mods.double
   };
   const handlers={
-    repeat_last_named(c){if(c.lastNamed)c.perform(c.lastNamed.type,c.lastNamed.value)},
-    lucky_dice(c){if(c.random()<.5)c.perform('gain_chips',2)},
-    sheathed_blade(c){c.perform('damage_enemy',c.enemyCard.rank>c.card.rank?5:2)},
-    black_signature(c){c.perform(c.enemyForecast<3?'increase_enemy_forecast':'gain_chips',1)},
-    royal_seal(c){let value=10,others=c.slots.filter((_,i)=>i!==c.slotIndex).map(x=>x.card.suit);if(others.length===4&&new Set(others).size===1)value+=6;c.perform('showdown_power',value)}
+    repeat_last_named(c){if(c.lastNamed)c.perform(c.lastNamed.type,c.lastNamed.value)}
   };
   function run(trigger,card,context){if(!card?.named?.implemented)return;for(const effect of card.named.effects.filter(x=>x.trigger===trigger)){if(effect.condition&&!conditions[effect.condition]?.(context,effect))continue;if(effect.handler)handlers[effect.handler](context,effect);else context.perform(effect.action,effect.value,effect)}}
   function newHistory(){return{tacticsUsed:false,tacticUseCount:0,chipsSpent:0,cardsDrawn:0,damageDealt:0,healingDone:0}}
