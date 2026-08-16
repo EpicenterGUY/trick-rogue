@@ -213,6 +213,8 @@ button{font:inherit;color:inherit}
 
   <div id="overlay"><div class="modal" id="modal"></div></div>
 </div>
+<script src="card-packs/core.js"></script>
+<script src="card-packs/pack01.js"></script>
 <script src="cards.js"></script>
 <script src="effects.js"></script>
 <script>
@@ -238,7 +240,25 @@ const TERMS={
  '압승':'적용 숫자 차이 5 이상으로 승리한 경우.',
  '아슬아슬':'적용 숫자 차이 1로 승리한 경우.',
  '역전':'원래 더 낮은 숫자였지만 조작/트럼프로 승리한 경우.',
- '슬롯':'쇼다운에 쌓이는 1~5번째 위치. 일부 카드는 위치를 참조한다.'
+ '슬롯':'쇼다운에 쌓이는 1~5번째 위치. 일부 카드는 위치를 참조한다.',
+ '랜덤':'정해진 확률에 따라 결과가 달라지는 효과.',
+ '칩':'전술 카드를 사용하는 데 쓰는 전투 자원.',
+ '드로우':'덱에서 카드를 손패로 가져오는 행동.',
+ '피해':'대상의 체력을 감소시키는 수치.',
+ '무늬':'스페이드, 하트, 다이아, 클럽 중 카드의 분류.',
+ '덱':'전투에서 뽑아 사용할 카드 묶음.',
+ '패배':'트릭 또는 쇼다운에서 상대보다 낮은 결과를 낸 상태.',
+ '버림':'카드를 버린 카드 더미로 보내는 행동.',
+ '최종 위력':'쇼다운에서 피해를 결정하는 최종 계산 수치.',
+ '회복':'플레이어 체력을 최대 체력 이내에서 되돌리는 효과.',
+ '손패':'현재 손에 있어 사용할 수 있는 카드.',
+ '순수':'네임드 효과가 없는 기본 트럼프 카드.',
+ '전술':'칩을 소비해 카드나 전투 규칙을 바꾸는 카드.',
+ '전술 패':'현재 손에 있어 사용할 수 있는 전술 카드.',
+ '족보':'쇼다운 다섯 장의 조합으로 정해지는 기본 위력.',
+ '골드':'상점과 이벤트에서 사용하는 런 자원.',
+ '인텐트':'적이 다음에 하려는 행동을 알려 주는 정보.',
+ '위력':'트릭 또는 쇼다운 결과에 더해지는 힘.'
 };
 const SYSTEM_NOTES={
  '발동':'이 카드가 언제 작동하는지 알려 주는 말. 예: 트릭 승리 시, 카드를 냈을 때.',
@@ -278,7 +298,7 @@ const PACKS=[
  {id:'rush',name:'난전',desc:'더블다운과 속공용 전술.',t:['double','double','plus2','draw','draw','paint','barrier','burn','reverse','scout']}
 ];
 const ENEMIES={battle:{name:'폐허 약탈자',hp:58,intent:'고랭크 압박',sub:'높은 숫자를 자주 낸다.',sprite:'raider'},elite:{name:'철갑 사냥꾼',hp:86,intent:'봉인 탄환',sub:'라운드가 길어질수록 네임드 억제를 건다.',sprite:'hunter'},boss:{name:'탑의 감시자',hp:130,intent:'규칙 재작성',sub:'라운드마다 전장 규칙이 바뀐다.',sprite:'boss'}};
-let selectedChar='modder',selectedPack='steady',run=null,battle=null;
+let selectedChar='modder',selectedPack='steady',selectedCardPacks=defaultEnabledPacks(),run=null,battle=null;
 function makeCard(s,r,cardId=null){ const named=cardId?cardDefinition(cardId):null; return {uid:Math.random().toString(36).slice(2),suit:s,rank:r,named,cardId:named?named.id:null}; }
 function makeNamed(ref){ const named=cardDefinition(ref); return makeCard(named.suit,named.rank,named.id); }
 
@@ -338,7 +358,9 @@ function charSprite(kind){
 const CARD_ART={};
 function termExplainHtml(terms=[]){if(!terms.length)return '용어 설명: 없음';return '용어 설명:<br>'+terms.map(t=>`<b>${t}</b> · ${TERMS[t]||'설명 준비 중.'}`).join('<br>')}
 function poolItemFromDefinition(def){const c=makeNamed(def.id);return{type:'card',card:c,html:artHtml(c),title:`${def.name} ${suitObj(c.suit).sym}${rankLabel(c.rank)}`,desc:def.description,meta:termExplainHtml(def.terms)}}
-function showNewPack(){const pack=CARD_PACKS.pack01;poolView={mode:'newpack',title:`${pack.name} 카드풀 · ${pack.cardIds.length}장`,items:pack.cardIds.map(id=>poolItemFromDefinition(CARD_DEFINITION_BY_ID[id])),selected:0};renderPoolModal()}
+function showPack(packId='pack01'){const pack=CARD_PACKS[packId];poolView={mode:'pack',packId,title:`${pack.name} · v${pack.version} · ${pack.cards.length}장`,items:pack.cards.map(poolItemFromDefinition),selected:0};renderPoolModal()}
+function showNewPack(){showPack('pack01')}
+function togglePoolPack(packId){const enabled=new Set(run?run.enabledPacks:selectedCardPacks);enabled.has(packId)?enabled.delete(packId):enabled.add(packId);if(run)run.enabledPacks=[...enabled];else selectedCardPacks=[...enabled];showPool(packId)}
 
 function makeMap(){return[
  {id:'n0',type:'battle',lane:1,row:0,next:['n1','n2']},
@@ -351,7 +373,7 @@ function makeMap(){return[
 ]}
 function currentBuild(){ if(!run) return '-'; let tags={}; run.deck.filter(c=>c.named).forEach(c=>(c.named.terms||[]).forEach(t=>tags[t]=(tags[t]||0)+1)); let top=Object.entries(tags).sort((a,b)=>b[1]-a[1])[0]; return top?top[0]:'혼합'; }
 function renderStart(){ heroSprite.innerHTML=charSprite(selectedChar); charGrid.innerHTML=CHARACTERS.map(c=>`<button class="option pixel ${selectedChar===c.id?'sel':''}" onclick="selectedChar='${c.id}';sfx('click');renderStart()"><div class="optionSprite">${charSprite(c.sprite)}</div><h3>${c.name}</h3><p>${c.desc}<br><span class="cyan">${c.passive}</span></p></button>`).join(''); packGrid.innerHTML=PACKS.map(p=>`<button class="option pixel ${selectedPack===p.id?'sel':''}" onclick="selectedPack='${p.id}';sfx('click');renderStart()"><div class="optionSprite" style="font-size:28px">${p.id==='steady'?'◫':p.id==='future'?'◎':'⚔'}</div><h3>${p.name}</h3><p>${p.desc}</p></button>`).join('') }
-function beginRun(){ sfx('reward'); const ch=CHARACTERS.find(c=>c.id===selectedChar), pk=PACKS.find(p=>p.id===selectedPack); let deck=baseDeck(); for(const k of ch.named){ const s=k[0], r=parseRank(k.slice(1)); let i=deck.findIndex(c=>c.suit===s&&c.rank===r); if(i>=0) deck[i]=makeCard(s,r,k) } for(let i=0;i<ch.remove;i++){ let pureIdx=deck.findIndex(c=>!c.named); if(pureIdx>=0) deck.splice(pureIdx,1) } if(ch.id==='modder'){ deck.unshift(makeNamed('SA')); deck.unshift(makeCard('S',7)); ['D8','C4','S9','H5','DQ','C6','SJ','HK','DA','C10'].forEach(k=>{const s=k[0],r=parseRank(k.slice(1));let i=deck.findIndex(c=>c.suit===s&&c.rank===r&&!c.named);if(i>=0)deck[i]=makeCard(s,r,k)}); } run={char:ch,pack:pk,hp:ch.hp,maxHp:ch.hp,gold:60,deck,tactics:pk.t.map(id=>({...TACTICS.find(t=>t.id===id),uid:Math.random().toString(36).slice(2)})),map:makeMap(),available:new Set(['n0']),completed:new Set()}; showScreen('mapScreen'); renderMap() }
+function beginRun(){ sfx('reward'); const ch=CHARACTERS.find(c=>c.id===selectedChar), pk=PACKS.find(p=>p.id===selectedPack); let deck=baseDeck(); for(const k of ch.named){ const s=k[0], r=parseRank(k.slice(1)); let i=deck.findIndex(c=>c.suit===s&&c.rank===r); if(i>=0) deck[i]=makeCard(s,r,k) } for(let i=0;i<ch.remove;i++){ let pureIdx=deck.findIndex(c=>!c.named); if(pureIdx>=0) deck.splice(pureIdx,1) } if(ch.id==='modder'){ deck.unshift(makeNamed('SA')); deck.unshift(makeCard('S',7)); ['D8','C4','S9','H5','DQ','C6','SJ','HK','DA','C10'].forEach(k=>{const s=k[0],r=parseRank(k.slice(1));let i=deck.findIndex(c=>c.suit===s&&c.rank===r&&!c.named);if(i>=0)deck[i]=makeCard(s,r,k)}); } run={char:ch,pack:pk,enabledPacks:[...selectedCardPacks],hp:ch.hp,maxHp:ch.hp,gold:60,deck,tactics:pk.t.map(id=>({...TACTICS.find(t=>t.id===id),uid:Math.random().toString(36).slice(2)})),map:makeMap(),available:new Set(['n0']),completed:new Set()}; showScreen('mapScreen'); renderMap() }
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active') }
 function renderMap(){ mapHp.textContent=`${run.hp}/${run.maxHp}`; mapGold.textContent=run.gold; mapDeck.textContent=run.deck.length; mapBuild.textContent=currentBuild(); const wrap=document.getElementById('mapWrap'); const grid=document.getElementById('mapGrid'); const svg=document.getElementById('mapSvg'); const W=wrap.clientWidth-20,H=wrap.clientHeight-20; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width',W); svg.setAttribute('height',H); const lanes=[W*0.2,W*0.5,W*0.8]; const rows=[H*0.08,H*0.27,H*0.47,H*0.67,H*0.86]; const pos={}; run.map.forEach(n=>pos[n.id]={x:lanes[n.lane],y:rows[n.row]}); svg.innerHTML=''; run.map.forEach(n=>n.next.forEach(id=>{ let a=pos[n.id],b=pos[id]; svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#5e6f90" stroke-width="4" stroke-linecap="square" opacity=".7"/>` })); grid.innerHTML=''; const label={battle:'전투',event:'이벤트',camp:'캠프',shop:'상점',elite:'엘리트',boss:'보스'}, icon={battle:'⚔',event:'?',camp:'⌂',shop:'$',elite:'◆',boss:'♛'}; run.map.forEach(n=>{ let d=document.createElement('button'); d.className='node '+(run.completed.has(n.id)?'done ':run.available.has(n.id)?'current ':'lock '); d.style.left=(pos[n.id].x-36)+'px'; d.style.top=(pos[n.id].y-27)+'px'; d.innerHTML=`<div class="icon">${icon[n.type]}</div><div class="nm">${label[n.type]}</div>`; d.onclick=()=>enterNode(n); grid.appendChild(d) }); let show=run.deck.filter(c=>c.named).slice(0,7); if(show.length<7) show=show.concat(run.deck.filter(c=>!c.named).slice(0,7-show.length)); mapDeckStrip.innerHTML=show.map(c=>`<div class="miniCard"><div class="cardArt">${artHtml(c)}</div></div>`).join('') }
 let poolView={mode:'deck',title:'',items:[],selected:0};
@@ -363,18 +385,19 @@ function renderPoolModal(){
  const item=poolView.items[poolView.selected]||poolView.items[0];
  const tabs = poolView.mode==='all'
    ? `<div class="poolTabs"><button class="pixelBtn" onclick="showDeck()">현재 덱 보기</button><button class="pixelBtn" onclick="showNewPack()">신규 1팩 보기</button><button class="pixelBtn" onclick="closeOverlay()">닫기</button></div>`
-   : poolView.mode==='newpack'
+   : poolView.mode==='pack'
      ? `<div class="poolTabs"><button class="pixelBtn" onclick="showPool()">전체 카드풀 보기</button><button class="pixelBtn" onclick="showDeck()">현재 덱 보기</button><button class="pixelBtn" onclick="closeOverlay()">닫기</button></div>`
      : `<div class="poolTabs"><button class="pixelBtn" onclick="showPool()">전체 카드풀 보기</button><button class="pixelBtn" onclick="showNewPack()">신규 1팩 보기</button><button class="pixelBtn" onclick="closeOverlay()">닫기</button></div>`;
- const subText = poolView.mode==='newpack'
-   ? `신규 1팩 10장만 표시. 카드 클릭 시 하단에서 이름 / 효과 / 용어 설명 확인. <span class="poolCount">${poolView.items.length}장</span>`
+ const subText = poolView.mode==='pack'
+   ? `선택한 팩의 카드만 표시. 카드 클릭 시 하단에서 이름 / 효과 / 용어 설명 확인. <span class="poolCount">${poolView.items.length}장</span>`
    : `카드 면에는 숫자·무늬·아이콘만 표시. <span class="poolCount">${poolView.items.length}장</span>`;
+ const enabled=new Set(run?run.enabledPacks:selectedCardPacks); const packControls=`<div class="poolTabs"><button class="pixelBtn" onclick="showPool('all')">전체</button>${Object.values(CARD_PACKS).map(p=>`<button class="pixelBtn" onclick="showPool('${p.id}')">${p.name}</button><button class="pixelBtn ${enabled.has(p.id)?'sel':''}" onclick="togglePoolPack('${p.id}')">${enabled.has(p.id)?'보상 ON':'보상 OFF'}</button>`).join('')}</div>`;
  const cards=poolView.items.map((it,i)=>`<button class="poolCardBtn ${i===poolView.selected?'sel':''}" onclick="poolSelect(${i})"><div class="poolCard"><div class="cardArt">${it.html}</div></div></button>`).join('');
- showModal(`<div class="poolWrap"><div class="poolHead"><div><h2>${poolView.title}</h2><p class="poolDeckBar">${subText}</p>${tabs}</div></div><div class="poolBody"><div class="poolGrid">${cards}</div><div class="poolDetail"><div class="poolDetailArt">${item?item.html:''}</div><div><div class="poolDetailTitle">${item?item.title:''}</div><div class="poolDetailText">${item?item.desc:''}</div><div class="poolDetailMeta">${item?item.meta:''}</div></div></div></div></div>`);
+ showModal(`<div class="poolWrap"><div class="poolHead"><div><h2>${poolView.title}</h2><p class="poolDeckBar">${subText}</p>${tabs}${packControls}</div></div><div class="poolBody"><div class="poolGrid">${cards}</div><div class="poolDetail"><div class="poolDetailArt">${item?item.html:''}</div><div><div class="poolDetailTitle">${item?item.title:''}</div><div class="poolDetailText">${item?item.desc:''}</div><div class="poolDetailMeta">${item?item.meta:''}</div></div></div></div></div>`);
 }
 function poolSelect(i){ poolView.selected=i; renderPoolModal(); }
 function showDeck(){ const namedCount=run.deck.filter(c=>c.named).length; poolView={mode:'deck',title:`현재 덱 · 총 ${run.deck.length}장 / 네임드 ${namedCount}장`,items:run.deck.map(poolItemFromCard),selected:0}; renderPoolModal(); }
-function showPool(){ const definitions=CARD_DEFINITIONS,suitOrder=['S','H','D','C'],rankOrder=[14,2,3,4,5,6,7,8,9,10,11,12,13]; const items=[...definitions.map(d=>poolItemFromCard(makeNamed(d.id))),...suitOrder.flatMap(s=>rankOrder.map(r=>poolItemFromCard(makeCard(s,r)))),...TACTICS.map(poolItemFromTactic)]; poolView={mode:'all',title:`전체 카드풀 · 효과 카드 ${definitions.length+TACTICS.length}장 + 순수 카드 52장`,items,selected:0}; renderPoolModal(); }
+function showPool(activePackId='all'){ const definitions=activePackId==='all'?CARD_DEFINITIONS:CARD_PACKS[activePackId].cards,suitOrder=['S','H','D','C'],rankOrder=[14,2,3,4,5,6,7,8,9,10,11,12,13]; const extras=activePackId==='all'?[...suitOrder.flatMap(s=>rankOrder.map(r=>poolItemFromCard(makeCard(s,r)))),...TACTICS.map(poolItemFromTactic)]:[]; const items=[...definitions.map(d=>poolItemFromCard(makeNamed(d.id))),...extras]; const title=activePackId==='all'?`전체 카드풀 · 효과 카드 ${definitions.length+TACTICS.length}장 + 순수 카드 52장`:`${CARD_PACKS[activePackId].name} 카드풀 · ${definitions.length}장`; poolView={mode:'all',activePackId,title,items,selected:0}; renderPoolModal(); }
 function enterNode(n){ if(!run.available.has(n.id))return; sfx('click'); if(['battle','elite','boss'].includes(n.type)) startBattle(n); else if(n.type==='event') showEvent(n); else if(n.type==='camp') showCamp(n); else if(n.type==='shop') showShop(n) }
 function completeNode(node){ run.completed.add(node.id); run.available.delete(node.id); node.next.forEach(id=>run.available.add(id)); if(node.type==='boss'){ finishRun(); return } closeOverlay(); showScreen('mapScreen'); renderMap() }
 function startBattle(node){ const e=ENEMIES[node.type]; battle={node,type:node.type,enemy:{...e,hp:e.hp,maxHp:e.hp},deck:shuffle(run.deck.map(c=>({...c}))),discard:[],hand:[],tdeck:shuffle(run.tactics.map(t=>({...t}))),tdisc:[],thand:[],trick:1,round:1,trump:pick(SUITS).k,pedge:0,eedge:0,maxChip:3,chip:3,mods:{paint:false,plus:0,reverse:false,double:false},myForecast:0,enemyForecast:0,slots:[],enemySlots:[],statuses:{player:{shield: run.char.id==='keeper'?2:0,bleed:0,seal:0},enemy:{shield:0,bleed:0}},reservations:[],lastNamed:null,slotBonus:0,history:CardEffects.newHistory(),selected:null,selectedTactic:null,inspectSlot:null,inspectStage:null}; dealOpeningHand(); drawT(5); if(run.char.id==='scout') {battle.myForecast=1;battle.enemyForecast=1} nextEnemy(); showScreen('battleScreen'); renderBattle() }
@@ -686,8 +709,8 @@ function applyHealingState(n){const before=run.hp;run.hp=Math.min(run.maxHp,run.
 function heal(n){const healed=applyHealingState(n);if(healed){sfx('heal');burstAt(arena.clientWidth*.26,arena.clientHeight*.77,'#87e59c',9);floatText(arena,`HP +${healed}`,'green')}renderBattle();return healed}
 async function winBattle(){ flash('승리'); sfx('reward'); await wait(650); run.gold += battle.type==='battle'?20:battle.type==='elite'?40:70; showReward(battle.node) }
 function loseRun(){ showModal(`<h2 class="red">런 종료</h2><p>체력이 모두 소진되었다.</p><div class="choiceList"><button class="choice" onclick="location.reload()"><b>다시 시작</b></button></div>`) }
-const RPOOL=CARD_DEFINITIONS.map(card=>card.id);
-function showReward(node){const opts=shuffle(RPOOL).slice(0,3);showModal(`<h2>전투 보상</h2><p>이번 보상은 전부 네임드 카드다. <b>각인</b>은 기존 원본을 바꾸고, <b>추가</b>는 새 복사본을 덱에 넣는다.</p><div class="rewardGrid">${opts.map(id=>{const def=cardDefinition(id);return `<div class="rewardBox"><div class="cardArt">${artHtml(makeNamed(id))}</div><h3>${def.name}</h3><p>${def.description}</p><div class="rewardBtns"><button onclick="takeReward('${id}','engrave','${node.id}')">각인</button><button onclick="takeReward('${id}','add','${node.id}')">추가</button></div></div>`}).join('')}</div><div class="choiceList"><button class="choice" onclick="skipReward('${node.id}')"><b>자원 보상으로 바꾸기</b><span>골드 +12</span></button></div>`)}
+function rewardPool(){return rewardCardIds(run.enabledPacks)}
+function showReward(node){const opts=shuffle(rewardPool()).slice(0,3);showModal(`<h2>전투 보상</h2><p>이번 보상은 전부 네임드 카드다. <b>각인</b>은 기존 원본을 바꾸고, <b>추가</b>는 새 복사본을 덱에 넣는다.</p><div class="rewardGrid">${opts.map(id=>{const def=cardDefinition(id);return `<div class="rewardBox"><div class="cardArt">${artHtml(makeNamed(id))}</div><h3>${def.name}</h3><p>${def.description}</p><div class="rewardBtns"><button onclick="takeReward('${id}','engrave','${node.id}')">각인</button><button onclick="takeReward('${id}','add','${node.id}')">추가</button></div></div>`}).join('')}</div><div class="choiceList"><button class="choice" onclick="skipReward('${node.id}')"><b>자원 보상으로 바꾸기</b><span>골드 +12</span></button></div>`)}
 function takeReward(cardId,mode,id){const def=cardDefinition(cardId),s=def.suit,r=def.rank;if(mode==='engrave'){let i=run.deck.findIndex(c=>c.suit===s&&c.rank===r&&!c.named);if(i<0)i=run.deck.findIndex(c=>c.suit===s&&c.rank===r);if(i>=0)run.deck[i]=makeNamed(cardId);else run.deck.push(makeNamed(cardId))}else run.deck.push(makeNamed(cardId));closeOverlay();completeNode(run.map.find(n=>n.id===id))}
 function skipReward(id){ run.gold+=12; closeOverlay(); completeNode(run.map.find(n=>n.id===id)) }
 function showEvent(node){ showModal(`<h2>이벤트 · 끊어진 관측소</h2><p>낡은 모니터가 미래를 조금 읽어 준다.</p><div class="choiceList"><button class="choice" onclick="eventPick('${node.id}','gold')"><b>부품 분해</b><span>골드 +30</span></button><button class="choice" onclick="eventPick('${node.id}','card')"><b>관측 데이터 보관</b><span>관측자 ♣5 추가</span></button><button class="choice" onclick="eventPick('${node.id}','heal')"><b>숨 고르기</b><span>체력 +10</span></button></div>`) }

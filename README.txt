@@ -29,3 +29,16 @@ previously-live winners:
 - D4 탐험 지도 (replaced 정품보증서)
 
 Run `npm test` to validate pack size, unique card IDs, image files, and terms.
+
+Phase 4 card packs
+------------------
+`CARD_PACK_LIST` is the central registry. Every entry provides `id`, `name`,
+`version`, `enabledByDefault`, `rewardWeight`, and `cards`. A run snapshots the
+selected IDs in `enabledPacks`; only those packs contribute reward candidates.
+The pre-existing cards are explicitly the always-default `core` group, while
+`pack01` remains a default-enabled ten-card expansion.
+
+To add an approved pack, copy `card-packs/pack02.example.js` to `packNN.js`, add
+its ten approved images under `assets/cards/packNN/`, register the module and its
+metadata in `CARD_PACK_LIST`, add handlers only for exceptional effects, then run
+`npm test`. The template deliberately defines no new card names or effects.
