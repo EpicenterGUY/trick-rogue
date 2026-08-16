@@ -1,6 +1,6 @@
 (function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
-  const TRIGGERS=['on_play','before_compare','after_compare','on_trick_win','on_trick_loss','after_card_slotted','on_trick_end','on_showdown_score','after_showdown_result','before_damage','after_damage'];
-  const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage','gain_edge'];
+  const TRIGGERS=['on_play','on_set_start','before_compare','after_compare','on_trick_win','on_trick_loss','after_card_slotted','on_trick_end','before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
+  const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage'];
   const conditions={
     tactic_or_chip_used:c=>c.history.tacticsUsed||c.history.chipsSpent>0,
     effective_rank_at_most:(c,e)=>c.effectiveRank<=e.conditionValue,
