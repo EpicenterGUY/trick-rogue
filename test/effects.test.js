@@ -53,19 +53,22 @@ test('on_showdown_advantage 트리거는 판정 결과를 context.advantage로 �
   assert.strictEqual(received,advantage);
 });
 
-const { CARD_DEFINITIONS, CARD_PACKS, BASE_CARD_SLOTS, createBaseCardSlots, defaultEnabledPacks, rewardCardIds } = require('../cards.js');
+const { CARD_DEFINITIONS, CARD_PACKS, BASE_CARD_SLOTS, createBaseCardSlots, defaultEnabledPacks, validateEnabledPacks, createRunPackState, rewardCardIds } = require('../cards.js');
 test('활성 네임드 레지스트리에는 pack01 10장만 존재한다',()=>{
   assert.equal(CARD_DEFINITIONS.length,10);
   assert.equal(CARD_PACKS.pack01.cards.length,10);
   assert.deepEqual(Object.keys(CARD_PACKS),['pack01']);
   assert(CARD_DEFINITIONS.every(card=>card.id.startsWith('pack01.')));
 });
-test('모든 보상 후보는 활성 pack01 네임드 카드다',()=>{
-  const rewards=rewardCardIds(defaultEnabledPacks());
+test('활성/비활성 팩 설정에 따라 보상 후보가 달라진다',()=>{
+  const activeRun=createRunPackState(defaultEnabledPacks());
+  const inactiveRun=createRunPackState([]);
+  const rewards=rewardCardIds(activeRun.enabledPacks);
   assert.equal(rewards.length,10);
   assert.deepEqual(new Set(rewards),new Set(CARD_PACKS.pack01.cardIds));
   assert(rewards.every(id=>CARD_DEFINITION_BY_ID[id]));
-  assert.deepEqual(rewardCardIds([]),[]);
+  assert.deepEqual(rewardCardIds(inactiveRun.enabledPacks),[]);
+  assert.throws(()=>validateEnabledPacks(['pack99']),/Unknown enabledPacks reference/);
 });
 test('네임드가 없는 기본 슬롯은 효과 없는 순수 카드로 생성된다',()=>{
   const pure=createBaseCardSlots();

@@ -14,14 +14,16 @@ or referenced by active card data.
 
 Card packs
 ----------
-`CARD_PACK_LIST` is the central registry. Every entry provides `id`, `name`,
+`card-packs/index.js` owns the central `CARD_PACK_LIST`/`CARD_PACKS` registry.
+Every entry provides `id`, `name`,
 `version`, `enabledByDefault`, `rewardWeight`, and `cards`. A run snapshots the
 selected IDs in `enabledPacks`; only those packs contribute reward candidates.
 
 To add an approved pack, copy `card-packs/pack02.example.js` to `packNN.js`, add
 its ten approved images under `assets/cards/packNN/`, register the module and its
-metadata in `CARD_PACK_LIST`, add handlers only for exceptional effects, then run
-`npm test`. The template deliberately defines no new card names or effects.
+metadata once in `card-packs/index.js` (and add the two browser script tags), add
+handlers only for exceptional effects, then run `npm test`. The template
+deliberately defines no new card names or effects.
 
 Validation
 ----------
