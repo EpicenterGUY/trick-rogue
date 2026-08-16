@@ -11,12 +11,39 @@ function execute(id,trigger,overrides={}) {
 }
 test('검은 탄환은 승리 피해와 쇼다운 위력을 적용한다',()=>{assert.deepEqual(execute('pack01.black_bullet','on_trick_win')[0].slice(0,2),['damage_enemy',3]);assert.equal(execute('pack01.black_bullet','on_showdown_score')[0][1],4)});
 test('불사조는 승리 시 4 회복한다',()=>assert.equal(execute('pack01.phoenix','on_trick_win')[0][1],4));
-test('황금손은 전술 또는 칩 사용 이력이 있어야 한다',()=>{assert.equal(execute('pack01.golden_hand','on_trick_win').length,0);assert.equal(execute('pack01.golden_hand','on_trick_win',{history:{...Effects.newHistory(),chipsSpent:1}})[0][1],1)});
+test('황금손은 실제 칩 소비 후 승리할 때만 칩과 전술 카드를 준다',()=>{
+  assert.equal(execute('pack01.golden_hand','on_trick_win',{history:{...Effects.newHistory(),tacticsUsed:true}}).length,0);
+  assert.deepEqual(execute('pack01.golden_hand','on_trick_win',{history:{...Effects.newHistory(),chipsSpent:1}}).map(call=>call.slice(0,2)),[['gain_chips',1],['draw_tactic',1]]);
+});
 test('비열한 승부사는 적용 숫자 5 이하에서만 칩을 준다',()=>{assert.equal(execute('pack01.dirty_gambler','on_trick_win',{effectiveRank:5})[0][1],2);assert.equal(execute('pack01.dirty_gambler','on_trick_win',{effectiveRank:6}).length,0)});
 test('예약 발송은 다음 승리 피해 예약을 만든다',()=>assert.deepEqual(execute('pack01.scheduled_delivery','on_play')[0].slice(0,2),['reserve_next_win_damage',6]));
 test('날 선 유리는 출혈 2를 부여한다',()=>assert.equal(execute('pack01.sharp_glass','on_trick_win')[0][1],2));
 test('응급 보호구는 즉시 보호막 5를 준다',()=>assert.equal(execute('pack01.emergency_guard','on_play')[0][1],5));
-test('배터리 1%는 쇼다운 위력 15를 준다',()=>assert.equal(execute('pack01.battery_1pct','on_showdown_score')[0][1],15));
+test('재귀 함수는 직전 다른 네임드의 허용된 수치 효과 하나만 복사한다',()=>{
+  assert.deepEqual(execute('pack01.recursive_function','on_trick_win',{lastNamed:{cardId:'pack01.black_bullet',action:'damage_enemy',value:3}})[0].slice(0,3),['damage_enemy',3,{copied:true}]);
+  assert.equal(execute('pack01.recursive_function','on_trick_win',{lastNamed:{cardId:'pack01.recursive_function',action:'damage_enemy',value:3}}).length,0);
+  assert.equal(execute('pack01.recursive_function','on_trick_win',{lastNamed:{cardId:'pack01.scheduled_delivery',action:'reserve_next_win_damage',value:6}}).length,0);
+});
+test('예약 발송은 바로 다음 트릭에만 남고 패배나 무승부에도 사라진다',()=>{
+  const reservations=[{type:'nextWinDamage',value:6,eligibleTrick:2}];const calls=[];
+  assert.equal(Effects.resolveNextWinReservations(reservations,1,true,(...args)=>calls.push(args)).length,1);
+  assert.deepEqual(Effects.resolveNextWinReservations(reservations,2,true,(...args)=>calls.push(args)),[]);assert.deepEqual(calls,[['damage_enemy',6]]);
+  assert.deepEqual(Effects.resolveNextWinReservations(reservations,2,false,()=>assert.fail()),[]);
+});
+test('배터리 1%는 손에 있을 때만 20% 확률로 소진되고 제출 성공 시 쇼다운 위력 15를 준다',()=>{
+  let exhausted=0;const base={inHand:true,exhaust:()=>exhausted++};
+  execute('pack01.battery_1pct','on_trick_end',{...base,random:()=>0.199});assert.equal(exhausted,1);
+  execute('pack01.battery_1pct','on_trick_end',{...base,random:()=>0.2});execute('pack01.battery_1pct','on_trick_end',{...base,inHand:false,random:()=>0});assert.equal(exhausted,1);
+  assert.equal(execute('pack01.battery_1pct','on_showdown_score')[0][1],15);
+});
+test('매복한 관측자는 3번 슬롯에서 예측만 +2 하고 쇼다운 위력은 올리지 않는다',()=>{
+  assert.equal(execute('pack01.ambush_observer','after_card_slotted',{slotIndex:1}).length,0);
+  assert.deepEqual(execute('pack01.ambush_observer','after_card_slotted',{slotIndex:2})[0].slice(0,2),['increase_enemy_forecast',2]);
+  assert.equal(execute('pack01.ambush_observer','on_showdown_score',{slotIndex:2}).length,0);
+});
+test('pack01의 모든 효과는 trigger와 지속 범위를 명시하고 전부 구현 상태다',()=>{
+  for(const card of Object.values(CARD_DEFINITION_BY_ID)){assert.equal(card.implemented,true);assert(card.effects.length);for(const effect of card.effects){assert(Effects.TRIGGERS.includes(effect.trigger));assert(['trick','set','battle','run'].includes(effect.duration));}}
+});
 
 const { CARD_DEFINITIONS, CARD_PACKS, BASE_CARD_SLOTS, createBaseCardSlots, defaultEnabledPacks, rewardCardIds } = require('../cards.js');
 test('활성 네임드 레지스트리에는 pack01 10장만 존재한다',()=>{

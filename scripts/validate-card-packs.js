@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { CARD_PACK_LIST, CARD_DEFINITIONS, CARD_DEFINITION_BY_ID, CARD_PACKS, defaultEnabledPacks } = require('../cards.js');
 const { TRIGGERS, ACTIONS, conditions, handlers } = require('../effects.js');
+const { EFFECT_DURATIONS } = require('../battle-core.js');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const termsSource = html.match(/const TERMS=(\{[\s\S]*?\n\});\nconst SYSTEM_NOTES=/);
@@ -38,6 +39,7 @@ for (const card of CARD_DEFINITIONS) {
     if(effect.condition&&typeof conditions[effect.condition]!=='function')errors.push(`${card.id}: condition 없음 ${effect.condition}`);
     if(!effect.action&&!effect.handler)errors.push(`${card.id}: action 또는 handler 누락`);
     if(effect.handler&&typeof handlers[effect.handler]!=='function')errors.push(`${card.id}: handler 없음 ${effect.handler}`);
+    if(!EFFECT_DURATIONS.includes(effect.duration))errors.push(`${card.id}: 유효하지 않은 지속 범위 ${effect.duration}`);
   }
 }
 if(errors.length){console.error(errors.map(error=>`✗ ${error}`).join('\n'));process.exit(1)}
