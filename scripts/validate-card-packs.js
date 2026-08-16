@@ -1,40 +1,40 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { CARD_DEFINITIONS, CARD_DEFINITION_BY_ID, CARD_PACKS } = require('../cards.js');
+const { CARD_PACK_LIST, CARD_DEFINITIONS, CARD_DEFINITION_BY_ID, CARD_PACKS, defaultEnabledPacks } = require('../cards.js');
 const { TRIGGERS, ACTIONS, handlers } = require('../effects.js');
-
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const termsSource = html.match(/const TERMS=(\{[\s\S]*?\n\});\nconst SYSTEM_NOTES=/);
 if (!termsSource) throw new Error('index.html에서 TERMS 레지스트리를 읽을 수 없습니다.');
 const TERMS = Function(`"use strict"; return (${termsSource[1]})`)();
 const errors = [];
-const ids = CARD_DEFINITIONS.map(card => card.id);
-const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
-if (duplicateIds.length) errors.push(`중복 카드 ID: ${duplicateIds.join(', ')}`);
+const duplicates = values => [...new Set(values.filter((value,index) => values.indexOf(value)!==index))];
+const duplicatePackIds=duplicates(CARD_PACK_LIST.map(pack=>pack.id));
+if(duplicatePackIds.length)errors.push(`중복 팩 ID: ${duplicatePackIds.join(', ')}`);
+const duplicateCardIds=duplicates(CARD_DEFINITIONS.map(card=>card.id));
+if(duplicateCardIds.length)errors.push(`중복 카드 ID: ${duplicateCardIds.join(', ')}`);
+for(const id of defaultEnabledPacks())if(!CARD_PACKS[id])errors.push(`기본 enabled pack 참조가 유효하지 않음: ${id}`);
+for (const pack of CARD_PACK_LIST) {
+  for(const key of ['id','name','version','enabledByDefault','rewardWeight','cards'])if(pack[key]===undefined)errors.push(`${pack.id||'(ID 없음)'}: 메타데이터 ${key} 누락`);
+  if (!pack.isCore && pack.cards.length !== 10) errors.push(`${pack.id}: ${pack.cards.length}장 (확장 팩은 정확히 10장이어야 함)`);
+  for (const card of pack.cards) {
+    if (CARD_DEFINITION_BY_ID[card.id] !== card) errors.push(`${card.id}: 중앙 카드 정의와 팩 정의가 동일 객체가 아님`);
+    if (card.packId !== pack.id) errors.push(`${card.id}: packId가 ${pack.id}가 아님`);
+    if (!pack.isCore && (!card.image || !fs.existsSync(path.join(root,card.image)))) errors.push(`${card.id}: 이미지 경로가 없거나 파일이 없음 (${card.image})`);
+    for (const term of card.terms || []) if (!Object.hasOwn(TERMS,term)) errors.push(`${card.id}: 미등록 용어 ${term}`);
+  }
+}
 for (const card of CARD_DEFINITIONS) {
-  if (typeof card.implemented !== 'boolean') errors.push(`${card.id}: implemented 누락`);
-  if (!Array.isArray(card.effects)) errors.push(`${card.id}: effects 누락`);
-  if (card.implemented && !card.effects.length) errors.push(`${card.id}: 구현 카드에 효과 없음`);
-  if (!card.implemented && card.effects.length) errors.push(`${card.id}: 미구현 카드에 효과가 등록됨`);
-  for (const effect of card.effects || []) {
-    if (!TRIGGERS.includes(effect.trigger)) errors.push(`${card.id}: 유효하지 않은 trigger ${effect.trigger}`);
-    if (effect.action && !ACTIONS.includes(effect.action)) errors.push(`${card.id}: 유효하지 않은 action ${effect.action}`);
-    if (!effect.action && !effect.handler) errors.push(`${card.id}: action 또는 handler 누락`);
-    if (effect.handler && typeof handlers[effect.handler] !== 'function') errors.push(`${card.id}: handler 없음 ${effect.handler}`);
+  if(typeof card.implemented!=='boolean')errors.push(`${card.id}: implemented 누락`);
+  if(!Array.isArray(card.effects))errors.push(`${card.id}: effects 누락`);
+  if(card.implemented&&!card.effects.length)errors.push(`${card.id}: 구현 카드에 효과 없음`);
+  for(const effect of card.effects||[]){
+    if(!TRIGGERS.includes(effect.trigger))errors.push(`${card.id}: 유효하지 않은 trigger ${effect.trigger}`);
+    if(effect.action&&!ACTIONS.includes(effect.action))errors.push(`${card.id}: 유효하지 않은 action ${effect.action}`);
+    if(!effect.action&&!effect.handler)errors.push(`${card.id}: action 또는 handler 누락`);
+    if(effect.handler&&typeof handlers[effect.handler]!=='function')errors.push(`${card.id}: handler 없음 ${effect.handler}`);
   }
 }
-
-for (const pack of Object.values(CARD_PACKS)) {
-  if (pack.cardIds.length !== 10) errors.push(`${pack.id}: ${pack.cardIds.length}장 (정확히 10장이어야 함)`);
-  for (const id of pack.cardIds) {
-    const card = CARD_DEFINITION_BY_ID[id];
-    if (!card) { errors.push(`${pack.id}: 존재하지 않는 카드 ID ${id}`); continue; }
-    if (card.packId !== pack.id) errors.push(`${id}: packId가 ${pack.id}가 아님`);
-    if (!card.image || !fs.existsSync(path.join(root, card.image))) errors.push(`${id}: 이미지 경로가 없거나 파일이 없음 (${card.image})`);
-    for (const term of card.terms) if (!Object.hasOwn(TERMS, term)) errors.push(`${id}: 미등록 용어 ${term}`);
-  }
-}
-if (errors.length) { console.error(errors.map(error => `✗ ${error}`).join('\n')); process.exit(1); }
-console.log(`✓ ${Object.keys(CARD_PACKS).length}개 팩 / ${ids.length}개 카드 검증 완료 (${CARD_DEFINITIONS.filter(c=>c.implemented).length} 구현, ${CARD_DEFINITIONS.filter(c=>!c.implemented).length} 미구현)`);
+if(errors.length){console.error(errors.map(error=>`✗ ${error}`).join('\n'));process.exit(1)}
+console.log(`✓ ${CARD_PACK_LIST.length}개 카드군 / ${CARD_DEFINITIONS.length}개 카드 검증 완료`);

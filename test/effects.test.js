@@ -17,3 +17,23 @@ test('예약 발송은 다음 승리 피해 예약을 만든다',()=>assert.deep
 test('날 선 유리는 출혈 2를 부여한다',()=>assert.equal(execute('pack01.sharp_glass','on_trick_win')[0][1],2));
 test('응급 보호구는 즉시 보호막 5를 준다',()=>assert.equal(execute('pack01.emergency_guard','on_play')[0][1],5));
 test('배터리 1%는 쇼다운 위력 15를 준다',()=>assert.equal(execute('pack01.battery_1pct','on_showdown_score')[0][1],15));
+
+const { CARD_PACKS, defaultEnabledPacks, rewardCardIds } = require('../cards.js');
+test('활성 팩에 따라 보상 후보가 달라진다',()=>{
+  const all=rewardCardIds(defaultEnabledPacks());
+  const coreOnly=rewardCardIds(['core']);
+  assert(all.includes('pack01.phoenix'));
+  assert(!coreOnly.some(id=>id.startsWith('pack01.')));
+  assert(coreOnly.some(id=>id.startsWith('core.')));
+});
+test('pack01 화면·덱·전투·보상은 동일 정의와 이미지를 참조한다',()=>{
+  assert.equal(CARD_PACKS.pack01.cards.length,10);
+  for(const definition of CARD_PACKS.pack01.cards){
+    const deckCard={named:CARD_DEFINITION_BY_ID[definition.id],cardId:definition.id};
+    const battleCard={...deckCard};
+    assert.strictEqual(definition,CARD_DEFINITION_BY_ID[definition.id]);
+    assert.strictEqual(deckCard.named,battleCard.named);
+    assert.equal(deckCard.named.image,definition.image);
+    assert(rewardCardIds(['pack01']).includes(definition.id));
+  }
+});
