@@ -44,6 +44,14 @@ test('매복한 관측자는 3번 슬롯에서 예측만 +2 하고 쇼다운 위
 test('pack01의 모든 효과는 trigger와 지속 범위를 명시하고 전부 구현 상태다',()=>{
   for(const card of Object.values(CARD_DEFINITION_BY_ID)){assert.equal(card.implemented,true);assert(card.effects.length);for(const effect of card.effects){assert(Effects.TRIGGERS.includes(effect.trigger));assert(['trick','set','battle','run'].includes(effect.duration));}}
 });
+test('on_showdown_advantage 트리거는 판정 결과를 context.advantage로 받는다',()=>{
+  let received;
+  const card={named:{implemented:true,effects:[{trigger:'on_showdown_advantage',handler:'capture'}]}};
+  Effects.handlers.capture=context=>{received=context.advantage};
+  const advantage={result:'player',playerWins:3,enemyWins:2,draws:0,powerBonus:6};
+  Effects.run('on_showdown_advantage',card,{advantage});delete Effects.handlers.capture;
+  assert.strictEqual(received,advantage);
+});
 
 const { CARD_DEFINITIONS, CARD_PACKS, BASE_CARD_SLOTS, createBaseCardSlots, defaultEnabledPacks, rewardCardIds } = require('../cards.js');
 test('활성 네임드 레지스트리에는 pack01 10장만 존재한다',()=>{
