@@ -1,6 +1,7 @@
 (function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.BattleCore=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const DEFAULT_MAX_HAND_SIZE=3;
   const TRICKS_PER_SET=5;
+  const SHOWDOWN_ADVANTAGE_POWER=6;
   const EFFECT_DURATIONS=Object.freeze(['trick','set','battle','run']);
   const ENCOUNTER_PROGRESSION=Object.freeze({
     battle:{setCount:null,bossPhases:[]},
@@ -17,7 +18,7 @@
     return state.hand;
   }
   function createBattleState({deck=[],maxHandSize=DEFAULT_MAX_HAND_SIZE,encounterType='battle',progression}={}){
-    const state={deck:[...deck],discard:[],hand:[],maxHandSize,trickIndex:1,setIndex:1,phase:'trick',
+    const state={deck:[...deck],discard:[],hand:[],maxHandSize,trickIndex:1,setIndex:1,phase:'trick',setHistory:createSetHistory(),
       encounter:{type:encounterType,...ENCOUNTER_PROGRESSION[encounterType],...progression},effects:[],
       statuses:{player:{shield:0,bleed:0,poison:0},enemy:{shield:0,bleed:0,poison:0}}};
     drawToMaxHand(state);
@@ -36,19 +37,39 @@
     const entry={...effect};state.effects.push(entry);return entry;
   }
   function expireEffects(state,duration){state.effects=state.effects.filter(effect=>effect.duration!==duration);}
-  function endTrick(state){
+  function createSetHistory(){return{trickResults:[]};}
+  function recordTrickResult(context,result){
+    const history=context.setHistory||context;
+    if(!history||!Array.isArray(history.trickResults))throw new TypeError('A setHistory with trickResults is required');
+    const normalized=result===1||result==='player'?'player':result===-1||result==='enemy'?'enemy':result===0||result==='draw'?'draw':null;
+    if(!normalized)throw new TypeError(`Unknown trick result: ${result}`);
+    if(history.trickResults.length>=TRICKS_PER_SET)throw new RangeError('A set cannot record more than five tricks');
+    history.trickResults.push(normalized);return normalized;
+  }
+  function endTrick(state,result){
+    if(result!==undefined)recordTrickResult(state,result);
     expireEffects(state,'trick');
     if(state.trickIndex===TRICKS_PER_SET){state.phase='showdown';return 'showdown';}
     state.trickIndex++;return 'trick';
   }
-  // 통합 개선안 v2의 우세 공식이 확정될 때 이 함수만 교체/주입한다.
-  function resolveShowdownAdvantage(context){void context;return{player:0,enemy:0,result:'neutral'};}
+  function resolveShowdownAdvantage(context){
+    const results=context?.setHistory?.trickResults||context?.trickResults;
+    if(!Array.isArray(results))throw new TypeError('Showdown advantage requires the current set trick history');
+    const playerWins=results.filter(result=>result==='player').length;
+    const enemyWins=results.filter(result=>result==='enemy').length;
+    const draws=results.filter(result=>result==='draw').length;
+    const result=playerWins>enemyWins?'player':enemyWins>playerWins?'enemy':'neutral';
+    return{result,playerWins,enemyWins,draws,powerBonus:result==='neutral'?0:SHOWDOWN_ADVANTAGE_POWER};
+  }
+  function applyShowdownAdvantage(playerPower,enemyPower,advantage){
+    return{playerPower:playerPower+(advantage.result==='player'?advantage.powerBonus:0),enemyPower:enemyPower+(advantage.result==='enemy'?advantage.powerBonus:0)};
+  }
   function finishShowdown(state){
     if(state.phase!=='showdown')throw new Error('No showdown to finish');
     expireEffects(state,'set');
-    state.setIndex++;state.trickIndex=1;state.phase='trick';
+    state.setIndex++;state.trickIndex=1;state.phase='trick';state.setHistory=createSetHistory();
     return state;
   }
   function endBattle(state){expireEffects(state,'battle');state.phase='ended';}
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,endTrick,resolveShowdownAdvantage,finishShowdown,endBattle};
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,resolveShowdownAdvantage,applyShowdownAdvantage,finishShowdown,endBattle};
 });
