@@ -18,16 +18,31 @@ test('날 선 유리는 출혈 2를 부여한다',()=>assert.equal(execute('pack
 test('응급 보호구는 즉시 보호막 5를 준다',()=>assert.equal(execute('pack01.emergency_guard','on_play')[0][1],5));
 test('배터리 1%는 쇼다운 위력 15를 준다',()=>assert.equal(execute('pack01.battery_1pct','on_showdown_score')[0][1],15));
 
-const { CARD_PACKS, defaultEnabledPacks, rewardCardIds } = require('../cards.js');
-test('활성 팩에 따라 보상 후보가 달라진다',()=>{
-  const all=rewardCardIds(defaultEnabledPacks());
-  const coreOnly=rewardCardIds(['core']);
-  assert(all.includes('pack01.phoenix'));
-  assert(!coreOnly.some(id=>id.startsWith('pack01.')));
-  assert(coreOnly.some(id=>id.startsWith('core.')));
+const { CARD_DEFINITIONS, CARD_PACKS, BASE_CARD_SLOTS, createBaseCardSlots, defaultEnabledPacks, rewardCardIds } = require('../cards.js');
+test('활성 네임드 레지스트리에는 pack01 10장만 존재한다',()=>{
+  assert.equal(CARD_DEFINITIONS.length,10);
+  assert.equal(CARD_PACKS.pack01.cards.length,10);
+  assert.deepEqual(Object.keys(CARD_PACKS),['pack01']);
+  assert(CARD_DEFINITIONS.every(card=>card.id.startsWith('pack01.')));
+});
+test('모든 보상 후보는 활성 pack01 네임드 카드다',()=>{
+  const rewards=rewardCardIds(defaultEnabledPacks());
+  assert.equal(rewards.length,10);
+  assert.deepEqual(new Set(rewards),new Set(CARD_PACKS.pack01.cardIds));
+  assert(rewards.every(id=>CARD_DEFINITION_BY_ID[id]));
+  assert.deepEqual(rewardCardIds([]),[]);
+});
+test('네임드가 없는 기본 슬롯은 효과 없는 순수 카드로 생성된다',()=>{
+  const pure=createBaseCardSlots();
+  assert.equal(pure.length,52);
+  assert(pure.every(card=>card.named===null&&card.cardId===null));
+});
+test('기본 트럼프의 52개 suit/rank 슬롯이 중복 없이 유지된다',()=>{
+  assert.equal(BASE_CARD_SLOTS.length,52);
+  assert.equal(new Set(BASE_CARD_SLOTS.map(card=>`${card.suit}${card.rank}`)).size,52);
+  for(const suit of ['S','H','D','C'])assert.deepEqual(BASE_CARD_SLOTS.filter(card=>card.suit===suit).map(card=>card.rank),Array.from({length:13},(_,i)=>i+2));
 });
 test('pack01 화면·덱·전투·보상은 동일 정의와 이미지를 참조한다',()=>{
-  assert.equal(CARD_PACKS.pack01.cards.length,10);
   for(const definition of CARD_PACKS.pack01.cards){
     const deckCard={named:CARD_DEFINITION_BY_ID[definition.id],cardId:definition.id};
     const battleCard={...deckCard};
