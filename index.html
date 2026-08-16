@@ -113,6 +113,72 @@ button{font:inherit;color:inherit}
 .poolCard{background:#161d2a;border:2px solid #080b10;box-shadow:0 0 0 2px #344158 inset;padding:7px;border-radius:5px}
 .poolCard b{font-size:11px}.poolCard span{color:#c6cfdd}
 
+/* Desktop workspace: keep the compact phone composition as the default, then
+   let each screen use the extra room as an actual multi-column layout. */
+@media (min-width:900px){
+  html,body{overflow:auto}
+  #app{width:min(100%,1520px);min-height:100dvh;height:100dvh}
+  .screen{padding:clamp(12px,2vw,28px);overflow:auto}
+  .topbar{padding:0 0 12px}.section{padding-left:0;padding-right:0}
+  .logo{font-size:24px}.sub{font-size:12px}
+
+  /* Start */
+  #startScreen.active{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.35fr);grid-template-rows:1fr auto;gap:18px;align-items:stretch}
+  #startScreen .hero{margin:0;min-height:0;padding:clamp(24px,3vw,48px);display:flex;flex-direction:column;justify-content:center}
+  .hero h1{font-size:clamp(42px,4vw,66px)}
+  .hero p{max-width:62%;font-size:13px;line-height:1.65}
+  .heroSprite{width:min(18vw,260px);height:min(18vw,260px);right:3%;bottom:5%}
+  #startScreen>.section{padding:8px 4px;align-self:center}
+  #startScreen .grid2{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  #startScreen .option{min-height:138px;padding:12px}
+  #startScreen .optionSprite{height:58px}
+  #startScreen .option h3{font-size:14px}#startScreen .option p{font-size:11px}
+  .startBottom{grid-column:2;padding:0 4px 4px;margin:0}
+
+  /* Map */
+  #mapScreen.active{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,25%);grid-template-rows:auto auto minmax(420px,1fr) auto;column-gap:18px}
+  #mapScreen>.topbar,#mapScreen>.section{grid-column:1/-1}
+  #mapScreen>.topbar{justify-content:flex-start}.topbar>div:first-child{margin-right:auto}
+  #mapWrap{grid-column:1;grid-row:3/5;margin:0;height:auto;min-height:500px;padding:18px}
+  #mapScreen>.sectionTitle{grid-column:2;grid-row:3;margin:0!important;padding:8px 0!important;align-self:start}
+  #mapDeckStrip{grid-column:2;grid-row:3/5;margin:38px 0 0;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));align-content:start;overflow-y:auto;overflow-x:hidden}
+  .miniCard{min-width:0;width:100%;height:auto;aspect-ratio:100/148}
+  .node{width:92px;height:66px}.node .icon{font-size:22px}.node .nm{font-size:12px}
+
+  /* Battle */
+  #battleScreen{overflow:auto}
+  #battleScreen>.topbar{padding:0 0 12px}
+  #battleMain{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.85fr);grid-template-areas:"status status" "arena hand" "arena tactic" "arena inspect";grid-template-rows:auto auto auto minmax(104px,1fr);gap:10px;padding:0;min-height:calc(100dvh - 94px)}
+  #statusTop{grid-area:status}.hpPanel{padding:10px 12px}.hpBar{height:14px}.midStat{min-width:150px}
+  #arena{grid-area:arena;min-height:0;height:100%;padding:14px;gap:10px;justify-content:space-between;overflow:hidden}
+  .intentWrap{grid-template-columns:90px 1fr}.portrait{width:90px;height:90px}.intentBox{padding:12px}
+  #versus{min-height:190px}.stageCard{height:184px;min-height:184px}.stageInner{width:122px;height:181px}.vsText{font-size:24px}
+  #slotRow{gap:9px}.slot{height:132px}.slotArt{width:82px;height:121px}
+  #handPanel{grid-area:hand}#tacticPanel{grid-area:tactic}#inspect{grid-area:inspect}
+  #handPanel,#tacticPanel{padding:10px;min-width:0;overflow:hidden}
+  #handRow,#tacticRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));overflow-x:hidden;gap:8px;padding:5px 3px 12px}
+  .card,.tactic{min-width:0;width:100%;height:auto;aspect-ratio:100/148}
+  #inspect{min-height:104px;max-height:none;align-self:stretch}#inspect>div{max-height:none}
+  #playBtn{min-width:104px;padding:12px 16px}
+
+  /* Card pool / other overlays */
+  #overlay{position:fixed;padding:24px}.modal{width:min(1180px,94vw);max-height:92dvh;padding:18px}
+  .poolBody{grid-template-columns:minmax(0,1fr) 280px;gap:16px}
+  .poolGrid{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:12px}
+  .poolCard .cardArt{height:auto;aspect-ratio:100/148}.poolDetail{grid-template-columns:110px 1fr;padding:14px}.poolDetailArt{height:auto;aspect-ratio:100/148}
+}
+
+@media (min-width:900px) and (max-height:820px){
+  .screen{padding:10px 18px}
+  #battleMain{grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);grid-template-rows:auto 1fr 1fr auto;min-height:calc(100dvh - 68px)}
+  #arena{padding:9px;gap:5px}.intentWrap{grid-template-columns:64px 1fr}.portrait{width:64px;height:64px}.intentBox{padding:7px}
+  #versus{min-height:128px}.stageCard{height:126px;min-height:126px}.stageInner{width:84px;height:124px}
+  .slot{height:96px}.slotArt{width:60px;height:88px}
+  #handRow,#tacticRow{grid-template-columns:repeat(auto-fit,minmax(70px,1fr));padding-bottom:6px}
+  #inspect{min-height:82px}#startScreen .option{min-height:112px}
+  #mapWrap{min-height:400px}
+}
+
 </style>
 </head>
 <body>
