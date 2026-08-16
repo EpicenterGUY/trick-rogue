@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>TRICK//ROGUE - Pixel Rework v2</title>
+<meta name="theme-color" content="#11131b">
+<style>
+:root{
+  --bg:#0e1118;--bg2:#0a0c12;--panel:#1b2130;--panel2:#232a3d;--line:#425072;
+  --text:#f2ead8;--soft:#9ba7c2;--gold:#e4bd62;--cyan:#67d3d0;--red:#ef6575;--green:#78d68b;--violet:#9e89f2;
+  --paper:#efe5cc;--paper2:#dfcfb0;--ink:#252933;--shadow:#0008;--px:2px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090b10;color:var(--text);font-family:"Courier New",monospace}
+button{font:inherit;color:inherit}
+#app{
+  position:relative;margin:auto;width:min(100vw,460px);height:100dvh;overflow:hidden;
+  background:
+    linear-gradient(180deg,#141924,#090b10 68%),
+    repeating-linear-gradient(0deg,transparent 0 3px,#ffffff03 3px 4px),
+    repeating-linear-gradient(90deg,transparent 0 3px,#ffffff03 3px 4px);
+  image-rendering:pixelated;
+}
+#app:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 18% 0%,#1e5f64aa 0,transparent 30%),radial-gradient(circle at 88% 10%,#6e3244aa 0,transparent 26%);opacity:.85}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;z-index:2}
+.screen.active{display:flex;animation:fade .22s cubic-bezier(.2,.75,.25,1)}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.pixel{border:var(--px) solid #000;background:var(--panel);box-shadow:0 0 0 var(--px) var(--line) inset, 0 var(--px) 0 #fff1 inset, calc(var(--px)*2) calc(var(--px)*2) 0 #0006}
+.pixelBtn{border:var(--px) solid #000;background:linear-gradient(180deg,#2d3850,#1a2230);box-shadow:0 0 0 var(--px) #50607e inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006;padding:8px 10px;color:var(--text)}
+.pixelBtn.primary{background:linear-gradient(180deg,#2b676b,#1b3b40);box-shadow:0 0 0 var(--px) #63a2a6 inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006}
+.pixelBtn.gold{background:linear-gradient(180deg,#6f5828,#43361c);box-shadow:0 0 0 var(--px) #aa8a49 inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006}
+.pixelBtn{transition:transform .16s cubic-bezier(.2,.8,.2,1), filter .16s ease, box-shadow .16s ease} .pixelBtn:hover{filter:brightness(1.08)} .pixelBtn:active{transform:translate(var(--px),var(--px));box-shadow:0 0 0 var(--px) #50607e inset}
+.row{display:flex;gap:8px}.between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.topbar{padding:10px 10px 6px}.logo{font-weight:900;font-size:20px;letter-spacing:-1px}.logo b{color:var(--cyan)}.sub{font-size:11px;color:var(--soft)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:var(--px) solid #000;background:#10151f;box-shadow:0 0 0 var(--px) #2e3850 inset;font-size:11px}
+.small{font-size:11px;color:var(--soft)} .tiny{font-size:10px;color:var(--soft)}
+.red{color:var(--red)} .cyan{color:var(--cyan)} .gold{color:var(--gold)} .green{color:var(--green)} .violet{color:var(--violet)}
+.scrollX{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}.scrollX::-webkit-scrollbar{display:none}
+.scrollY{overflow-y:auto;scrollbar-width:none}.scrollY::-webkit-scrollbar{display:none}
+.section{padding:0 10px 10px}
+.sectionTitle{font-size:13px;font-weight:700;color:#f4d98f;margin:8px 0 6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* start */
+#startScreen .hero{margin:10px;padding:12px 12px 10px;position:relative;overflow:hidden;min-height:132px}
+.hero h1{margin:0;font-size:28px;line-height:.95;letter-spacing:-2px}.hero p{margin:8px 0 0;max-width:65%;font-size:11px;line-height:1.45;color:#bdc7da}
+.heroSprite{position:absolute;right:10px;bottom:6px;width:120px;height:120px}
+.option{padding:8px;cursor:pointer;min-height:104px;background:linear-gradient(180deg,#243049,#1a2232)}
+.option.sel{box-shadow:0 0 0 var(--px) var(--cyan) inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006;background:linear-gradient(180deg,#2c4451,#1b2c31)}
+.option h3{margin:4px 0 3px;font-size:12px}.option p{margin:0;font-size:10px;line-height:1.35;color:#b6c1d5}.optionSprite{height:40px;display:grid;place-items:center}
+.startBottom{padding:0 10px 14px;margin-top:auto}
+/* map */
+#mapScreen{padding-bottom:8px}
+#mapWrap{margin:8px 10px 0;padding:10px;height:58%;position:relative;overflow:hidden}
+#mapSvg{position:absolute;inset:0;pointer-events:none}
+#mapGrid{position:relative;height:100%}
+.node{position:absolute;width:72px;height:54px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;border:var(--px) solid #000;background:linear-gradient(180deg,#2a3346,#1c2230);box-shadow:0 0 0 var(--px) #495a7a inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006;cursor:pointer}
+.node{transition:transform .2s cubic-bezier(.2,.8,.2,1), filter .2s ease} .node:hover{transform:translateY(-2px)} .node.lock{opacity:.28;filter:grayscale(1);pointer-events:none}.node.done{opacity:.4}.node.current{box-shadow:0 0 0 var(--px) var(--cyan) inset,0 0 0 calc(var(--px)*2) #000,calc(var(--px)*2) calc(var(--px)*2) 0 #0006;animation:nodePulse 1.3s ease-in-out infinite}
+.node .icon{font-size:18px}.node .nm{font-size:11px}
+#mapDeckStrip{margin:10px;padding:8px;display:flex;gap:8px;overflow-x:auto;align-items:flex-start}
+.miniCard{min-width:62px;width:62px;height:92px;padding:0;border:none;background:transparent;color:var(--ink);box-shadow:none;display:block;overflow:visible}
+.miniCard .cardArt{height:100%;margin:0}.miniCard svg,.miniCard img{width:100%;height:100%;display:block;image-rendering:pixelated;filter:drop-shadow(0 3px 0 #0007)}
+.poolWrap{display:flex;flex-direction:column;gap:10px}.poolHead{display:flex;justify-content:space-between;gap:8px;align-items:end;flex-wrap:wrap}.poolTabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.poolTabs .pixelBtn{padding:5px 8px;font-size:11px}.poolBody{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.poolGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:10px;align-content:start}.poolCardBtn{padding:0;border:0;background:none;cursor:pointer;text-align:left}.poolCard{background:#141c2a;border:var(--px) solid #000;box-shadow:0 0 0 var(--px) #44567a inset;padding:6px;transition:transform .12s ease,filter .12s ease,box-shadow .12s ease}.poolCardBtn:hover .poolCard,.poolCardBtn.sel .poolCard{transform:translateY(-3px);filter:brightness(1.03);box-shadow:0 0 0 var(--px) #81a1d2 inset,0 0 0 calc(var(--px)*2) #000}.poolCard .cardArt{height:150px;margin:0}.poolCard .cardArt svg,.poolCard .cardArt img{width:100%;height:100%;display:block;image-rendering:pixelated;filter:drop-shadow(0 4px 0 #0004)}.poolDetail{background:#121a27;border:var(--px) solid #000;box-shadow:0 0 0 var(--px) #41516d inset;padding:10px;display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:start}.poolDetailArt{height:132px}.poolDetailArt svg,.poolDetailArt img{width:100%;height:100%;display:block}.poolDetailTitle{font-size:13px;font-weight:800}.poolDetailText{font-size:10px;line-height:1.5;color:#d0d8e7;margin-top:5px}.poolDetailMeta{font-size:9px;line-height:1.45;color:#97abc6;margin-top:7px}.poolDeckBar{font-size:11px;color:#b7c7de}.poolCount{color:#8ed8e1}.missingArt{width:100%;height:100%;display:grid;place-items:center;text-align:center;background:#efe5cf;color:#6e5d49;border:2px solid #d39a27;font-size:10px}@media(min-width:560px){.poolBody{grid-template-columns:minmax(0,1fr) 220px;align-items:start}.poolDetail{position:sticky;top:0}}
+/* battle */
+#battleScreen{padding-bottom:6px;overflow-y:auto}
+#battleMain{display:flex;flex-direction:column;gap:6px;padding:0 8px 8px;min-height:0;flex:none}
+#statusTop{display:grid;grid-template-columns:1fr auto 1fr;gap:6px}
+.hpPanel{padding:8px}.hpHead{display:flex;justify-content:space-between;font-size:11px;font-weight:700}.hpBar{height:10px;margin-top:5px;border:var(--px) solid #000;background:#0e1218;box-shadow:0 0 0 var(--px) #2a354a inset}.hpFill{height:100%}#pHpFill{background:#4ed0d0}#eHpFill{background:#e25a6a}
+.midStat{padding:10px 8px;min-width:62px;text-align:center;font-size:11px}.midStat b{display:block;font-size:16px;color:var(--gold)}
+#arena{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:418px;flex:none;position:relative;overflow:visible;background:linear-gradient(180deg,#1a2233,#111827)}
+#arena:before{content:"";position:absolute;left:0;right:0;bottom:0;height:44%;background:repeating-linear-gradient(90deg,#0000 0 10px,#0003 10px 12px),linear-gradient(180deg,#0e1420,#0b1017);clip-path:polygon(0 100%,0 58%,7% 58%,7% 35%,12% 35%,12% 56%,18% 56%,18% 20%,24% 20%,24% 44%,31% 44%,31% 62%,37% 62%,37% 33%,44% 33%,44% 50%,51% 50%,51% 17%,58% 17%,58% 55%,66% 55%,66% 27%,73% 27%,73% 59%,79% 59%,79% 40%,86% 40%,86% 65%,93% 65%,93% 52%,100% 52%,100% 100%);opacity:.45} #arena:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,#ffffff03 0 2px,#0000 2px 4px);pointer-events:none;mix-blend-mode:screen;opacity:.28}
+.intentWrap{display:grid;grid-template-columns:70px 1fr;gap:6px;position:relative;z-index:2}
+.portrait{width:70px;height:70px;border:var(--px) solid #000;background:linear-gradient(180deg,#23304a,#171d2a);box-shadow:0 0 0 var(--px) #4c5e7f inset,0 0 12px #0006;display:grid;place-items:center;overflow:hidden}
+.intentBox{padding:8px}.intentTitle{font-size:11px;color:#ffb5bc}.intentMain{font-size:14px;font-weight:700;margin-top:3px}.intentSub{font-size:10px;color:var(--soft);margin-top:3px;line-height:1.3}
+.arenaMeta{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
+.forecastRow{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
+#versus{display:grid;grid-template-columns:1fr 28px 1fr;align-items:center;gap:6px;position:relative;z-index:2;min-height:150px}
+.stageCard{height:138px;min-height:138px;display:none;position:relative;overflow:visible;background:transparent;border:none;box-shadow:none;padding:0;justify-self:center;align-self:center}.stageCard.show{display:grid;place-items:center;animation:cardPop .24s cubic-bezier(.18,.8,.2,1)}.stageInner{position:relative;width:92px;height:136px;filter:drop-shadow(0 6px 0 #0008)}.stageInner svg,.stageInner img{width:100%;height:100%;display:block;image-rendering:pixelated}.stageLabel{position:absolute;left:50%;top:-8px;transform:translateX(-50%);font-size:9px;padding:2px 6px;border:var(--px) solid #000;background:#152032;box-shadow:0 0 0 var(--px) #3b4f72 inset;color:#dce6f8;white-space:nowrap}.vsText{text-align:center;font-size:18px;font-weight:800;color:#c7d0e3}
+#slotRow{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;position:relative;z-index:2}
+.slot{height:94px;border:var(--px) dashed #384660;background:#091018;display:grid;place-items:center;font-size:10px;color:#7f8ca5;transition:transform .16s cubic-bezier(.2,.8,.2,1),filter .16s ease;overflow:hidden}.slot.fill{border-style:solid;background:#0f1622;color:var(--ink);box-shadow:0 0 0 var(--px) #445267 inset;cursor:pointer;padding:3px}.slot.fill:active{transform:translateY(1px)}.slot.fill:hover{filter:brightness(1.08)}.slot.inspecting{outline:2px solid var(--cyan);transform:translateY(-2px)}.slot small{display:block;font-size:9px}.slotArt{width:56px;height:82px;margin:0 auto 2px}.slotArt img,.slotArt svg{width:100%;height:100%;display:block;image-rendering:pixelated;filter:drop-shadow(0 2px 0 #0007)}
+#statuses{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;position:relative;z-index:2}
+.stateChip{padding:4px 6px;border:var(--px) solid #000;background:#111824;box-shadow:0 0 0 var(--px) #31405a inset;font-size:10px}
+#inspect{padding:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;min-height:84px;max-height:124px;overflow:hidden;transition:max-height .18s ease, min-height .18s ease, padding .18s ease} #inspect.collapsed{min-height:56px;max-height:56px} #inspect.collapsed #inspectApply,#inspect.collapsed #systemLegend,#inspect.collapsed #termRow{display:none} #inspect.collapsed #inspectDesc{max-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#inspect>div{min-width:0;max-height:108px;overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+#inspectTitle{font-size:12px;font-weight:700;position:sticky;top:0;background:#1b2130;padding-bottom:3px;z-index:1}#inspectDesc{margin-top:3px;font-size:10px;line-height:1.45;color:#c4cede;white-space:normal;overflow:visible}#inspectApply{margin-top:5px;font-size:10px;line-height:1.35;color:#ecdcbc}.inspectHint{color:#8fa6c9}#termRow{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;padding-bottom:2px}.termBtn{padding:3px 5px;border:var(--px) solid #000;background:#0f1621;box-shadow:0 0 0 var(--px) #2f3b53 inset;font-size:9px}
+#playBtn{padding:10px 12px;min-width:76px;align-self:center;position:sticky;right:0}
+.panelTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;color:#b4bfd2;font-size:11px}
+#handPanel,#tacticPanel{padding:8px;overflow:visible}
+#handRow,#tacticRow{display:flex;gap:6px;overflow-x:auto;overflow-y:visible;align-items:flex-start;padding:4px 2px 10px}
+.card{min-width:100px;width:100px;height:148px;padding:0;border:none;background:transparent;box-shadow:none;color:var(--ink);position:relative;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s ease;animation:handIn .24s cubic-bezier(.2,.8,.2,1);overflow:visible;flex:0 0 auto}.card:hover{transform:translateY(-4px);filter:brightness(1.05)} .card:after{display:none}
+.card.named{filter:drop-shadow(0 5px 0 #0006)}.card.sel{transform:translateY(-6px) scale(1.02);filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 10px #63d3d599)}
+.cardTop,.cardName,.cardDesc,.cardTag{display:none}.cardSuit{font-size:17px}.cardArt{height:100%;margin:0;border:none;background:transparent;display:grid;place-items:center;overflow:visible;position:relative}.cardArt:after{display:none}.cardArt svg,.cardArt img{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 #0006)}
+.tactic{min-width:86px;width:86px;height:132px;padding:0;border:none;background:transparent;color:var(--ink);cursor:pointer;position:relative;transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s ease;animation:handIn .24s cubic-bezier(.2,.8,.2,1);overflow:visible;flex:0 0 auto}.tactic:hover{transform:translateY(-3px);filter:brightness(1.05)} .tactic.off{opacity:.45}.tactic.sel{transform:translateY(-4px)}
+.tacticArt{height:100%}.tacticArt img,.tacticArt svg{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 #0006)}
+/* modal */
+#overlay{position:absolute;inset:0;background:#06080ecc;display:none;align-items:center;justify-content:center;padding:10px;z-index:20}
+#overlay.show{display:flex}.modal{width:100%;max-height:92dvh;padding:10px;overflow:auto;border:var(--px) solid #000;background:linear-gradient(180deg,#232b3f,#171e2d);box-shadow:0 0 0 var(--px) #556789 inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006;animation:modalPop .2s cubic-bezier(.2,.8,.2,1)}
+.modal h2{margin:0 0 6px;font-size:18px}.modal p{font-size:11px;line-height:1.45;color:#c5cedd}.choiceList{display:grid;gap:6px;margin-top:8px}.choice{width:100%;padding:8px;text-align:left;border:var(--px) solid #000;background:linear-gradient(180deg,#2a3550,#1a2232);box-shadow:0 0 0 var(--px) #51617f inset;color:var(--text)}.choice b{font-size:12px}.choice span{display:block;font-size:10px;color:#cad2e0;line-height:1.3;margin-top:3px}
+.rewardGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.rewardBox{padding:5px;border:var(--px) solid #000;background:linear-gradient(180deg,var(--paper),var(--paper2));box-shadow:0 0 0 var(--px) #b6a88a inset,0 0 12px #0002;color:var(--ink);transition:transform .14s steps(3), filter .14s steps(3)} .rewardBox:hover{transform:translateY(-2px);filter:brightness(1.04)}.rewardBox h3{margin:4px 0 2px;font-size:10px;line-height:1.15}.rewardBox p{font-size:8px;line-height:1.25;color:#565b66;min-height:54px}.rewardBtns{display:grid;gap:4px}.rewardBtns button{padding:5px 4px;border:1px solid #8d816d;background:#e8dcc3;color:#262a33;font-size:8px}
+.flyingCard{position:absolute;z-index:50;pointer-events:none;transform-origin:center;transition:left .34s cubic-bezier(.18,.82,.2,1),top .34s cubic-bezier(.18,.82,.2,1),width .34s cubic-bezier(.18,.82,.2,1),height .34s cubic-bezier(.18,.82,.2,1),transform .34s cubic-bezier(.18,.82,.2,1),opacity .28s ease;filter:drop-shadow(0 10px 10px #0008)}
+.float{position:absolute;z-index:15;font-size:16px;font-weight:800;pointer-events:none;animation:float .72s cubic-bezier(.2,.7,.25,1) forwards;text-shadow:2px 2px 0 #000}.flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;z-index:16;font-weight:900;text-shadow:3px 3px 0 #000;animation:flash .78s cubic-bezier(.18,.82,.2,1) forwards;text-align:center}.particle{position:absolute;width:8px;height:8px;z-index:14;pointer-events:none;animation:burst .56s cubic-bezier(.2,.7,.25,1) forwards}.slash{position:absolute;left:50%;top:46%;width:120px;height:14px;background:linear-gradient(90deg,#fff,#ffeb92,#fff0);transform:translate(-50%,-50%) rotate(-16deg);box-shadow:0 0 12px #fff8;z-index:15;animation:slash .25s cubic-bezier(.15,.75,.15,1) forwards;pointer-events:none}
+@keyframes float{0%{opacity:0;transform:translate(-50%,8px)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-30px)}}@keyframes flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}@keyframes nodePulse{0%{filter:brightness(1)}50%{filter:brightness(1.18)}100%{filter:brightness(1)}}@keyframes cardPop{0%{opacity:0;transform:scale(.86) translateY(8px)}100%{opacity:1;transform:scale(1) translateY(0)}}@keyframes handIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}@keyframes modalPop{0%{opacity:0;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}@keyframes burst{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}@keyframes slash{0%{opacity:0;transform:translate(-50%,-50%) rotate(-18deg) scaleX(.4)}100%{opacity:0;transform:translate(-50%,-50%) rotate(-18deg) scaleX(1.1)}}
+.shake{animation:shake .28s ease-out}@keyframes shake{25%{transform:translateX(3px)}50%{transform:translateX(-3px)}75%{transform:translateX(2px)}}
+@media (max-height:820px){
+  .hero h1{font-size:25px}.hero p{max-width:60%}.option{min-height:96px}.portrait{width:60px;height:60px}.intentWrap{grid-template-columns:60px 1fr}.stageCard{height:128px}.card{min-width:86px;width:86px;height:132px}.cardArt{height:100%}.tactic{min-width:88px;width:88px}.node{width:66px;height:50px}
+}
+
+/* v25 — icon-first card system */
+.card.named{filter:drop-shadow(0 3px 0 #0007)}
+.card.sel{transform:translateY(-7px) scale(1.025);filter:drop-shadow(0 0 8px #68d1d788)}
+.cardArt svg,.tacticArt svg,.slotArt svg,.stageCard svg,.poolCard .cardArt svg,.miniCard svg{shape-rendering:geometricPrecision;filter:drop-shadow(0 3px 0 #0005)}
+.tacticArt svg{filter:drop-shadow(0 3px 0 #0006)}
+.poolCard{background:#161d2a;border:2px solid #080b10;box-shadow:0 0 0 2px #344158 inset;padding:7px;border-radius:5px}
+.poolCard b{font-size:11px}.poolCard span{color:#c6cfdd}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <section class="screen active" id="startScreen">
+    <div class="hero pixel">
+      <h1>TRICK<b>//</b>ROGUE</h1>
+      <p>트릭으로 우세를 쌓고, 5장의 쇼다운으로 피해를 만든다. 평범한 트럼프를 네임드 카드로 개조해 빌드를 만든다.</p>
+      <div class="heroSprite" id="heroSprite"></div>
+    </div>
+    <div class="section">
+      <div class="sectionTitle">캐릭터</div>
+      <div class="grid2" id="charGrid"></div>
+      <div class="sectionTitle">스타팅 패키지</div>
+      <div class="grid2" id="packGrid"></div>
+    </div>
+    <div class="startBottom"><button class="pixelBtn primary" style="width:100%;padding:11px" onclick="beginRun()">런 시작</button></div>
+  </section>
+
+  <section class="screen" id="mapScreen">
+    <div class="topbar between">
+      <div><div class="logo">ACT 1 · <b>잔광 구역</b></div><div class="sub">노드를 선택해 덱을 개조하자</div></div>
+      <button class="pixelBtn" onclick="showDeck()">덱 보기</button><button class="pixelBtn" onclick="showPool()">카드풀</button><button class="pixelBtn" onclick="showNewPack()">신규 1팩</button>
+    </div>
+    <div class="section" style="padding-bottom:0">
+      <div class="row" style="flex-wrap:wrap">
+        <span class="badge">HP <b id="mapHp" class="cyan"></b></span>
+        <span class="badge">골드 <b id="mapGold" class="gold"></b></span>
+        <span class="badge">덱 <b id="mapDeck"></b></span>
+        <span class="badge">빌드 <b id="mapBuild"></b></span>
+      </div>
+    </div>
+    <div id="mapWrap" class="pixel">
+      <svg id="mapSvg"></svg>
+      <div id="mapGrid"></div>
+    </div>
+    <div class="sectionTitle" style="padding:0 10px;margin-top:8px">현재 덱 일부</div>
+    <div id="mapDeckStrip" class="pixel"></div>
+  </section>
+
+  <section class="screen" id="battleScreen">
+    <div class="topbar between">
+      <div><div class="logo" id="battleTitle">일반 전투</div><div class="sub" id="battleSub">ROUND 1 · 5트릭 후 쇼다운</div></div>
+      <div class="row"><button class="pixelBtn" onclick="showTerms()">용어</button><button class="pixelBtn" id="sfxBtn" onclick="toggleSfx()">SFX</button></div>
+    </div>
+    <div id="battleMain">
+      <div id="statusTop">
+        <div class="hpPanel pixel"><div class="hpHead"><span id="pName">플레이어</span><span id="pHpText"></span></div><div class="hpBar"><div class="hpFill" id="pHpFill"></div></div></div>
+        <div class="midStat pixel">우세<b id="edgeText">0:0</b></div>
+        <div class="hpPanel pixel"><div class="hpHead"><span id="eName">적</span><span id="eHpText"></span></div><div class="hpBar"><div class="hpFill" id="eHpFill"></div></div></div>
+      </div>
+      <div id="arena" class="pixel">
+        <div class="intentWrap">
+          <div class="portrait" id="enemyPortrait"></div>
+          <div class="intentBox pixel">
+            <div class="intentTitle">적 인텐트</div>
+            <div class="intentMain" id="intentMain"></div>
+            <div class="intentSub" id="intentSub"></div>
+          </div>
+        </div>
+        <div class="arenaMeta">
+          <span class="badge">트릭 <b id="trickText"></b></span>
+          <span class="badge">트럼프 <b id="trumpText"></b></span>
+          <span class="badge">칩 <b id="chipText" class="gold"></b></span>
+        </div>
+        <div class="forecastRow">
+          <span class="badge">내 다음 카드 <b id="myForecast"></b></span>
+          <span class="badge">적 다음 카드 <b id="enemyForecast"></b></span>
+        </div>
+        <div id="versus">
+          <div class="stageCard" id="enemyStage"></div>
+          <div class="vsText">VS</div>
+          <div class="stageCard" id="playerStage"></div>
+        </div>
+        <div id="slotRow"></div>
+        <div id="statuses"></div>
+      </div>
+      <div id="handPanel" class="pixel">
+        <div class="panelTitle"><span>트럼프 패</span><span id="drawInfo"></span></div>
+        <div id="handRow" class="scrollX"></div>
+      </div>
+      <div id="tacticPanel" class="pixel">
+        <div class="panelTitle"><span>전술 카드</span><span id="tacticInfo"></span></div>
+        <div id="tacticRow" class="scrollX"></div>
+      </div>
+      <div id="inspect" class="pixel">
+        <div>
+          <div id="inspectTitle">카드를 선택</div>
+          <div id="inspectDesc">손패나 쇼다운 슬롯의 카드를 누르면 전체 효과와 용어를 확인할 수 있다.</div>
+          <div id="inspectApply"></div>
+          <div id="systemLegend"></div>
+          <div id="termRow"></div>
+        </div>
+        <button class="pixelBtn primary" id="playBtn" onclick="useSelectedAction()" disabled>내기</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="overlay"><div class="modal" id="modal"></div></div>
+</div>
+<script>
+const SUITS=[{k:'S',sym:'♠',red:false},{k:'H',sym:'♥',red:true},{k:'D',sym:'♦',red:true},{k:'C',sym:'♣',red:false}];
+const suitObj=k=>SUITS.find(s=>s.k===k); const rankLabel=r=>({11:'J',12:'Q',13:'K',14:'A'}[r]||String(r)); const parseRank=x=>x==='A'?14:x==='K'?13:x==='Q'?12:x==='J'?11:Number(x);
+const shuffle=a=>{let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}; const pick=a=>a[Math.floor(Math.random()*a.length)];
+let soundOn=true,audioCtx=null; function ensureAudio(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)()} document.addEventListener('pointerdown',()=>{ensureAudio();audioCtx&&audioCtx.state==='suspended'&&audioCtx.resume()},{once:true}); function blip(f=420,d=.05,t='square',v=.03,s=0){if(!soundOn)return;ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t;o.frequency.setValueAtTime(f,audioCtx.currentTime); if(s)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+s),audioCtx.currentTime+d); g.gain.setValueAtTime(v,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d); o.connect(g).connect(audioCtx.destination); o.start();o.stop(audioCtx.currentTime+d)}
+function sfx(name){if(name==='click')blip(250,.03); if(name==='card'){blip(170,.04,'square',.035,150); setTimeout(()=>blip(500,.03,'triangle',.02,-80),35)} if(name==='win'){[420,540,680].forEach((f,i)=>setTimeout(()=>blip(f,.06,'triangle',.03,90),i*50))} if(name==='lose'){blip(200,.08,'sawtooth',.04,-70)} if(name==='hit')blip(90,.08,'sawtooth',.055,-20); if(name==='heal'){blip(520,.07,'triangle',.03,120); setTimeout(()=>blip(700,.06,'triangle',.02,80),55)} if(name==='reward'){[480,660,820].forEach((f,i)=>setTimeout(()=>blip(f,.08,'triangle',.028,70),i*60))} }
+function toggleSfx(){soundOn=!soundOn; sfxBtn.textContent=soundOn?'SFX':'MUTE'; if(soundOn)sfx('click')}
+const TERMS={
+ '트릭':'적과 플레이어가 트럼프 카드 1장씩 겨루는 짧은 승부.',
+ '쇼다운':'5트릭 후 모인 5장으로 족보와 위력을 계산하는 단계.',
+ '우세':'트릭 승리로 얻는 수치. 기본적으로 1당 쇼다운 위력 +3.',
+ '트럼프':'현재 라운드에서 다른 무늬보다 우선하는 무늬.',
+ '적용 값':'전술과 필드로 바뀐 현재 트릭용 숫자와 무늬.',
+ '원래 값':'카드에 인쇄된 본래 숫자와 무늬. 쇼다운은 기본적으로 이 값을 사용.',
+ '예측':'다음 카드나 다음 트럼프 같은 미래 정보를 일부 또는 전부 확인하는 효과.',
+ '출혈':'트릭 종료 시 피해를 받고 1 감소하는 상태.',
+ '보호막':'다음 피해를 수치만큼 먼저 막는 상태.',
+ '예약':'지금 등록해 두었다가 다음 트릭/다음 쇼다운 등에 발동하는 효과.',
+ '번':'손의 카드 1장을 버리고 칩을 얻으며 새 카드를 뽑는 행동.',
+ '더블다운':'이번 트릭 승자가 얻는 우세를 추가로 +1 해 주는 효과.',
+ '압승':'적용 숫자 차이 5 이상으로 승리한 경우.',
+ '아슬아슬':'적용 숫자 차이 1로 승리한 경우.',
+ '역전':'원래 더 낮은 숫자였지만 조작/트럼프로 승리한 경우.',
+ '슬롯':'쇼다운에 쌓이는 1~5번째 위치. 일부 카드는 위치를 참조한다.'
+};
+const SYSTEM_NOTES={
+ '발동':'이 카드가 언제 작동하는지 알려 주는 말. 예: 트릭 승리 시, 카드를 냈을 때.',
+ '조건':'효과가 켜지기 위해 먼저 만족해야 하는 전제. 예: 적용 숫자 5 이하, 전술 사용 후 승리.',
+ '효과':'조건을 만족했을 때 실제로 일어나는 결과 수치. 예: 피해 3, 칩 +2.',
+ '추가':'기본 효과 외에 따로 붙는 보너스 효과. 보통 쇼다운 포함 시 같은 후속 효과에 사용.'
+};
+const NAMED={
+ 'S7':{name:'검은 탄환',short:'검은 탄환',desc:'발동: 이 카드로 트릭 승리 시 즉시 적에게 피해 3. 추가: 이 카드가 쇼다운 5장 중 하나면 최종 쇼다운 위력 +4.',terms:['트릭','쇼다운','우세'],art:'bullet'},
+ 'H4':{name:'불사조',short:'불사조',desc:'발동: 이 카드로 트릭 승리 시 체력 4 회복. 회복은 최대 체력을 넘지 않는다.',terms:['트릭'],art:'phoenix'},
+ 'D7':{name:'황금손',short:'황금손',desc:'조건: 이번 트릭에서 전술 카드나 칩을 1회 이상 사용한 뒤 이 카드로 승리. 효과: 칩 +1.',terms:['트릭'],art:'gold'},
+ 'C3':{name:'비열한 승부사',short:'비열한 승부사',desc:'조건: 이 카드의 적용 숫자가 5 이하인 상태로 트릭 승리. 효과: 칩 +2.',terms:['적용 값','트릭'],art:'cheat'},
+ 'C8':{name:'재귀 함수',short:'재귀 함수',desc:'발동: 이 카드로 승리 시 직전에 발동한 네임드의 수치 효과를 1회 복사. 예: 직전 피해 3이면 추가 피해 3.',terms:['트릭'],art:'loop'},
+ 'D6':{name:'예약 발송',short:'예약 발송',desc:'발동: 이 카드를 내는 즉시 예약 생성. 다음 트릭에서 승리하면 적에게 추가 피해 6.',terms:['예약','트릭'],art:'mail'},
+ 'H8':{name:'응급 보호구',short:'응급 보호구',desc:'발동: 이 카드를 내는 즉시 보호막 5 획득. 보호막은 다음 피해를 먼저 막는다.',terms:['보호막'],art:'shield'},
+ 'S5':{name:'날 선 유리',short:'날 선 유리',desc:'발동: 이 카드로 트릭 승리 시 적에게 출혈 2 부여. 출혈은 트릭 종료마다 피해를 준다.',terms:['출혈','트릭'],art:'glass'},
+ 'C5':{name:'매복한 관측자',short:'관측자',desc:'조건: 이 카드가 쇼다운 3번째 슬롯에 놓일 때. 효과: 적의 다음 카드 예측 단계 +2.',terms:['슬롯','예측'],art:'eye'},
+ 'SA':{name:'배터리 1%',short:'배터리 1%',desc:'효과: 이 카드가 쇼다운 5장 중 하나면 최종 쇼다운 위력 +15. 트릭 중 즉시 효과는 없다.',terms:['쇼다운'],art:'battery'},
+ 'D8':{name:'행운의 주사위',short:'행운 주사위',desc:'발동: 이 카드를 낼 때 주사위를 굴린다. 효과: 50% 확률로 칩 +2, 실패하면 칩 +0.',terms:['랜덤', '칩'],art:'custom'},
+ 'C4':{name:'황동 조수',short:'황동 조수',desc:'발동: 이 카드를 내는 즉시 전술 카드 1장을 뽑는다. 추가: 이 트릭에서 승리하면 칩 +1.',terms:['드로우', '트릭'],art:'custom'},
+ 'S9':{name:'검집의 칼날',short:'검집의 칼날',desc:'발동: 이 카드로 트릭 승리 시 적에게 피해 2. 추가: 적의 원래 숫자가 이 카드보다 높았다면 피해 +3.',terms:['트릭', '피해'],art:'custom'},
+ 'H5':{name:'봉인된 장미',short:'봉인된 장미',desc:'발동: 이 카드로 트릭 패배 시 체력 3 회복. 추가: 쇼다운에 포함되면 위력 +3.',terms:['트릭', '쇼다운'],art:'custom'},
+ 'DQ':{name:'황금 모래시계',short:'황금 모래시계',desc:'조건: 이 카드가 쇼다운 4번 또는 5번 슬롯에 놓일 때. 효과: 최종 쇼다운 위력 +8.',terms:['슬롯', '쇼다운'],art:'custom'},
+ 'C6':{name:'극성 자석',short:'극성 자석',desc:'발동: 이 카드로 같은 무늬의 적 카드를 이기면 우세 +1을 추가로 얻는다.',terms:['우세', '트릭'],art:'custom'},
+ 'SJ':{name:'검은 서명',short:'검은 서명',desc:'발동: 이 카드로 트릭 승리 시 적의 다음 카드 예측 단계 +1. 추가: 이미 최대 예측이면 칩 +1.',terms:['예측', '트릭'],art:'custom'},
+ 'HK':{name:'심장의 등불',short:'심장의 등불',desc:'발동: 이 카드를 내는 즉시 보호막 4 획득. 추가: 이 카드로 승리하면 체력 2 회복.',terms:['보호막', '트릭'],art:'custom'},
+ 'DA':{name:'왕실 인장',short:'왕실 인장',desc:'효과: 이 카드가 쇼다운에 포함되면 위력 +10. 조건: 다른 네 장의 무늬가 모두 같으면 추가로 +6.',terms:['쇼다운', '무늬'],art:'custom'},
+ 'C10':{name:'태엽 상자',short:'태엽 상자',desc:'발동: 이 카드를 내는 즉시 전술 카드 1장을 뽑는다. 추가: 이번 트릭에서 전술 카드를 사용하지 않았다면 칩 +1.',terms:['드로우', '칩'],art:'custom'},
+'S2':{name:'멸망 버튼',short:'멸망 버튼',desc:'발동: 적 원래 숫자가 J 이상이면 이번 트릭에서 이 카드의 적용 숫자를 A로 취급한다.',terms:['적용 값','트릭'],art:'button'},
+ 'S4':{name:'화약 냄새',short:'화약 냄새',desc:'조건: 이번 트릭에서 전술 카드를 2장 이상 사용. 효과: 승리하면 적에게 피해 5.',terms:['트릭','피해'],art:'powder'},
+ 'S6':{name:'오버클럭 코어',short:'오버클럭 코어',desc:'발동: 이 카드를 내면 체력 2를 잃고 칩 +2. 추가: 이번 트릭 적용 숫자 +2.',terms:['칩','적용 값'],art:'core'},
+ 'S8':{name:'절단선',short:'절단선',desc:'효과: 스트레이트 쇼다운에 포함되면 위력 +7.',terms:['쇼다운'],art:'cut'},
+ 'S10':{name:'폭주 기관차',short:'폭주 기관차',desc:'효과: 쇼다운이 스트레이트라면 최종 위력 +10.',terms:['쇼다운'],art:'train'},
+ 'SQ':{name:'규칙을 읽지 않은 자의 최후',short:'규칙의 최후',desc:'발동: 이번 트릭에서 사용한 전술 카드 수가 많을수록 적용 숫자가 오른다.',terms:['전술','적용 값'],art:'rulebook'},
+ 'H2':{name:'길고양이',short:'길고양이',desc:'효과: 쇼다운의 다른 4장이 모두 순수 카드면 위력 +6, 체력 3 회복.',terms:['쇼다운','순수'],art:'cat'},
+ 'H3':{name:'삼각김밥 유통기한 3분 전',short:'삼각김밥',desc:'발동: 이 카드를 내면 체력 3 회복.',terms:['트릭'],art:'rice'},
+ 'H6':{name:'우산 없는 날',short:'우산 없는 날',desc:'발동: 트럼프 카드에게 패배하면 체력 4 회복.',terms:['트럼프','트릭'],art:'umbrella'},
+ 'H7':{name:'알람 7개',short:'알람 7개',desc:'발동: 전투 중 세 번째 드로우 계열 발동에서 체력 10 회복.',terms:['드로우'],art:'alarm'},
+ 'H10':{name:'심폐소생술',short:'심폐소생술',desc:'발동: 체력이 30% 이하라면 이 카드를 낼 때 체력 6 회복.',terms:['트릭'],art:'cpr'},
+ 'HQ':{name:'심장 박동기',short:'심장 박동기',desc:'효과: 전투 중 처음 치명적 피해를 받을 때 체력 1로 버틴다.',terms:['피해'],art:'heartmachine'},
+ 'D2':{name:'고장난 자판기',short:'고장난 자판기',desc:'발동: 칩, 회복, 드로우, 꽝, 적 회복 중 하나가 무작위로 발생.',terms:['랜덤','칩'],art:'vending'},
+ 'D4':{name:'정품보증서',short:'정품보증서',desc:'효과: 쇼다운의 다른 4장이 모두 순수 카드면 위력 +7.',terms:['순수','쇼다운'],art:'certificate'},
+ 'D5':{name:'메모리 패치',short:'메모리 패치',desc:'효과: 쇼다운에 순수 카드가 3장 이상이면 위력 +5.',terms:['순수','쇼다운'],art:'patch'},
+ 'D9':{name:'학원비 영수증',short:'학원비 영수증',desc:'발동: 이 카드를 내면 칩 1을 지불. 쇼다운에 포함되면 위력 +8.',terms:['칩','쇼다운'],art:'receipt'},
+ 'DJ':{name:'최종수정본_v7_진짜최종',short:'진짜최종',desc:'발동: 이 카드를 낼 때 전술 카드 2장을 뽑는다.',terms:['드로우','전술'],art:'document'},
+ 'DK':{name:'빚쟁이의 계약',short:'빚쟁이의 계약',desc:'발동: 이 카드를 처음 내면 칩 +3. 쇼다운에서는 위험한 추가 위력을 얻는다.',terms:['칩','쇼다운'],art:'contract'}
+};
+
+Object.assign(NAMED,{
+  'S2':{name:'빙결 수정',short:'빙결 수정',desc:'발동: 이 카드로 트릭 승리 시 적 우세 -1. 추가: 다음 적 카드 예측 단계 +1.',terms:['트릭','우세','예측'],art:'crystal2'},
+  'S3':{name:'만능 열쇠',short:'만능 열쇠',desc:'발동: 이 카드로 트릭 승리 시 칩 +1. 다음에 내는 카드의 적용 숫자 +1.',terms:['트릭','칩','적용 값'],art:'key3'},
+  'S4':{name:'그림자 단검',short:'그림자 단검',desc:'발동: 이 카드로 트릭 승리 시 적에게 피해 4.',terms:['트릭','피해'],art:'dagger4'},
+  'S6':{name:'강철 톱니',short:'강철 톱니',desc:'효과: 이 카드의 적용 숫자 +1. 승리 시 다음 트릭까지 우세 +1.',terms:['적용 값','우세','트릭'],art:'gear6'},
+  'S8':{name:'심연 거울',short:'심연 거울',desc:'발동: 이번 트릭 종료 후 직전에 낸 내 카드 1장을 복사해 덱 맨 위에 올린다.',terms:['트릭','덱'],art:'mirror8'},
+  'S10':{name:'황금 망원경',short:'황금 망원경',desc:'발동: 내 다음 카드와 적 다음 카드의 예측 단계를 각각 +2.',terms:['예측'],art:'scope10'},
+  'SQ':{name:'얼음 여왕',short:'얼음 여왕',desc:'효과: 쇼다운에 포함되면 최종 위력 +6. 추가: 하트가 아닌 적 카드에 승리 시 체력 2 회복.',terms:['쇼다운','트릭'],art:'icequeen'},
+  'SK':{name:'흑왕관',short:'흑왕관',desc:'효과: 이 카드가 쇼다운의 가장 높은 카드면 최종 위력 +8.',terms:['쇼다운'],art:'crownk'},
+  'HA':{name:'루비 성배',short:'루비 성배',desc:'발동: 이 카드로 트릭 승리 시 체력 3 회복, 칩 +1.',terms:['트릭','칩'],art:'chalicea'},
+  'H2':{name:'촛불',short:'촛불',desc:'발동: 이 카드가 손패에 있을 때 첫 패배 1회를 무효로 하고 이 카드를 버린다.',terms:['패배','버림'],art:'candle2'}
+});
+
+
+Object.assign(NAMED,{
+  'H3':{name:'새벽 깃털',short:'새벽 깃털',desc:'발동: 이 카드가 쇼다운에 포함되면 최종 위력 +3. 추가: 다음에 내는 하트 카드의 적용 숫자 +1.',terms:['쇼다운','최종 위력','적용 값'],art:'feather3'},
+  'H6':{name:'약초 주머니',short:'약초 주머니',desc:'발동: 이 카드로 트릭 승리 시 체력 2 회복. 쇼다운 승리 시 추가로 체력 1 회복.',terms:['트릭','쇼다운','회복'],art:'herb6'},
+  'H7':{name:'연심 나침반',short:'연심 나침반',desc:'발동: 내 다음 카드와 적 다음 카드의 예측 단계를 각각 +1. 이 카드로 승리 시 칩 +1.',terms:['예측','트릭','칩'],art:'compass7'},
+  'H9':{name:'장미 봉인',short:'장미 봉인',desc:'발동: 이 카드가 쇼다운에 포함되면 최종 위력 +5. 추가: 하트 족보의 위력 +2.',terms:['쇼다운','족보','최종 위력'],art:'letter9'},
+  'H10':{name:'축복의 종',short:'축복의 종',desc:'발동: 이 카드가 손패에 있을 때 첫 패배 1회를 무효로 하고 체력 1 회복.',terms:['패배','손패','회복'],art:'bell10'},
+  'HJ':{name:'익살 광대',short:'익살 광대',desc:'발동: 이 카드로 트릭 승리 시 전술 패 1장 드로우. 추가: 이번 라운드에 하트 카드 위력 +1.',terms:['트릭','전술 패','드로우'],art:'jesterj'},
+  'HQ':{name:'장미 여왕',short:'장미 여왕',desc:'효과: 쇼다운에 포함되면 최종 위력 +7. 추가: 하트 카드 2장 이상 포함 시 위력 +3.',terms:['쇼다운','최종 위력'],art:'queenq'},
+  'D2':{name:'별 병약',short:'별 병약',desc:'발동: 이 카드로 트릭 승리 시 칩 +2. 추가: 다이아 카드 1장 드로우.',terms:['트릭','칩','드로우'],art:'potion2'},
+  'D3':{name:'묶음 서류',short:'묶음 서류',desc:'발동: 이 카드가 쇼다운에 포함되면 최종 위력 +4. 승리 시 골드 +8.',terms:['쇼다운','골드'],art:'papers3'},
+  'D4':{name:'탐험 지도',short:'탐험 지도',desc:'발동: 이 카드로 트릭 승리 시 적 다음 카드의 예측 단계 +2. 쇼다운에 포함되면 최종 위력 +2.',terms:['트릭','예측','쇼다운'],art:'map4'}
+});
+
+
+Object.assign(NAMED,{
+  'D10':{name:'황혼 패스',short:'황혼 패스',desc:'발동: 이 카드가 쇼다운에 포함되면 최종 위력 +6. 승리 시 칩 +2.',terms:['쇼다운','최종 위력','칩'],art:'twilightpass'},
+  'CA':{name:'푸른 포털',short:'푸른 포털',desc:'발동: 이 카드로 트릭 승리 시 전술 패 1장 드로우. 추가: 다음 카드의 적용 숫자 +1.',terms:['트릭','드로우'],art:'portal'},
+  'C2':{name:'황금 메달',short:'황금 메달',desc:'발동: 이 카드가 쇼다운에 포함되면 최종 위력 +3. 승리 시 칩 +1.',terms:['쇼다운','칩'],art:'medal'},
+  'C7':{name:'연쇄 사슬',short:'연쇄 사슬',desc:'발동: 이번 트릭 동안 적 인텐트의 수치 보정을 2만큼 낮춘다.',terms:['트릭','인텐트'],art:'chain'},
+  'C9':{name:'응시의 눈',short:'응시의 눈',desc:'발동: 내 다음 카드와 적 다음 카드의 예측 단계를 각각 +2 한다.',terms:['예측'],art:'eye'},
+  'CJ':{name:'황동 의수',short:'황동 의수',desc:'발동: 이 카드로 트릭 승리 시 위력 +4를 추가로 얻고 칩 +1.',terms:['트릭','위력','칩'],art:'gauntlet'}
+});
+
+const TACTICS=[
+ {id:'paint',name:'페인트',cost:1,desc:'비용 1. 다음에 낼 카드 1장의 적용 무늬를 현재 트럼프로 바꾼다. 원래 값은 변하지 않는다.',terms:['적용 값','트럼프']},
+ {id:'plus2',name:'숫자 +2',cost:1,desc:'비용 1. 다음에 낼 카드 1장의 적용 숫자를 +2 한다. 쇼다운 원래 값은 유지된다.',terms:['적용 값']},
+ {id:'draw',name:'드로우',cost:1,desc:'비용 1. 트럼프 카드 1장을 즉시 뽑는다.',terms:[]},
+ {id:'scout',name:'정찰',cost:1,desc:'비용 1. 내 다음 카드와 적 다음 카드의 예측 단계를 각각 +1 한다.',terms:['예측']},
+ {id:'double',name:'더블다운',cost:0,desc:'비용 0. 이번 트릭 승자가 얻는 우세를 기본 1에서 2로 늘린다.',terms:['더블다운','우세']},
+ {id:'barrier',name:'임시 장벽',cost:1,desc:'비용 1. 즉시 보호막 3을 얻는다.',terms:['보호막']},
+ {id:'burn',name:'번',cost:0,desc:'비용 0. 선택한 트럼프 카드 1장을 버리고 칩 +1, 트럼프 카드 1장 드로우.',terms:['번']},
+ {id:'reverse',name:'리버스',cost:2,desc:'비용 2. 이번 트릭 한정으로 높은 숫자 대신 낮은 숫자가 승리한다.',terms:['트릭']},
+{id:'pureboost',name:'기본에 충실',cost:0,desc:'비용 0. 다음 순수 카드의 적용 숫자 +2.',terms:['순수','적용 값']},
+ {id:'clean',name:'무첨가',cost:1,desc:'비용 1. 다음 순수 카드로 승리하면 칩 +2.',terms:['순수','칩']},
+ {id:'recolor',name:'색칠공부',cost:2,desc:'비용 2. 가장 최근 쇼다운 카드의 무늬를 현재 트럼프로 바꾼다.',terms:['쇼다운','트럼프']},
+ {id:'fakeid',name:'가짜 신분증',cost:2,desc:'비용 2. 가장 최근 쇼다운 카드의 숫자를 +1 한다.',terms:['쇼다운','적용 값']}
+];
+const CHARACTERS=[
+ {id:'modder',name:'개조공',hp:54,desc:'네임드 밀도가 높고 압축된 시작.',passive:'시작 네임드 5장 / 순수 카드 2장 제거',named:['S7','H4','D7','C3','C8'],remove:2,sprite:'modder'},
+ {id:'scout',name:'정찰가',hp:58,desc:'예측과 예약 계열에 강하다.',passive:'전투 시작 시 예측 +1',named:['C5','D6','H4','S5'],remove:1,sprite:'scout'},
+ {id:'keeper',name:'보관인',hp:62,desc:'안정적이고 장기전에 유리한 시작.',passive:'시작 보호막 +2',named:['H8','D7','S7'],remove:0,sprite:'keeper'}
+];
+const PACKS=[
+ {id:'steady',name:'정석',desc:'숫자 조작과 드로우 위주.',t:['plus2','plus2','paint','draw','draw','scout','double','barrier','burn','reverse']},
+ {id:'future',name:'예측',desc:'정찰과 예약 운영.',t:['scout','scout','draw','draw','paint','plus2','double','barrier','burn','reverse']},
+ {id:'rush',name:'난전',desc:'더블다운과 속공용 전술.',t:['double','double','plus2','draw','draw','paint','barrier','burn','reverse','scout']}
+];
+const ENEMIES={battle:{name:'폐허 약탈자',hp:58,intent:'고랭크 압박',sub:'높은 숫자를 자주 낸다.',sprite:'raider'},elite:{name:'철갑 사냥꾼',hp:86,intent:'봉인 탄환',sub:'라운드가 길어질수록 네임드 억제를 건다.',sprite:'hunter'},boss:{name:'탑의 감시자',hp:130,intent:'규칙 재작성',sub:'라운드마다 전장 규칙이 바뀐다.',sprite:'boss'}};
+let selectedChar='modder',selectedPack='steady',run=null,battle=null;
+function makeCard(s,r,key=null){return{uid:Math.random().toString(36).slice(2),suit:s,rank:r,named:key?NAMED[key]:null,namedKey:key}}
+function makeNamed(key){ const s=key[0], r=parseRank(key.slice(1)); return makeCard(s,r,key) }
+
+function parseEffectSections(desc=''){
+  const keys=['발동','조건','효과','추가'];
+  const map={};
+  let remaining=desc;
+  keys.forEach((k,idx)=>{
+    const token=k+':';
+    const start=remaining.indexOf(token);
+    if(start!==-1){
+      let nextPos=remaining.length;
+      keys.forEach(k2=>{ if(k2===k) return; const p=remaining.indexOf(k2+':', start+token.length); if(p!==-1 && p<nextPos) nextPos=p; });
+      map[k]=remaining.slice(start+token.length,nextPos).trim();
+    }
+  });
+  return map;
+}
+function formatEffectText(desc=''){
+  const parts=parseEffectSections(desc), order=['발동','조건','효과','추가'];
+  const items=order.filter(k=>parts[k]).map(k=>`<div><span class="legendChip" onclick="showSystemNote('${k}')">${k}</span> ${parts[k]}</div>`);
+  return items.length?items.join(''):desc;
+}
+function systemLegendHtml(desc=''){
+  const parts=parseEffectSections(desc), order=['발동','조건','효과','추가'];
+  return order.filter(k=>parts[k]).map(k=>`<button class="legendChip" onclick="showSystemNote('${k}')">${k}</button>`).join('');
+}
+function showSystemNote(k){ showModal(`<h2>${k}</h2><p>${SYSTEM_NOTES[k]||'설명 준비 중.'}</p><div class="choiceList"><button class="choice" onclick="closeOverlay()"><b>닫기</b></button></div>`)}
+function shortFrontLabel(c){ return c.named ? c.named.name : '순수 카드'; }
+function baseDeck(){let d=[];for(const s of SUITS)for(let r=2;r<=14;r++)d.push(makeCard(s.k,r));return d}
+function charSprite(kind){
+ const map={
+   modder:{hair:'#66d4d5',coat:'#253043',shade:'#1a2230',acc:'#7fe8e6',skin:'#f0d2b7'},
+   scout:{hair:'#69d59a',coat:'#20352f',shade:'#15241f',acc:'#93f2ba',skin:'#f0d2b7'},
+   keeper:{hair:'#e4c267',coat:'#3a2d1f',shade:'#231b12',acc:'#f3d88a',skin:'#f0d2b7'},
+   raider:{hair:'#ef6977',coat:'#40242d',shade:'#2b1720',acc:'#ff97a0',skin:'#f0d2b7'},
+   hunter:{hair:'#97b2cf',coat:'#253649',shade:'#172330',acc:'#c3dcf2',skin:'#efd2b8'},
+   boss:{hair:'#9b84f1',coat:'#352b57',shade:'#221b39',acc:'#c9bdff',skin:'#ead0b8'}
+ };
+ const c=map[kind]||map.modder;
+ return `<svg viewBox="0 0 64 64" style="width:100%;height:100%;image-rendering:pixelated">
+   <rect width="64" height="64" fill="#10151f"/>
+   <rect x="6" y="6" width="52" height="52" fill="${c.shade}"/>
+   <rect x="18" y="12" width="28" height="18" fill="${c.skin}"/>
+   <rect x="14" y="8" width="36" height="8" fill="${c.hair}"/>
+   <rect x="12" y="16" width="6" height="12" fill="${c.hair}"/>
+   <rect x="46" y="16" width="6" height="12" fill="${c.hair}"/>
+   <rect x="22" y="20" width="4" height="4" fill="#222"/>
+   <rect x="38" y="20" width="4" height="4" fill="#222"/>
+   <rect x="24" y="28" width="16" height="4" fill="#9f5458"/>
+   <rect x="14" y="34" width="36" height="18" fill="${c.coat}"/>
+   <rect x="18" y="34" width="28" height="4" fill="${c.acc}"/>
+   <rect x="28" y="38" width="8" height="14" fill="${c.acc}" opacity=".55"/>
+ </svg>`
+}
+
+const CARD_ART={};
+
+const NEW_PACK_IMAGES={"S7": "assets/cards/pack01/black_bullet.png", "H4": "assets/cards/pack01/phoenix.png", "C8": "assets/cards/pack01/recursive_function.png", "SA": "assets/cards/pack01/battery_1pct.png", "D7": "assets/cards/pack01/golden_hand.png", "C3": "assets/cards/pack01/dirty_gambler.png", "D6": "assets/cards/pack01/scheduled_delivery.png", "S5": "assets/cards/pack01/sharp_glass.png", "H8": "assets/cards/pack01/emergency_guard.png", "C5": "assets/cards/pack01/ambush_observer.png"};
+const NEW_PACK_KEYS=["S7", "H4", "C8", "SA", "D7", "C3", "D6", "S5", "H8", "C5"];
+function termExplainHtml(terms=[]){
+  if(!terms||!terms.length) return '용어 설명: 없음';
+  return '용어 설명:<br>'+terms.map(t=>`<b>${t}</b> · ${TERMS[t]||'설명 준비 중.'}`).join('<br>');
+}
+function poolItemFromImageKey(key){
+  const suit=key[0], rank=parseRank(key.slice(1));
+  const c=makeCard(suit,rank,key);
+  const title=`${c.named?c.named.name:'순수 카드'} ${suitObj(c.suit).sym}${rankLabel(c.rank)}`;
+  return {
+    type:'card',
+    card:c,
+    html:`<img src="${NEW_PACK_IMAGES[key]}" alt="${c.named.name}" loading="lazy">`,
+    title,
+    desc:c.named?c.named.desc:'효과 없음.',
+    meta:termExplainHtml(c.named?.terms||[])
+  };
+}
+function showNewPack(){
+  poolView={
+    mode:'newpack',
+    title:'신규 1팩 카드풀 · 10장',
+    items:NEW_PACK_KEYS.map(poolItemFromImageKey),
+    selected:0
+  };
+  renderPoolModal();
+}
+function makeMap(){return[
+ {id:'n0',type:'battle',lane:1,row:0,next:['n1','n2']},
+ {id:'n1',type:'event',lane:0,row:1,next:['n3']},
+ {id:'n2',type:'battle',lane:2,row:1,next:['n4']},
+ {id:'n3',type:'camp',lane:0,row:2,next:['n5']},
+ {id:'n4',type:'shop',lane:2,row:2,next:['n5']},
+ {id:'n5',type:'elite',lane:1,row:3,next:['n6']},
+ {id:'n6',type:'boss',lane:1,row:4,next:[]}
+]}
+function currentBuild(){ if(!run) return '-'; let tags={}; run.deck.filter(c=>c.named).forEach(c=>(c.named.terms||[]).forEach(t=>tags[t]=(tags[t]||0)+1)); let top=Object.entries(tags).sort((a,b)=>b[1]-a[1])[0]; return top?top[0]:'혼합'; }
+function renderStart(){ heroSprite.innerHTML=charSprite(selectedChar); charGrid.innerHTML=CHARACTERS.map(c=>`<button class="option pixel ${selectedChar===c.id?'sel':''}" onclick="selectedChar='${c.id}';sfx('click');renderStart()"><div class="optionSprite">${charSprite(c.sprite)}</div><h3>${c.name}</h3><p>${c.desc}<br><span class="cyan">${c.passive}</span></p></button>`).join(''); packGrid.innerHTML=PACKS.map(p=>`<button class="option pixel ${selectedPack===p.id?'sel':''}" onclick="selectedPack='${p.id}';sfx('click');renderStart()"><div class="optionSprite" style="font-size:28px">${p.id==='steady'?'◫':p.id==='future'?'◎':'⚔'}</div><h3>${p.name}</h3><p>${p.desc}</p></button>`).join('') }
+function beginRun(){ sfx('reward'); const ch=CHARACTERS.find(c=>c.id===selectedChar), pk=PACKS.find(p=>p.id===selectedPack); let deck=baseDeck(); for(const k of ch.named){ const s=k[0], r=parseRank(k.slice(1)); let i=deck.findIndex(c=>c.suit===s&&c.rank===r); if(i>=0) deck[i]=makeCard(s,r,k) } for(let i=0;i<ch.remove;i++){ let pureIdx=deck.findIndex(c=>!c.named); if(pureIdx>=0) deck.splice(pureIdx,1) } if(ch.id==='modder'){ deck.unshift(makeNamed('SA')); deck.unshift(makeCard('S',7)); ['D8','C4','S9','H5','DQ','C6','SJ','HK','DA','C10'].forEach(k=>{const s=k[0],r=parseRank(k.slice(1));let i=deck.findIndex(c=>c.suit===s&&c.rank===r&&!c.named);if(i>=0)deck[i]=makeCard(s,r,k)}); } run={char:ch,pack:pk,hp:ch.hp,maxHp:ch.hp,gold:60,deck,tactics:pk.t.map(id=>({...TACTICS.find(t=>t.id===id),uid:Math.random().toString(36).slice(2)})),map:makeMap(),available:new Set(['n0']),completed:new Set()}; showScreen('mapScreen'); renderMap() }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active') }
+function renderMap(){ mapHp.textContent=`${run.hp}/${run.maxHp}`; mapGold.textContent=run.gold; mapDeck.textContent=run.deck.length; mapBuild.textContent=currentBuild(); const wrap=document.getElementById('mapWrap'); const grid=document.getElementById('mapGrid'); const svg=document.getElementById('mapSvg'); const W=wrap.clientWidth-20,H=wrap.clientHeight-20; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width',W); svg.setAttribute('height',H); const lanes=[W*0.2,W*0.5,W*0.8]; const rows=[H*0.08,H*0.27,H*0.47,H*0.67,H*0.86]; const pos={}; run.map.forEach(n=>pos[n.id]={x:lanes[n.lane],y:rows[n.row]}); svg.innerHTML=''; run.map.forEach(n=>n.next.forEach(id=>{ let a=pos[n.id],b=pos[id]; svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#5e6f90" stroke-width="4" stroke-linecap="square" opacity=".7"/>` })); grid.innerHTML=''; const label={battle:'전투',event:'이벤트',camp:'캠프',shop:'상점',elite:'엘리트',boss:'보스'}, icon={battle:'⚔',event:'?',camp:'⌂',shop:'$',elite:'◆',boss:'♛'}; run.map.forEach(n=>{ let d=document.createElement('button'); d.className='node '+(run.completed.has(n.id)?'done ':run.available.has(n.id)?'current ':'lock '); d.style.left=(pos[n.id].x-36)+'px'; d.style.top=(pos[n.id].y-27)+'px'; d.innerHTML=`<div class="icon">${icon[n.type]}</div><div class="nm">${label[n.type]}</div>`; d.onclick=()=>enterNode(n); grid.appendChild(d) }); let show=run.deck.filter(c=>c.named).slice(0,7); if(show.length<7) show=show.concat(run.deck.filter(c=>!c.named).slice(0,7-show.length)); mapDeckStrip.innerHTML=show.map(c=>`<div class="miniCard"><div class="cardArt">${artHtml(c)}</div></div>`).join('') }
+let poolView={mode:'deck',title:'',items:[],selected:0};
+function poolItemFromCard(c){
+ return {type:'card',card:c,html:artHtml(c),title:`${c.named?c.named.name:'순수 카드'} ${suitObj(c.suit).sym}${rankLabel(c.rank)}`,desc:c.named?c.named.desc:'효과 없음. 족보 구성과 쇼다운 재료로 사용된다.',meta:c.named?`용어: ${(c.named.terms||[]).join(' · ')}`:'기본 카드 · 족보 재료'};
+}
+function poolItemFromTactic(t){ return {type:'tactic',tactic:t,html:tacticIcon(t.id),title:`${t.name} · 비용 ${t.cost}`,desc:t.desc,meta:`용어: ${(t.terms||[]).join(' · ')||'없음'}`}; }
+function renderPoolModal(){
+ const item=poolView.items[poolView.selected]||poolView.items[0];
+ const tabs = poolView.mode==='all'
+   ? `<div class="poolTabs"><button class="pixelBtn" onclick="showDeck()">현재 덱 보기</button><button class="pixelBtn" onclick="showNewPack()">신규 1팩 보기</button><button class="pixelBtn" onclick="closeOverlay()">닫기</button></div>`
+   : poolView.mode==='newpack'
+     ? `<div class="poolTabs"><button class="pixelBtn" onclick="showPool()">전체 카드풀 보기</button><button class="pixelBtn" onclick="showDeck()">현재 덱 보기</button><button class="pixelBtn" onclick="closeOverlay()">닫기</button></div>`
+     : `<div class="poolTabs"><button class="pixelBtn" onclick="showPool()">전체 카드풀 보기</button><button class="pixelBtn" onclick="showNewPack()">신규 1팩 보기</button><button class="pixelBtn" onclick="closeOverlay()">닫기</button></div>`;
+ const subText = poolView.mode==='newpack'
+   ? `신규 1팩 10장만 표시. 카드 클릭 시 하단에서 이름 / 효과 / 용어 설명 확인. <span class="poolCount">${poolView.items.length}장</span>`
+   : `카드 면에는 숫자·무늬·아이콘만 표시. <span class="poolCount">${poolView.items.length}장</span>`;
+ const cards=poolView.items.map((it,i)=>`<button class="poolCardBtn ${i===poolView.selected?'sel':''}" onclick="poolSelect(${i})"><div class="poolCard"><div class="cardArt">${it.html}</div></div></button>`).join('');
+ showModal(`<div class="poolWrap"><div class="poolHead"><div><h2>${poolView.title}</h2><p class="poolDeckBar">${subText}</p>${tabs}</div></div><div class="poolBody"><div class="poolGrid">${cards}</div><div class="poolDetail"><div class="poolDetailArt">${item?item.html:''}</div><div><div class="poolDetailTitle">${item?item.title:''}</div><div class="poolDetailText">${item?item.desc:''}</div><div class="poolDetailMeta">${item?item.meta:''}</div></div></div></div></div>`);
+}
+function poolSelect(i){ poolView.selected=i; renderPoolModal(); }
+function showDeck(){ const namedCount=run.deck.filter(c=>c.named).length; poolView={mode:'deck',title:`현재 덱 · 총 ${run.deck.length}장 / 네임드 ${namedCount}장`,items:run.deck.map(poolItemFromCard),selected:0}; renderPoolModal(); }
+function showPool(){ const namedKeys=Object.keys(NAMED),suitOrder=['S','H','D','C'],rankOrder=[14,2,3,4,5,6,7,8,9,10,11,12,13]; const items=[...namedKeys.map(k=>poolItemFromCard(makeCard(k[0],parseRank(k.slice(1)),k))),...suitOrder.flatMap(s=>rankOrder.map(r=>poolItemFromCard(makeCard(s,r)))),...TACTICS.map(poolItemFromTactic)]; poolView={mode:'all',title:`전체 카드풀 · 효과 카드 ${namedKeys.length+TACTICS.length}장 + 순수 카드 52장`,items,selected:0}; renderPoolModal(); }
+function enterNode(n){ if(!run.available.has(n.id))return; sfx('click'); if(['battle','elite','boss'].includes(n.type)) startBattle(n); else if(n.type==='event') showEvent(n); else if(n.type==='camp') showCamp(n); else if(n.type==='shop') showShop(n) }
+function completeNode(node){ run.completed.add(node.id); run.available.delete(node.id); node.next.forEach(id=>run.available.add(id)); if(node.type==='boss'){ finishRun(); return } closeOverlay(); showScreen('mapScreen'); renderMap() }
+function startBattle(node){ const e=ENEMIES[node.type]; battle={node,type:node.type,enemy:{...e,hp:e.hp,maxHp:e.hp},deck:shuffle(run.deck.map(c=>({...c}))),discard:[],hand:[],tdeck:shuffle(run.tactics.map(t=>({...t}))),tdisc:[],thand:[],trick:1,round:1,trump:pick(SUITS).k,pedge:0,eedge:0,maxChip:3,chip:3,mods:{paint:false,plus:0,reverse:false,double:false},myForecast:0,enemyForecast:0,slots:[],enemySlots:[],statuses:{player:{shield: run.char.id==='keeper'?2:0,bleed:0,seal:0},enemy:{shield:0,bleed:0}},reservations:[],lastNamed:null,slotBonus:0,selected:null,selectedTactic:null,inspectSlot:null,inspectStage:null}; dealOpeningHand(); drawT(5); if(run.char.id==='scout') {battle.myForecast=1;battle.enemyForecast=1} nextEnemy(); showScreen('battleScreen'); renderBattle() }
+function recycleP(){ if(!battle.deck.length && battle.discard.length){ battle.deck=shuffle(battle.discard); battle.discard=[] } } function drawP(n=1){ while(n--){ recycleP(); if(battle.deck.length) battle.hand.push(battle.deck.pop()) } }
+function recycleT(){ if(!battle.tdeck.length && battle.tdisc.length){ battle.tdeck=shuffle(battle.tdisc); battle.tdisc=[] } } function drawT(n=1){ while(n--){ recycleT(); if(battle.tdeck.length) battle.thand.push(battle.tdeck.pop()) } }
+function dealOpeningHand(){ const namedPool=battle.deck.filter(c=>c.named); for(let i=0;i<namedPool.length && battle.hand.length<3;i++){ const pick=namedPool[i]; const idx=battle.deck.findIndex(c=>c.uid===pick.uid); if(idx>=0) battle.hand.push(battle.deck.splice(idx,1)[0]); } while(battle.hand.length<7){ recycleP(); if(battle.deck.length) battle.hand.push(battle.deck.pop()); else break } }
+function genEnemyCard(){ let r=battle.type==='battle'?(Math.random()<.55?8+Math.floor(Math.random()*7):2+Math.floor(Math.random()*13)):6+Math.floor(Math.random()*9); return {suit:pick(SUITS).k,rank:Math.min(14,r)} }
+function nextEnemy(){ battle.enemyCard=battle.nextEnemyPreview||genEnemyCard(); battle.nextEnemyPreview=genEnemyCard() }
+function forecastText(target){ if(target==='me'){ if(battle.myForecast<=0) return '???'; recycleP(); const c=battle.deck[battle.deck.length-1]; if(!c) return '없음'; if(battle.myForecast===1) return c.rank>=11?'고랭크':c.rank<=5?'저랭크':'중랭크'; if(battle.myForecast===2) return `${rankLabel(c.rank)} 근처`; return `${suitObj(c.suit).sym}${rankLabel(c.rank)}` } else { if(battle.enemyForecast<=0) return '???'; const c=battle.nextEnemyPreview; if(battle.enemyForecast===1) return c.rank>=11?'고랭크':c.rank<=5?'저랭크':'중랭크'; if(battle.enemyForecast===2) return `${rankLabel(c.rank)} 근처`; return `${suitObj(c.suit).sym}${rankLabel(c.rank)}` } }
+
+function cardArtKey(c){ return c.namedKey?`named:${c.namedKey}`:`pure:${c.suit}${rankLabel(c.rank)}` }
+const NAMED_ICON={
+ S7:'bullet',H4:'flame',D7:'handcoin',C3:'mask',C8:'loop',D6:'mail',H8:'shield',S5:'shard',C5:'eye',SA:'battery',
+ D8:'dice',C4:'gearhand',S9:'blade',H5:'rose',DQ:'hourglass',C6:'magnet',SJ:'quill',HK:'lantern',DA:'seal',C10:'gearbox',
+ S2:'button',S4:'spark',S6:'chip',S8:'cut',S10:'train',SQ:'warning',H2:'cat',H3:'food',H6:'umbrella',H7:'alarm',H10:'medical',HQ:'heartline',
+ D2:'vending',D4:'badge',D5:'memory',D9:'receipt',DJ:'document',DK:'contract',S3:'key',SK:'crown',HA:'chalice',H9:'letter',HJ:'jester',D3:'papers',
+ D10:'ticket',CA:'portal',C2:'medal',C7:'chain',C9:'eye',CJ:'gauntlet'
+};
+function iconBody(kind,fg='#313846',accent='#657a93'){
+ const s=`stroke="${fg}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+ const a=`stroke="${accent}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+ const fill=`fill="${fg}"`;
+ switch(kind){
+  case 'bullet':return `<path ${s} d="M17 34h24l9-8v16l-9-8"/><path ${a} d="M14 27v14"/>`;
+  case 'flame':return `<path ${s} d="M34 10c7 10 14 14 11 25-2 9-9 16-19 15-10-1-16-9-14-18 1-6 5-9 10-14 0 7 4 10 7 12 2-8 1-13 5-20z"/><path ${a} d="M31 30c5 5 5 11 1 15"/>`;
+  case 'handcoin':return `<circle ${a} cx="44" cy="20" r="9"/><path ${s} d="M12 35h16l8-6 9 4-12 8H21l-8 8"/>`;
+  case 'mask':return `<path ${s} d="M12 20h40v15c0 10-8 18-20 18S12 45 12 35z"/><path ${s} d="M21 30h6M37 30h6"/><path ${a} d="M25 42c5 3 9 3 14 0"/>`;
+  case 'loop':return `<path ${s} d="M18 19h22l7 7-7 7M46 45H24l-7-7 7-7"/><path ${a} d="M46 19v14M18 45V31"/>`;
+  case 'mail':return `<rect ${s} x="10" y="18" width="44" height="30" rx="3"/><path ${s} d="M11 21l21 16 21-16"/><path ${a} d="M42 12v10M37 17h10"/>`;
+  case 'shield':return `<path ${s} d="M32 10l19 7v14c0 12-7 20-19 25-12-5-19-13-19-25V17z"/><path ${a} d="M32 21v24M21 33h22"/>`;
+  case 'shard':return `<path ${s} d="M31 8l10 18-6 29-18-20z"/><path ${a} d="M41 26l11 4-17 25"/>`;
+  case 'eye':return `<path ${s} d="M7 32s9-15 25-15 25 15 25 15-9 15-25 15S7 32 7 32z"/><circle ${a} cx="32" cy="32" r="7"/>`;
+  case 'battery':return `<rect ${s} x="13" y="18" width="38" height="28" rx="4"/><path ${s} d="M52 26h5v12h-5"/><rect x="18" y="23" width="8" height="18" fill="${accent}"/><rect x="29" y="23" width="8" height="18" fill="${accent}" opacity=".45"/>`;
+  case 'dice':return `<rect ${s} x="13" y="13" width="38" height="38" rx="6"/><circle ${fill} cx="23" cy="23" r="3"/><circle ${fill} cx="41" cy="23" r="3"/><circle ${fill} cx="32" cy="32" r="3"/><circle ${fill} cx="23" cy="41" r="3"/><circle ${fill} cx="41" cy="41" r="3"/>`;
+  case 'gearhand':return `<circle ${a} cx="24" cy="25" r="10"/><circle ${a} cx="24" cy="25" r="3"/><path ${s} d="M32 47V29c0-4 5-4 5 0v9-14c0-4 5-4 5 0v14-10c0-4 5-4 5 0v14c0 9-5 14-14 14H22"/>`;
+  case 'blade':return `<path ${s} d="M37 9l9 8-19 30-12 6 5-13z"/><path ${a} d="M22 41l9 7"/>`;
+  case 'rose':return `<circle ${s} cx="31" cy="24" r="11"/><path ${a} d="M31 35v20M31 42l-10 6M31 46l9 5"/>`;
+  case 'hourglass':return `<path ${s} d="M17 12h30M17 52h30M21 13c0 11 8 13 11 19-3 6-11 8-11 19M43 13c0 11-8 13-11 19 3 6 11 8 11 19"/><path ${a} d="M25 20h14M25 44h14"/>`;
+  case 'magnet':return `<path ${s} d="M16 13v22c0 12 7 18 16 18s16-6 16-18V13"/><path ${a} d="M16 21h10M38 21h10"/>`;
+  case 'quill':return `<path ${s} d="M11 51c17-2 29-13 41-40-26 9-37 22-38 37"/><path ${a} d="M17 44l25-23"/>`;
+  case 'lantern':return `<path ${s} d="M22 18h20l5 8-5 24H22l-5-24z"/><path ${s} d="M25 18c0-8 14-8 14 0"/><path ${a} d="M26 31h12M26 39h12"/>`;
+  case 'seal':return `<circle ${s} cx="32" cy="27" r="14"/><path ${a} d="M22 40l-5 16 15-8 15 8-5-16"/><path ${s} d="M27 27h10M32 22v10"/>`;
+  case 'gearbox':return `<rect ${s} x="12" y="16" width="40" height="34" rx="5"/><circle ${a} cx="32" cy="33" r="10"/><circle ${a} cx="32" cy="33" r="3"/><path ${s} d="M19 10v6M45 10v6"/>`;
+  case 'button':return `<circle ${s} cx="32" cy="34" r="19"/><circle cx="32" cy="34" r="11" fill="${accent}"/><path ${s} d="M25 13l7-7 7 7"/>`;
+  case 'spark':return `<path ${s} d="M32 8l5 16 16 5-16 5-5 16-5-16-16-5 16-5z"/><path ${a} d="M47 12l3 7M14 45l7 3"/>`;
+  case 'chip':return `<rect ${s} x="10" y="17" width="44" height="30" rx="5"/><rect ${a} x="18" y="24" width="28" height="16" rx="2"/><path ${s} d="M15 11v6M25 11v6M39 11v6M49 11v6M15 47v6M25 47v6M39 47v6M49 47v6"/>`;
+  case 'cut':return `<path ${s} d="M14 45L45 14M17 20l27 27"/><path ${a} d="M9 29h12M43 35h12"/>`;
+  case 'train':return `<rect ${s} x="14" y="17" width="36" height="29" rx="5"/><path ${s} d="M20 46l-5 9M44 46l5 9"/><circle ${a} cx="23" cy="38" r="3"/><circle ${a} cx="41" cy="38" r="3"/><path ${a} d="M21 23h22"/>`;
+  case 'warning':return `<path ${s} d="M32 9l25 45H7z"/><path ${s} d="M32 23v15"/><circle ${fill} cx="32" cy="46" r="3"/>`;
+  case 'cat':return `<path ${s} d="M18 24l4-12 10 8 10-8 4 12v18c0 8-6 13-14 13s-14-5-14-13z"/><path ${s} d="M25 34h2M37 34h2"/><path ${a} d="M29 41h6"/>`;
+  case 'food':return `<path ${s} d="M13 39l19-24 19 24z"/><path ${a} d="M20 37h24M27 27h10"/>`;
+  case 'umbrella':return `<path ${s} d="M9 31c4-13 12-19 23-19s19 6 23 19H9z"/><path ${s} d="M32 31v16c0 7 10 7 10 0"/>`;
+  case 'alarm':return `<circle ${s} cx="32" cy="34" r="16"/><path ${s} d="M32 22v13l8 5M19 15l-7 7M45 15l7 7M24 53l-4 6M40 53l4 6"/>`;
+  case 'medical':return `<rect ${s} x="11" y="17" width="42" height="34" rx="4"/><path ${a} d="M32 23v22M21 34h22"/><path ${s} d="M24 17v-5h16v5"/>`;
+  case 'heartline':return `<path ${s} d="M32 53S9 41 10 24c1-13 17-15 22-4 5-11 21-9 22 4 1 17-22 29-22 29z"/><path ${a} d="M14 34h10l4-8 7 15 4-7h11"/>`;
+  case 'vending':return `<rect ${s} x="13" y="10" width="38" height="44" rx="4"/><rect ${a} x="19" y="17" width="26" height="15"/><path ${s} d="M20 41h9M36 41h8M20 47h24"/>`;
+  case 'badge':return `<path ${s} d="M32 9l8 6 10 1 1 10 6 8-6 8-1 10-10 1-8 6-8-6-10-1-1-10-6-8 6-8 1-10 10-1z"/><path ${a} d="M24 34l5 5 12-12"/>`;
+  case 'memory':return `<rect ${s} x="11" y="20" width="42" height="27" rx="3"/><path ${s} d="M17 14v6M27 14v6M37 14v6M47 14v6M17 47v6M27 47v6M37 47v6M47 47v6"/><rect x="21" y="28" width="22" height="11" fill="${accent}" opacity=".4"/>`;
+  case 'receipt':return `<path ${s} d="M17 10h30v44l-5-4-5 4-5-4-5 4-5-4-5 4z"/><path ${a} d="M23 21h18M23 29h14M23 37h18"/>`;
+  case 'document':return `<path ${s} d="M16 10h24l9 9v35H16z"/><path ${s} d="M40 10v10h9"/><path ${a} d="M23 30h18M23 38h18M23 46h11"/>`;
+  case 'contract':return `<path ${s} d="M14 10h36v44H14z"/><path ${a} d="M21 21h22M21 29h18M21 37h22"/><circle ${s} cx="39" cy="45" r="6"/>`;
+  case 'key':return `<circle ${s} cx="22" cy="25" r="10"/><path ${s} d="M30 31l22 22M42 43l6-6M48 49l6-6"/>`;
+  case 'crown':return `<path ${s} d="M12 23l10 12 10-20 10 20 10-12-5 27H17z"/><path ${a} d="M19 43h26"/>`;
+  case 'chalice':return `<path ${s} d="M17 14h30v8c0 12-6 19-15 19s-15-7-15-19z"/><path ${s} d="M32 41v10M23 55h18"/><path ${a} d="M22 22h20"/>`;
+  case 'letter':return `<rect ${s} x="10" y="19" width="44" height="30" rx="3"/><path ${s} d="M11 21l21 17 21-17"/><circle cx="32" cy="39" r="5" fill="${accent}"/>`;
+  case 'jester':return `<path ${s} d="M14 27c5-13 11-17 18-6 7-11 13-7 18 6l-8 4-10-6-10 6z"/><circle ${fill} cx="14" cy="27" r="3"/><circle ${fill} cx="50" cy="27" r="3"/><path ${a} d="M23 40h18"/>`;
+  case 'papers':return `<rect ${s} x="17" y="14" width="30" height="36"/><path ${a} d="M12 20h5v35h30v-5M23 24h18M23 32h18M23 40h12"/>`;
+  case 'ticket':return `<path ${s} d="M9 20h46v9c-6 0-6 8 0 8v9H9v-9c6 0 6-8 0-8z"/><path ${a} d="M25 24v18M39 24v18"/>`;
+  case 'portal':return `<ellipse ${s} cx="32" cy="32" rx="21" ry="25"/><ellipse ${a} cx="32" cy="32" rx="12" ry="17"/><path ${a} d="M32 16c7 6 8 13 2 18-6 5-7 10-2 15"/>`;
+  case 'medal':return `<circle ${s} cx="32" cy="29" r="16"/><path ${a} d="M25 13l-7-8M39 13l7-8M25 42l-5 15 12-7 12 7-5-15"/><path ${s} d="M32 21v16"/>`;
+  case 'chain':return `<ellipse ${s} cx="23" cy="25" rx="12" ry="8" transform="rotate(-35 23 25)"/><ellipse ${s} cx="41" cy="39" rx="12" ry="8" transform="rotate(-35 41 39)"/><path ${a} d="M28 29l8 6"/>`;
+  case 'gauntlet':return `<path ${s} d="M18 53V29c0-4 5-4 5 0v8-15c0-4 5-4 5 0v15-18c0-4 5-4 5 0v18-15c0-4 5-4 5 0v17-10c0-4 5-4 5 0v11c0 9-6 16-16 16z"/><path ${a} d="M18 45h25"/>`;
+  default:return `<circle ${s} cx="32" cy="32" r="18"/><path ${a} d="M22 32h20M32 22v20"/>`;
+ }
+}
+
+function iconAccent(kind,red=false){
+ const warm=new Set(['flame','rose','heartline','medical','letter','mail','warning','jester','spark']);
+ const gold=new Set(['handcoin','medal','crown','seal','chalice','receipt','contract','ticket','badge','vending']);
+ const cool=new Set(['loop','battery','memory','portal','eye','gearhand','gearbox','gauntlet','chip']);
+ const violet=new Set(['hourglass','dice','button']);
+ if(warm.has(kind)) return '#cc5a4b';
+ if(gold.has(kind)) return '#b78532';
+ if(cool.has(kind)) return '#4f8797';
+ if(violet.has(kind)) return '#79658f';
+ return red ? '#b94d50' : '#667582';
+}
+function guideIconBody(kind,fg='#25292f',accent='#667582'){
+ const s=`stroke="${fg}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+ const a=`stroke="${accent}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+ switch(kind){
+  case 'bullet': return `
+    <circle cx="42" cy="31" r="14" fill="none" stroke="${accent}" stroke-width="3" stroke-dasharray="5 4"/>
+    <path d="M40 17v8M40 37v8M26 31h8M46 31h8" ${a}/>
+    <path d="M9 38l25-12 11 4-7 10-29 4z" fill="${fg}"/>
+    <path d="M8 46h18M11 51h12" ${a}/>`;
+  case 'flame': return `
+    <path d="M32 12c8 9 17 13 25 15-4 5-8 9-14 11 5 2 9 3 14 2-6 8-14 12-24 11-10 1-18-3-24-11 5 1 9 0 14-2-6-2-10-6-14-11 8-2 17-6 25-15z" fill="${accent}"/>
+    <path d="M32 20c4 8 7 11 5 17-1 5-4 8-5 12-1-4-5-7-6-11-2-6 2-11 6-18z" fill="#f0a15d" stroke="${fg}" stroke-width="2.5"/>`;
+  case 'loop': return `
+    <rect x="9" y="17" width="20" height="28" rx="2" ${s}/><text x="19" y="35" text-anchor="middle" font-size="15" fill="${fg}">♣</text>
+    <rect x="36" y="19" width="20" height="28" rx="2" ${s}/><text x="46" y="37" text-anchor="middle" font-size="15" fill="${fg}">♣</text>
+    <path d="M12 11c11-8 28-8 38 2l5 6M55 19l-9-1 5-8M53 53c-11 8-28 8-38-2l-5-6M10 45l9 1-5 8" ${a}/>`;
+  case 'battery': return `
+    <rect x="8" y="20" width="46" height="26" rx="4" ${s}/><path d="M55 27h5v12h-5" ${s}/>
+    <rect x="13" y="25" width="6" height="16" rx="1" fill="${accent}"/>
+    <path d="M19 52L49 13" ${s}/>`;
+  case 'handcoin': return `
+    <circle cx="43" cy="18" r="10" fill="#e5bc62" stroke="${fg}" stroke-width="3"/>
+    <path d="M43 12l2 4 5 1-4 3 1 5-4-2-4 2 1-5-4-3 5-1z" fill="${fg}" opacity=".75"/>
+    <path d="M8 39h14l9-6c4-3 8-2 10 1l-11 8h11c5 0 8 2 10 5H25l-9 7H8" ${s}/>`;
+  case 'mask': return `
+    <path d="M10 17c8 4 15 5 22 1 7 4 14 3 22-1v17c0 13-9 20-22 20S10 47 10 34z" fill="${fg}"/>
+    <path d="M17 29c4-5 8-5 12-1-3 4-7 5-12 1M35 28c4-4 8-4 12 1-5 4-9 3-12-1" fill="#f6f1e7"/>
+    <rect x="42" y="37" width="17" height="23" rx="2" fill="#f6f1e7" stroke="${accent}" stroke-width="3" transform="rotate(12 50 48)"/><text x="50" y="53" text-anchor="middle" font-size="12" fill="${accent}">♣</text>`;
+  case 'mail': return `
+    <rect x="8" y="20" width="42" height="29" rx="3" fill="#d7b46f" stroke="${fg}" stroke-width="3"/>
+    <path d="M9 22l20 15 20-15" ${s}/><path d="M53 34h9M57 30l5 4-5 4" ${a}/>`;
+  case 'shard': return `
+    <path d="M31 7l13 18-10 31-19-18z" fill="#b8d7df" stroke="${fg}" stroke-width="3"/>
+    <path d="M31 7l2 28-18 3M44 25l-11 10" ${a}/>
+    <path d="M49 22l7-4M49 34l8 2M43 45l6 6" ${a}/>`;
+  default: return iconBody(kind,fg,accent);
+ }
+}
+
+function cardFaceName(name){ return name.length>8 ? 8.7 : name.length>6 ? 9.5 : 10.5; }
+function featuredNamedBody(key,kind,fg,accent){
+ const s=`stroke="${fg}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+ const a=`stroke="${accent}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+ switch(key){
+  case 'S7': return `
+    <circle cx="54" cy="31" r="15" fill="none" stroke="${accent}" stroke-width="2.3" opacity=".72"/>
+    <path d="M54 12v8M54 42v8M35 31h8M65 31h8" ${a}/>
+    <g transform="rotate(-12 37 37)">
+      <path d="M17 30h25l15 8-15 8H17z" fill="${fg}"/>
+      <path d="M34 30v16M39 30v16" stroke="#f7f2e8" stroke-width="2.3" opacity=".7"/>
+      <path d="M12 34h-9M13 39H0M11 44H3" stroke="${fg}" stroke-width="3" stroke-linecap="round"/>
+    </g>`;
+  case 'H4': return `
+    <path d="M43 16c-4 5-8 9-13 12-7 4-14 6-22 6 4 5 9 9 15 11-4 1-8 1-12 0 7 8 16 12 27 10" fill="${accent}" stroke="${fg}" stroke-width="2.1" stroke-linejoin="round"/>
+    <path d="M47 16c4 5 8 9 13 12 7 4 14 6 22 6-4 5-9 9-15 11 4 1 8 1 12 0-7 8-16 12-27 10" fill="${accent}" stroke="${fg}" stroke-width="2.1" stroke-linejoin="round"/>
+    <path d="M45 17c5 0 9 4 9 9 0 4-2 7-5 9 4 4 6 9 5 15-1 6-5 10-9 14-4-4-8-8-9-14-1-6 1-11 5-15-3-2-5-5-5-9 0-5 4-9 9-9z" fill="#f3a154" stroke="${fg}" stroke-width="2.2"/>
+    <path d="M45 44c4 5 4 11 0 17-4-6-4-12 0-17z" fill="#d74e4e"/>
+    <circle cx="48" cy="24" r="1.7" fill="${fg}"/>`;
+  case 'C8': return `
+    <rect x="18" y="23" width="21" height="29" rx="3" fill="#fffdf8" stroke="${fg}" stroke-width="2.7"/>
+    <text x="28.5" y="42" text-anchor="middle" font-size="16" fill="${fg}" font-family="Arial">♣</text>
+    <rect x="49" y="20" width="21" height="29" rx="3" fill="#fffdf8" stroke="${fg}" stroke-width="2.7"/>
+    <text x="59.5" y="39" text-anchor="middle" font-size="16" fill="${fg}" font-family="Arial">♣</text>
+    <path d="M22 14c10-9 30-11 43-2" ${a}/><path d="M63 8l8 3-5 7" fill="${accent}"/>
+    <path d="M68 59c-10 9-30 11-43 2" ${a}/><path d="M27 65l-8-3 5-7" fill="${accent}"/>`;
+  case 'SA': return `
+    <rect x="15" y="25" width="52" height="25" rx="4" fill="#fffdf8" stroke="${fg}" stroke-width="2.8"/>
+    <rect x="67" y="31" width="7" height="13" rx="1.5" fill="#fffdf8" stroke="${fg}" stroke-width="2.4"/>
+    <rect x="20" y="30" width="8" height="15" rx="1" fill="#d85656"/>
+    <path d="M34 30h24M34 36h20M34 42h14" stroke="#d8d3ca" stroke-width="2" stroke-linecap="round"/>
+    <path d="M19 58l8-8M56 20l10-10" ${s}/>`;
+  case 'D7': return `
+    <circle cx="55" cy="18" r="10" fill="#ddb44d" stroke="${fg}" stroke-width="2.5"/>
+    <path d="M55 12l2.2 4.5 5 .7-3.6 3.5.8 5-4.4-2.4-4.4 2.4.8-5-3.6-3.5 5-.7z" fill="#fff1b8" stroke="#9d7729" stroke-width="1.1"/>
+    <path d="M15 48c8-2 12-5 17-12 3-5 7-7 11-5 2 1 3 3 3 5 4-3 8-3 10 0 2 2 1 5-1 8 5-2 9-1 10 2 1 2 0 4-2 6-7 7-17 10-31 9-8 0-13-4-17-13z" fill="#fff8e9" stroke="${fg}" stroke-width="2.6"/>
+    <path d="M22 45c8 1 15-1 22-7M31 53c8 0 14-2 20-6" ${a} opacity=".75"/>`;
+  case 'C3': return `
+    <path d="M17 27c7-7 16-10 27-10s20 3 27 10c-3 13-12 21-27 21S20 40 17 27z" fill="${fg}"/>
+    <path d="M24 29c4-5 9-6 15-2-3 5-8 6-15 2M49 27c6-4 11-3 15 2-7 4-12 3-15-2" fill="#fffdf8"/>
+    <path d="M34 41c5 3 10 3 15 0" stroke="#fffdf8" stroke-width="2.2" stroke-linecap="round"/>
+    <rect x="49" y="35" width="18" height="25" rx="2" transform="rotate(13 58 47)" fill="#fffdf8" stroke="${accent}" stroke-width="2.6"/>
+    <text x="58" y="51" text-anchor="middle" font-size="13" fill="${accent}" transform="rotate(13 58 51)" font-family="Arial">♣</text>`;
+  case 'D6': return `
+    <rect x="17" y="27" width="48" height="31" rx="3" fill="#e5c47e" stroke="#8e6b35" stroke-width="2.6"/>
+    <path d="M18 29l23 17 23-17" fill="none" stroke="#8e6b35" stroke-width="2.4"/>
+    <circle cx="66" cy="19" r="9" fill="#fffdf8" stroke="${fg}" stroke-width="2.4"/>
+    <path d="M66 14v6l4 2" ${s}/>
+    <path d="M68 43h14" ${a}/><path d="M77 37l8 6-8 6" fill="${accent}"/>`;
+  case 'S5': return `
+    <path d="M35 14l17 20-11 29-23-20z" fill="#dff0f3" stroke="${fg}" stroke-width="2.7"/>
+    <path d="M35 15l6 23-22 5M52 34L41 38M41 38l0 24" fill="none" stroke="#74a5b5" stroke-width="2.2"/>
+    <path d="M58 24l8-6 1 10M62 40l11-1-6 8M55 52l7 9-10-1" fill="#b7dbe2" stroke="${fg}" stroke-width="1.8"/>
+    <path d="M58 29l12 3M57 47l12 6" ${a} opacity=".8"/>`;
+  default: return guideIconBody(kind,fg,accent);
+ }
+}
+function namedIconSvg(c){
+ const red=suitObj(c.suit).red, suitColor=red?'#c64e61':'#2e3540';
+ const rank=rankLabel(c.rank), sym=suitObj(c.suit).sym, kind=NAMED_ICON[c.namedKey]||'default';
+ const accent=iconAccent(kind,red), fg='#25292f', name=(c.named?.name)||'';
+ const nameSize=cardFaceName(name);
+ return `<svg viewBox="0 0 100 148" preserveAspectRatio="none" aria-label="${name} ${sym}${rank}">
+   <rect x="2" y="2" width="96" height="144" rx="7" fill="#f8f5ee" stroke="#b4a68c" stroke-width="2.1"/>
+   <rect x="4.5" y="4.5" width="91" height="139" rx="6" fill="none" stroke="#ebe2d3" stroke-width="1.2"/>
+   <path d="M9 14V9h6M85 9h6v5M9 134v5h6M85 139h6v-5" stroke="#b7a787" stroke-width="1.2" fill="none" opacity=".8"/>
+   <text x="13" y="19" font-size="14" font-weight="700" fill="${suitColor}" font-family="Arial, sans-serif">${rank}</text>
+   <text x="13" y="33" font-size="13" fill="${suitColor}" font-family="Arial, sans-serif">${sym}</text>
+   <circle cx="50" cy="59" r="25" fill="${accent}" opacity=".035"/>
+   <g transform="translate(9 17) scale(1.00)">${featuredNamedBody(c.namedKey,kind,fg,accent)}</g>
+   <path d="M28 110h44" stroke="#c9b79d" stroke-width="1" opacity=".9"/>
+   <path d="M50 106l3 3-3 3-3-3z" fill="none" stroke="#c9b79d" stroke-width="1.1"/>
+   <text x="50" y="126" text-anchor="middle" font-size="${nameSize}" font-weight="700" fill="#2e3540" font-family="Arial, sans-serif">${name}</text>
+   <g transform="translate(100 148) rotate(180)"><text x="13" y="19" font-size="14" font-weight="700" fill="${suitColor}" font-family="Arial, sans-serif">${rank}</text><text x="13" y="33" font-size="13" fill="${suitColor}" font-family="Arial, sans-serif">${sym}</text></g>
+ </svg>`;
+}
+function pureCardSvg(c){
+ const red=suitObj(c.suit).red, col=red?'#c64e61':'#343c4a', rank=rankLabel(c.rank), sym=suitObj(c.suit).sym;
+ const spots={
+  2:[[50,39],[50,103]],3:[[50,35],[50,71],[50,107]],4:[[34,39],[66,39],[34,103],[66,103]],
+  5:[[34,37],[66,37],[50,71],[34,105],[66,105]],6:[[34,34],[66,34],[34,71],[66,71],[34,108],[66,108]],
+  7:[[34,31],[66,31],[50,52],[34,72],[66,72],[34,110],[66,110]],8:[[34,29],[66,29],[50,48],[34,68],[66,68],[50,88],[34,108],[66,108]],
+  9:[[34,28],[66,28],[34,50],[66,50],[50,70],[34,92],[66,92],[34,114],[66,114]],
+  10:[[34,26],[66,26],[50,43],[34,60],[66,60],[34,84],[66,84],[50,101],[34,118],[66,118]]
+ };
+ let center='';
+ if(c.rank>=2&&c.rank<=10){ center=(spots[c.rank]||[]).map(([x,y])=>`<text x="${x}" y="${y}" font-size="18" text-anchor="middle" dominant-baseline="middle" fill="${col}" font-family="Arial">${sym}</text>`).join(''); }
+ else if(c.rank===14){ center=`<text x="50" y="84" font-size="52" text-anchor="middle" fill="${col}" font-family="Arial">${sym}</text>`; }
+ else {
+   const face=c.rank===11?'J':c.rank===12?'Q':'K';
+   center=`<rect x="26" y="36" width="48" height="70" rx="6" fill="#ece8de" stroke="#c9c3b6" stroke-width="2"/>
+   <text x="50" y="67" font-size="28" font-weight="800" text-anchor="middle" fill="${col}" font-family="Georgia">${face}</text>
+   <text x="50" y="92" font-size="25" text-anchor="middle" fill="${col}" font-family="Arial">${sym}</text>`;
+ }
+ return `<svg viewBox="0 0 100 148" preserveAspectRatio="none">
+  <rect x="2" y="2" width="96" height="144" rx="6" fill="#f6f1e7" stroke="#202630" stroke-width="3"/>
+  <text x="13" y="22" font-size="16" font-weight="800" fill="${col}" font-family="Arial">${rank}</text>
+  <text x="13" y="38" font-size="15" fill="${col}" font-family="Arial">${sym}</text>
+  ${center}
+  <g transform="translate(100 148) rotate(180)"><text x="13" y="22" font-size="16" font-weight="800" fill="${col}" font-family="Arial">${rank}</text><text x="13" y="38" font-size="15" fill="${col}" font-family="Arial">${sym}</text></g>
+ </svg>`;
+}
+const FULL_CARD_ART={
+'S7':'assets/cards/legacy/S7.png',
+'H4':'assets/cards/legacy/H4.png',
+'C8':'assets/cards/legacy/C8.png',
+'SA':'assets/cards/legacy/SA.png',
+'D7':'assets/cards/legacy/D7.png',
+'C3':'assets/cards/legacy/C3.png',
+'D6':'assets/cards/legacy/D6.png',
+'S5':'assets/cards/legacy/S5.png',
+'H8':'assets/cards/legacy/H8.png',
+'C5':'assets/cards/legacy/C5.png',
+'H6':'assets/cards/legacy/H6.png',
+'H9':'assets/cards/legacy/H9.png',
+'HJ':'assets/cards/legacy/HJ.png',
+'D2':'assets/cards/legacy/D2.png',
+'D9':'assets/cards/legacy/D9.png',
+'C9':'assets/cards/legacy/C9.png'
+};
+function artHtml(c){ if(c.named && FULL_CARD_ART[c.namedKey]) return `<img src="${FULL_CARD_ART[c.namedKey]}" alt="${c.named.name}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:6px">`; return c.named ? namedIconSvg(c) : pureCardSvg(c) }
+function stageHtml(c,label){ return `<div class="stageInner">${artHtml(c)}<div class="stageLabel">${label}</div></div>` }
+const TACTIC_ICON={paint:'palette',plus2:'plus',draw:'cards',scout:'eye',double:'double',barrier:'shield',burn:'flame',reverse:'reverse',pureboost:'pure',clean:'clean',recolor:'palette',fakeid:'id'};
+function tacticMiniIcon(kind){
+ const s='stroke="#e9edf2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+ const a='stroke="#7ec7d1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+ switch(kind){
+  case 'palette':return `<path ${s} d="M14 35c0-14 10-23 23-23 12 0 20 7 20 17 0 8-5 11-11 11h-6c-3 0-4 4-2 6 3 4-1 8-7 8-10 0-17-8-17-19z"/><circle cx="27" cy="24" r="3" fill="#d87684"/><circle cx="39" cy="21" r="3" fill="#d9b45e"/><circle cx="49" cy="28" r="3" fill="#7ec7d1"/>`;
+  case 'plus':return `<path ${s} d="M32 15v34M15 32h34"/><path ${a} d="M47 13h10v10"/>`;
+  case 'cards':return `<rect ${s} x="13" y="18" width="27" height="35" rx="3"/><rect ${a} x="25" y="11" width="27" height="35" rx="3"/>`;
+  case 'eye':return `<path ${s} d="M7 32s9-15 25-15 25 15 25 15-9 15-25 15S7 32 7 32z"/><circle ${a} cx="32" cy="32" r="7"/>`;
+  case 'double':return `<circle ${s} cx="23" cy="32" r="12"/><circle ${a} cx="42" cy="32" r="12"/><path ${s} d="M28 32h9"/>`;
+  case 'shield':return iconBody('shield','#e9edf2','#7ec7d1');
+  case 'flame':return iconBody('flame','#e9edf2','#e08b68');
+  case 'reverse':return `<path ${s} d="M12 23h35l-8-8M52 41H17l8 8"/><path ${a} d="M47 23l-8 8M17 41l8-8"/>`;
+  case 'pure':return `<path ${s} d="M32 10l6 13 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2z"/>`;
+  case 'clean':return `<path ${s} d="M18 43c9-20 19-28 30-30-2 12-9 28-30 30z"/><path ${a} d="M19 43l25-24"/>`;
+  case 'id':return `<rect ${s} x="9" y="17" width="46" height="30" rx="4"/><circle ${a} cx="21" cy="30" r="6"/><path ${s} d="M32 26h16M32 34h12"/>`;
+  default:return `<circle ${s} cx="32" cy="32" r="18"/>`;
+ }
+}
+function tacticIcon(id){
+ const base=TACTICS.find(x=>x.id===id)||{name:id,cost:0}; const kind=TACTIC_ICON[id]||id;
+ const accent='#4e8790', fg='#25292f';
+ return `<svg viewBox="0 0 100 148" preserveAspectRatio="none" aria-label="전술 비용 ${base.cost}">
+ <rect x="2" y="2" width="96" height="144" rx="7" fill="#f3f0e8" stroke="#22272d" stroke-width="2.6"/>
+ <rect x="6.5" y="6.5" width="87" height="135" rx="5" fill="none" stroke="#b9c8c7" stroke-width="1.2"/>
+ <path d="M9 18V9h9M82 9h9v9M9 130v9h9M82 139h9v-9" stroke="${accent}" stroke-width="1.7" fill="none" opacity=".7"/>
+ <circle cx="17" cy="18" r="9" fill="#29323a"/><text x="17" y="22" text-anchor="middle" font-size="11" font-weight="800" fill="#f2d17b" font-family="Arial">${base.cost}</text>
+ <circle cx="50" cy="71" r="31" fill="${accent}" opacity=".06"/>
+ <g transform="translate(18 39)">${tacticMiniIcon(kind).replaceAll('#e9edf2',fg).replaceAll('#7ec7d1',accent).replaceAll('#d87684','#b94d50').replaceAll('#d9b45e','#b78532').replaceAll('#e08b68','#c96d51')}</g>
+ <path d="M40 126h20" stroke="${accent}" stroke-width="1.4" opacity=".65"/><path d="M50 121l5 5-5 5-5-5z" fill="none" stroke="${accent}" stroke-width="1.5"/>
+ </svg>`;
+}
+function tacticView(t){ return `<button class="tactic ${battle.chip<t.cost?'off':''} ${battle.selectedTactic===t.uid?'sel':''}" onclick="selectTactic('${t.uid}')"><div class="tacticArt">${tacticIcon(t.id)}</div></button>` }
+function inspectTactic(t){ inspect.classList.remove('collapsed'); inspectTitle.textContent=`${t.name} · 비용 ${t.cost}`; inspectDesc.innerHTML=t.desc; inspectApply.innerHTML=`<span class="inspectHint">전술 카드</span> · 클릭 후 아래 버튼으로 사용. 번은 먼저 손패 카드 1장을 선택해야 한다.`; const terms=[...new Set([...(t.terms||[]),'칩'])]; systemLegend.innerHTML=''; termRow.innerHTML=terms.map(x=>`<button class="termBtn" onclick="showTerm('${x}')">${x}</button>`).join(''); playBtn.textContent='사용'; playBtn.disabled=battle.chip<t.cost; }
+function inspectStageCard(which){ if(which==='player' && !battle.playerStage) return; if(which==='enemy' && !battle.enemyCard) return; if(battle.inspectStage===which){ battle.inspectStage=null; sfx('click'); renderBattle(); return } battle.inspectStage=which; battle.selected=null; battle.selectedTactic=null; battle.inspectSlot=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function useSelectedAction(){ if(battle.selectedTactic){ useTactic(battle.selectedTactic); return } playSelected() }
+function shortEffect(c){ if(!c.named) return '효과 없음 · 족보/순수 빌드'; const d=c.named.desc; if(c.namedKey==='S7')return '승리: 피해 3 · 쇼다운 +4'; if(c.namedKey==='H4')return '승리: 체력 +4'; if(c.namedKey==='D7')return '전술 사용 후 승리: 칩 +1'; if(c.namedKey==='C3')return '적용값 5↓ 승리: 칩 +2'; if(c.namedKey==='C8')return '승리: 직전 수치효과 복사'; if(c.namedKey==='D6')return '다음 트릭 승리: 피해 6 예약'; if(c.namedKey==='H8')return '낼 때: 보호막 +5'; if(c.namedKey==='S5')return '승리: 적 출혈 +2'; if(c.namedKey==='C5')return '3번 슬롯: 적 예측 +2'; if(c.namedKey==='SA')return '쇼다운: 위력 +15'; if(c.namedKey==='D8')return '낼 때: 50% 칩 +2'; if(c.namedKey==='C4')return '낼 때 전술 +1 · 승리 칩 +1'; if(c.namedKey==='S9')return '승리: 피해 2~5'; if(c.namedKey==='H5')return '패배: 회복 3 · 쇼다운 +3'; if(c.namedKey==='DQ')return '4~5번 슬롯: 쇼다운 +8'; if(c.namedKey==='C6')return '같은 무늬 승리: 우세 +1'; if(c.namedKey==='SJ')return '승리: 적 예측 +1'; if(c.namedKey==='HK')return '낼 때 보호막 +4 · 승리 회복 2'; if(c.namedKey==='DA')return '쇼다운 +10~16'; if(c.namedKey==='C10')return '낼 때 전술 +1'; return d.slice(0,28); }
+function cardView(c,sel=false){ return `<button id="card-${c.uid}" class="card ${c.named?'named':''} ${sel?'sel':''}" onclick="selectCard('${c.uid}')"><div class="cardArt">${artHtml(c)}</div></button>` }
+function statusList(){ const out=[]; const p=battle.statuses.player,e=battle.statuses.enemy; if(p.shield) out.push(`<span class="stateChip cyan">보호막 ${p.shield}</span>`); if(p.bleed) out.push(`<span class="stateChip red">출혈 ${p.bleed}</span>`); if(e.bleed) out.push(`<span class="stateChip red">적 출혈 ${e.bleed}</span>`); battle.reservations.forEach(r=>out.push(`<span class="stateChip gold">예약 · ${r.label}</span>`)); return out.join('')||'<span class="stateChip">상태 없음</span>' }
+function renderBattle(){ battleTitle.textContent=battle.type==='battle'?'일반 전투':battle.type==='elite'?'엘리트 전투':'보스 전투'; battleSub.textContent=`ROUND ${battle.round} · 5트릭 후 쇼다운`; pName.textContent=run.char.name; eName.textContent=battle.enemy.name; pHpText.textContent=`${run.hp}/${run.maxHp}`; eHpText.textContent=`${battle.enemy.hp}/${battle.enemy.maxHp}`; pHpFill.style.width=(run.hp/run.maxHp*100)+'%'; eHpFill.style.width=(battle.enemy.hp/battle.enemy.maxHp*100)+'%'; edgeText.textContent=`${battle.pedge}:${battle.eedge}`; trickText.textContent=`${battle.trick}/5`; trumpText.textContent=suitObj(battle.trump).sym; trumpText.className=suitObj(battle.trump).red?'red':''; chipText.textContent=`${battle.chip}/${battle.maxChip}`; intentMain.textContent=battle.enemy.intent; intentSub.textContent=battle.enemy.sub; enemyPortrait.innerHTML=charSprite(battle.enemy.sprite); myForecast.textContent=forecastText('me'); enemyForecast.textContent=forecastText('enemy'); enemyStage.className='stageCard show'; enemyStage.innerHTML=stageHtml(battle.enemyCard,'적 카드'); enemyStage.onclick=()=>inspectStageCard('enemy'); enemyStage.style.cursor='pointer'; if(battle.playerStage){ playerStage.className='stageCard show'; playerStage.innerHTML=stageHtml(battle.playerStage,'내 카드'); playerStage.onclick=()=>inspectStageCard('player'); playerStage.style.cursor='pointer'; } else { playerStage.className='stageCard'; playerStage.innerHTML=''; playerStage.onclick=null; playerStage.style.cursor='default'; } slotRow.innerHTML=Array.from({length:5},(_,i)=>{ let s=battle.slots[i]; return s?`<button class="slot fill ${battle.inspectSlot===i?'inspecting':''}" onclick="inspectPlaced(${i})"><div class="slotArt">${artHtml(s.card)}</div><small>${i+1}번 슬롯</small></button>`:`<div class="slot"><div>${i+1}</div></div>` }).join(''); statuses.innerHTML=statusList(); handRow.innerHTML=battle.hand.map(c=>cardView(c,battle.selected===c.uid && !battle.selectedTactic)).join(''); tacticRow.innerHTML=battle.thand.map(t=>tacticView(t)).join(''); drawInfo.textContent=`덱 ${battle.deck.length} · 버림 ${battle.discard.length}`; tacticInfo.textContent=`전술 패 ${battle.thand.length} · 클릭 후 사용`; if(battle.selectedTactic){ const t=battle.thand.find(x=>x.uid===battle.selectedTactic); if(t) inspectTactic(t); else battle.selectedTactic=null; } else if(battle.selected){ const c=battle.hand.find(x=>x.uid===battle.selected); if(c) inspectCard(c); else battle.selected=null; } else if(battle.inspectSlot!==null && battle.slots[battle.inspectSlot]){ inspectCard(battle.slots[battle.inspectSlot].card,true,battle.inspectSlot); } else if(battle.inspectStage==='player' && battle.playerStage){ inspectCard(battle.playerStage,true,null); } else if(battle.inspectStage==='enemy' && battle.enemyCard){ inspectCard(battle.enemyCard,true,null); } else { inspect.classList.add('collapsed'); inspectTitle.textContent='카드를 선택'; inspectDesc.textContent='손패, 전술 카드, 전장 카드, 쇼다운 슬롯 카드를 누르면 아래에 설명이 뜬다.'; inspectApply.textContent=''; systemLegend.innerHTML=''; termRow.innerHTML=''; playBtn.textContent='내기'; playBtn.disabled=true; } }
+function effective(c){ let rank=Math.min(14,c.rank+battle.mods.plus), suit=battle.mods.paint?battle.trump:c.suit; return {rank,suit} }
+function compare(c,e){ const p=effective(c), pt=p.suit===battle.trump, et=e.suit===battle.trump; if(pt!==et) return pt?1:-1; if(p.rank===e.rank) return 0; return battle.mods.reverse?(p.rank<e.rank?1:-1):(p.rank>e.rank?1:-1) }
+function classifyWin(c,e,res){ if(res<=0) return null; let p=effective(c), diff=Math.abs(p.rank-e.rank), sameTrump=(p.suit===battle.trump)===(e.suit===battle.trump); if(c.rank<e.rank) return '역전'; if(sameTrump&&diff===1) return '아슬아슬'; if(sameTrump&&diff>=5) return '압승'; return null }
+function clearInspect(){ battle.selected=null; battle.selectedTactic=null; battle.inspectSlot=null; battle.inspectStage=null; renderBattle() }
+function selectCard(uid){ if(battle.selected===uid&&!battle.selectedTactic&&battle.inspectSlot===null){battle.selected=null;sfx('click');renderBattle();return} battle.selected=uid; battle.selectedTactic=null; battle.inspectSlot=null; battle.inspectStage=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function selectTactic(uid){ if(battle.selectedTactic===uid){battle.selectedTactic=null;sfx('click');renderBattle();return} battle.selectedTactic=uid; battle.inspectSlot=null; battle.inspectStage=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function inspectPlaced(i){ const item=battle.slots[i]; if(!item)return; if(battle.inspectSlot===i&&!battle.selected&&!battle.selectedTactic){battle.inspectSlot=null;sfx('click');renderBattle();return} battle.inspectSlot=i; battle.selected=null; battle.selectedTactic=null; battle.inspectStage=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function inspectCard(c,placed=false,slotIndex=null){ if(!c)return; inspect.classList.remove('collapsed'); playBtn.textContent='내기'; const eff=effective(c),result=compare(c,battle.enemyCard),label=result>0?'예상 승리':result<0?'예상 패배':'예상 동점'; const slotLabel=(slotIndex!==null&&slotIndex!==undefined)?` · ${slotIndex+1}번 슬롯`:''; inspectTitle.textContent=`${c.named?c.named.name:'순수 카드'} ${suitObj(c.suit).sym}${rankLabel(c.rank)}${placed?slotLabel:''}`; inspectDesc.innerHTML=c.named?formatEffectText(c.named.desc):'효과 없음. 순수 카드는 족보 구성과 쇼다운 재료로 사용된다.'; inspectApply.textContent=placed?`전장/쇼다운에 나온 카드 · 원래 값 ${suitObj(c.suit).sym}${rankLabel(c.rank)}`:`원래 ${suitObj(c.suit).sym}${rankLabel(c.rank)} → 적용 ${suitObj(eff.suit).sym}${rankLabel(eff.rank)} · ${label}`; systemLegend.innerHTML=c.named?systemLegendHtml(c.named.desc):''; const terms=[...new Set([...(c.named?.terms||[]),'원래 값','적용 값'])]; termRow.innerHTML=terms.map(t=>`<button class="termBtn" onclick="showTerm('${t}')">${t}</button>`).join(''); playBtn.disabled=placed||!!battle.selectedTactic }
+function useTactic(uid){ const idx=battle.thand.findIndex(t=>t.uid===uid); if(idx<0)return; const t=battle.thand[idx]; if(battle.chip<t.cost){floatText(arena,'칩 부족','red');sfx('lose');return} if(t.id==='burn'&&!battle.selected){floatText(arena,'먼저 카드 선택','cyan');return} battle.chip-=t.cost; battle.tdisc.push(battle.thand.splice(idx,1)[0]); battle.selectedTactic=null; sfx('click'); if(t.id==='paint') flash('페인트'),battle.mods.paint=true; if(t.id==='plus2') battle.mods.plus+=2,floatText(arena,'숫자 +2','cyan'); if(t.id==='draw'){drawP(1);floatText(arena,'카드 +1','cyan')} if(t.id==='scout'){battle.myForecast=Math.min(3,battle.myForecast+1);battle.enemyForecast=Math.min(3,battle.enemyForecast+1);floatText(arena,'예측 +1','violet')} if(t.id==='double') battle.mods.double=true,flash('더블다운'); if(t.id==='barrier'){battle.statuses.player.shield+=3;floatText(arena,'보호막 +3','cyan')} if(t.id==='reverse') battle.mods.reverse=true,flash('리버스'); if(t.id==='pureboost') battle.mods.plus+=2,floatText(arena,'순수 보정 +2','cyan'); if(t.id==='clean'){battle.chip=Math.min(9,battle.chip+1);floatText(arena,'무첨가 · 칩 +1','green')} if(t.id==='recolor'){const s=battle.slots[battle.slots.length-1];if(s){s.card.suit=battle.trump;floatText(arena,'슬롯 무늬 변경','violet')}else floatText(arena,'슬롯 없음','red')} if(t.id==='fakeid'){const s=battle.slots[battle.slots.length-1];if(s){s.card.rank=Math.min(14,s.card.rank+1);floatText(arena,'슬롯 숫자 +1','gold')}else floatText(arena,'슬롯 없음','red')} if(t.id==='burn'){const ci=battle.hand.findIndex(c=>c.uid===battle.selected);if(ci>=0){battle.discard.push(battle.hand.splice(ci,1)[0]);battle.chip=Math.min(9,battle.chip+1);drawP(1);battle.selected=null;floatText(arena,'번 · 칩 +1','gold')}} renderBattle() }
+async function animateCardFlight(card){ const src=document.getElementById(`card-${card.uid}`); if(!src)return; const appRect=app.getBoundingClientRect(),r=src.getBoundingClientRect(),vr=versus.getBoundingClientRect(); const clone=src.cloneNode(true); clone.removeAttribute('id'); clone.className='flyingCard card '+(card.named?'named':''); clone.style.left=(r.left-appRect.left)+'px'; clone.style.top=(r.top-appRect.top)+'px'; clone.style.width=r.width+'px'; clone.style.height=r.height+'px'; clone.style.margin='0'; app.appendChild(clone); const tw=72,th=96,tx=vr.left-appRect.left+vr.width*.67-tw/2,ty=vr.top-appRect.top+vr.height*.5-th/2; await new Promise(res=>requestAnimationFrame(()=>requestAnimationFrame(()=>{clone.style.left=tx+'px';clone.style.top=ty+'px';clone.style.width=tw+'px';clone.style.height=th+'px';clone.style.transform='rotate(-4deg) scale(1.02)';setTimeout(res,350)}))); clone.style.opacity='0'; setTimeout(()=>clone.remove(),180); }
+async function playSelected(){ const c=battle.hand.find(x=>x.uid===battle.selected); if(!c) return; playBtn.disabled=true; sfx('card'); await animateCardFlight(c); battle.playerStage=c; renderBattle(); await wait(90); const idx=battle.hand.findIndex(x=>x.uid===c.uid); battle.hand.splice(idx,1); let res=compare(c,battle.enemyCard), gain=battle.mods.double?2:1, kind=classifyWin(c,battle.enemyCard,res);
+ if(c.named){ if(c.namedKey==='D6') battle.reservations.push({type:'nextWinDamage',value:6,label:'다음 승리 피해 6'}); if(c.namedKey==='H8') {battle.statuses.player.shield+=5; floatText(arena,'보호막 +5','cyan')} if(c.namedKey==='D8'){ if(Math.random()<.5){battle.chip=Math.min(9,battle.chip+2);floatText(arena,'주사위 성공 · 칩 +2','gold')}else floatText(arena,'주사위 실패','red') } if(c.namedKey==='C4'){drawT(1);floatText(arena,'전술 +1','cyan')} if(c.namedKey==='HK'){battle.statuses.player.shield+=4;floatText(arena,'보호막 +4','cyan')} if(c.namedKey==='C10'){drawT(1);floatText(arena,'전술 +1','cyan')} }
+ if(res>0){ battle.pedge+=gain; floatText(arena,`우세 +${gain}`,'gold'); sfx('win') } else if(res<0){ battle.eedge+=gain; floatText(arena,`적 우세 +${gain}`,'gold'); sfx('lose') } else flash('동점'); if(kind) flash(kind);
+ if(c.named){ if(c.namedKey==='S7'&&res>0){ damageEnemy(3); battle.lastNamed={type:'damage',value:3} } if(c.namedKey==='H4'&&res>0){ heal(4); battle.lastNamed={type:'heal',value:4} } if(c.namedKey==='D7'&&res>0 && (battle.mods.paint||battle.mods.plus||battle.mods.reverse||battle.mods.double)){ battle.chip=Math.min(9,battle.chip+1); floatText(arena,'칩 +1','gold') } if(c.namedKey==='C3'&&res>0&&effective(c).rank<=5){ battle.chip=Math.min(9,battle.chip+2); floatText(arena,'칩 +2','gold') } if(c.namedKey==='S5'&&res>0){ battle.statuses.enemy.bleed+=2; floatText(arena,'적 출혈 +2','red') } if(c.namedKey==='C8'&&res>0&&battle.lastNamed){ if(battle.lastNamed.type==='damage') damageEnemy(battle.lastNamed.value); if(battle.lastNamed.type==='heal') heal(battle.lastNamed.value); flash('재귀 복사') } if(c.namedKey==='C4'&&res>0){battle.chip=Math.min(9,battle.chip+1);floatText(arena,'칩 +1','gold')} if(c.namedKey==='S9'&&res>0){const dmg=battle.enemyCard.rank>c.rank?5:2;damageEnemy(dmg);battle.lastNamed={type:'damage',value:dmg}} if(c.namedKey==='H5'&&res<0){heal(3);battle.lastNamed={type:'heal',value:3}} if(c.namedKey==='C6'&&res>0&&c.suit===battle.enemyCard.suit){battle.pedge+=1;floatText(arena,'우세 +1','gold')} if(c.namedKey==='SJ'&&res>0){if(battle.enemyForecast<3){battle.enemyForecast++;floatText(arena,'적 예측 +1','violet')}else{battle.chip=Math.min(9,battle.chip+1);floatText(arena,'칩 +1','gold')}} if(c.namedKey==='HK'&&res>0){heal(2);battle.lastNamed={type:'heal',value:2}} if(c.namedKey==='C10'&&!battle.mods.paint&&!battle.mods.plus&&!battle.mods.reverse&&!battle.mods.double){battle.chip=Math.min(9,battle.chip+1);floatText(arena,'칩 +1','gold')} }
+ if(res>0){ let ri=battle.reservations.findIndex(r=>r.type==='nextWinDamage'); if(ri>=0){ damageEnemy(battle.reservations[ri].value); battle.reservations.splice(ri,1); flash('예약 발동') } }
+ battle.slots.push({card:c,result:res}); battle.enemySlots.push({card:{...battle.enemyCard},result:-res}); if(c.namedKey==='C5' && battle.slots.length===3){ battle.enemyForecast=Math.min(3,battle.enemyForecast+2); floatText(arena,'예측 +2','violet') }
+ applyEndStatus(); if(battle.enemy.hp<=0){ await winBattle(); return } if(run.hp<=0){ loseRun(); return }
+ if(battle.slots.length<5){ drawP(1); drawT(1); battle.trick++; battle.chip=battle.maxChip; battle.mods={paint:false,plus:0,reverse:false,double:false}; battle.selected=null; battle.inspectSlot=null; battle.playerStage=null; nextEnemy(); renderBattle(); return }
+ await showdown() }
+function applyEndStatus(){ const e=battle.statuses.enemy,p=battle.statuses.player; if(e.bleed>0){ damageEnemy(e.bleed); e.bleed=Math.max(0,e.bleed-1) } if(p.bleed>0){ damagePlayer(p.bleed); p.bleed=Math.max(0,p.bleed-1) } }
+function poker(arr){ let rs=arr.map(x=>x.card.rank).sort((a,b)=>a-b), ss=arr.map(x=>x.card.suit), cnt={}; rs.forEach(r=>cnt[r]=(cnt[r]||0)+1); let v=Object.values(cnt).sort((a,b)=>b-a), u=[...new Set(rs)], fl=new Set(ss).size===1, st=(u.length===5&&u[4]-u[0]===4)||JSON.stringify(u)===JSON.stringify([2,3,4,5,14]); if(st&&fl)return{name:'스트레이트 플러시',p:70}; if(v[0]===4)return{name:'포카드',p:52}; if(v[0]===3&&v[1]===2)return{name:'풀하우스',p:40}; if(fl)return{name:'플러시',p:32}; if(st)return{name:'스트레이트',p:28}; if(v[0]===3)return{name:'트리플',p:22}; if(v[0]===2&&v[1]===2)return{name:'투페어',p:16}; if(v[0]===2)return{name:'페어',p:10}; return{name:'하이카드',p:5} }
+async function showdown(){ sfx('reward'); const p=poker(battle.slots), e=poker(battle.enemySlots); let pp=p.p+battle.pedge*3+battle.slotBonus, ep=e.p+battle.eedge*3; battle.slots.forEach((s,i)=>{ let k=s.card.namedKey; if(k==='S7') pp+=4; if(k==='SA') pp+=15; if(k==='C5'&&i===2) pp+=4; if(k==='H5') pp+=3; if(k==='DQ'&&(i===3||i===4)) pp+=8; if(k==='DA'){pp+=10; const others=battle.slots.filter((_,j)=>j!==i).map(x=>x.card.suit); if(others.length===4&&new Set(others).size===1) pp+=6;} }); flash(`${p.name}<br>${pp} : ${ep}`); await wait(700); const diff=Math.abs(pp-ep); if(pp>ep){ damageEnemy(diff); flash(`적 -${diff}`) } else if(ep>pp){ damagePlayer(diff); flash(`플레이어 -${diff}`) } else flash('동점'); await wait(450); battle.slots.forEach(s=>battle.discard.push(s.card)); battle.enemySlots=[]; battle.slots=[]; battle.pedge=0; battle.eedge=0; battle.trick=1; battle.round++; battle.chip=battle.maxChip; battle.playerStage=null; battle.selected=null; battle.inspectSlot=null; battle.mods={paint:false,plus:0,reverse:false,double:false}; battle.trump=pick(SUITS).k; nextEnemy(); renderBattle(); if(battle.enemy.hp<=0) await winBattle(); if(run.hp<=0) loseRun() }
+function damageEnemy(n){ if(n<=0)return; const e=battle.statuses.enemy; if(e.shield){ let b=Math.min(e.shield,n); e.shield-=b; n-=b } if(n<=0){ renderBattle(); return } battle.enemy.hp=Math.max(0,battle.enemy.hp-n); arena.classList.add('shake'); setTimeout(()=>arena.classList.remove('shake'),250); sfx('hit'); const c=centerOf('enemyPortrait'); burstAt(c.x,c.y,'#ff8d98',10); slashFx(); floatText(arena,`-${n}`,'red'); renderBattle() }
+function damagePlayer(n){ if(n<=0)return; const p=battle.statuses.player; if(p.shield){ let b=Math.min(p.shield,n); p.shield-=b; n-=b } if(n<=0){ renderBattle(); return } run.hp=Math.max(0,run.hp-n); arena.classList.add('shake'); setTimeout(()=>arena.classList.remove('shake'),250); sfx('hit'); const c=centerOf('pName'); burstAt(arena.clientWidth*0.26, arena.clientHeight*0.77,'#ff8d98',9); floatText(arena,`-${n}`,'red'); renderBattle() }
+function heal(n){ run.hp=Math.min(run.maxHp,run.hp+n); sfx('heal'); burstAt(arena.clientWidth*0.26, arena.clientHeight*0.77,'#87e59c',9); floatText(arena,`HP +${n}`,'green'); renderBattle() }
+async function winBattle(){ flash('승리'); sfx('reward'); await wait(650); run.gold += battle.type==='battle'?20:battle.type==='elite'?40:70; showReward(battle.node) }
+function loseRun(){ showModal(`<h2 class="red">런 종료</h2><p>체력이 모두 소진되었다.</p><div class="choiceList"><button class="choice" onclick="location.reload()"><b>다시 시작</b></button></div>`) }
+const RPOOL=Object.keys(NAMED);
+function showReward(node){ const opts=shuffle(RPOOL).slice(0,3); showModal(`<h2>전투 보상</h2><p>이번 보상은 전부 네임드 카드다. <b>각인</b>은 기존 원본을 바꾸고, <b>추가</b>는 새 복사본을 덱에 넣는다.</p><div class="rewardGrid">${opts.map(k=>`<div class="rewardBox"><div class="cardArt">${artHtml(makeCard(k[0],parseRank(k.slice(1)),k))}</div><h3>${NAMED[k].name}</h3><p>${NAMED[k].desc}</p><div class="rewardBtns"><button onclick="takeReward('${k}','engrave','${node.id}')">각인</button><button onclick="takeReward('${k}','add','${node.id}')">추가</button></div></div>`).join('')}</div><div class="choiceList"><button class="choice" onclick="skipReward('${node.id}')"><b>자원 보상으로 바꾸기</b><span>골드 +12</span></button></div>`) }
+function takeReward(k,mode,id){ const s=k[0],r=parseRank(k.slice(1)); if(mode==='engrave'){ let i=run.deck.findIndex(c=>c.suit===s&&c.rank===r&&!c.named); if(i<0)i=run.deck.findIndex(c=>c.suit===s&&c.rank===r); if(i>=0)run.deck[i]=makeCard(s,r,k); else run.deck.push(makeCard(s,r,k)) } else run.deck.push(makeCard(s,r,k)); closeOverlay(); completeNode(run.map.find(n=>n.id===id)) }
+function skipReward(id){ run.gold+=12; closeOverlay(); completeNode(run.map.find(n=>n.id===id)) }
+function showEvent(node){ showModal(`<h2>이벤트 · 끊어진 관측소</h2><p>낡은 모니터가 미래를 조금 읽어 준다.</p><div class="choiceList"><button class="choice" onclick="eventPick('${node.id}','gold')"><b>부품 분해</b><span>골드 +30</span></button><button class="choice" onclick="eventPick('${node.id}','card')"><b>관측 데이터 보관</b><span>관측자 ♣5 추가</span></button><button class="choice" onclick="eventPick('${node.id}','heal')"><b>숨 고르기</b><span>체력 +10</span></button></div>`) }
+function eventPick(id,type){ if(type==='gold')run.gold+=30; if(type==='card')run.deck.push(makeCard('C',5,'C5')); if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+10); completeNode(run.map.find(n=>n.id===id)) }
+function showCamp(node){ showModal(`<h2>캠프</h2><div class="choiceList"><button class="choice" onclick="campPick('${node.id}','heal')"><b>휴식</b><span>체력 30% 회복</span></button><button class="choice" onclick="campPick('${node.id}','remove')"><b>정리</b><span>순수 카드 1장 제거 (최소 36장)</span></button><button class="choice" onclick="campPick('${node.id}','gold')"><b>탐색</b><span>골드 +24</span></button></div>`) }
+function campPick(id,type){ if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+Math.ceil(run.maxHp*.3)); if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(c=>!c.named); if(i>=0)run.deck.splice(i,1) } if(type==='gold')run.gold+=24; completeNode(run.map.find(n=>n.id===id)) }
+function showShop(node){ showModal(`<h2>상점</h2><p>골드 ${run.gold}</p><div class="choiceList"><button class="choice" onclick="shopPick('${node.id}','remove',45)"><b>카드 제거 · 45G</b><span>순수 카드 1장 제거</span></button><button class="choice" onclick="shopPick('${node.id}','scout',35)"><b>정찰 구매 · 35G</b><span>전술 카드 정찰 추가</span></button><button class="choice" onclick="shopPick('${node.id}','heal',28)"><b>응급 수리 · 28G</b><span>체력 +14</span></button><button class="choice" onclick="completeNode(run.map.find(n=>n.id==='${node.id}'))"><b>나가기</b></button></div>`) }
+function shopPick(id,type,cost){ if(run.gold<cost){ sfx('lose'); return } run.gold-=cost; if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(c=>!c.named); if(i>=0)run.deck.splice(i,1) } if(type==='scout'){ let t=TACTICS.find(t=>t.id==='scout'); run.tactics.push({...t,uid:Math.random().toString(36).slice(2)}) } if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+14); showShop(run.map.find(n=>n.id===id)) }
+function finishRun(){ showModal(`<h2 class="cyan">ACT 1 클리어</h2><p>이번 리워크 프로토타입의 끝이다.<br>덱 ${run.deck.length}장 / 네임드 ${run.deck.filter(c=>c.named).length}장 / 전술 ${run.tactics.length}장</p><div class="choiceList"><button class="choice" onclick="location.reload()"><b>새 런</b></button></div>`) }
+function showModal(html){ modal.innerHTML=html; overlay.classList.add('show') } function closeOverlay(){ overlay.classList.remove('show') }
+function showTerm(t){ showModal(`<h2>${t}</h2><p>${TERMS[t]||'설명 준비 중.'}</p><div class="choiceList"><button class="choice" onclick="closeOverlay()"><b>닫기</b></button></div>`) }
+function showTerms(){ showModal(`<h2>용어 사전</h2><div class="choiceList">${Object.entries(TERMS).map(([k,v])=>`<button class="choice"><b>${k}</b><span>${v}</span></button>`).join('')}<button class="choice" onclick="closeOverlay()"><b>닫기</b></button></div>`) }
+function floatText(host,txt,cls=''){ const d=document.createElement('div'); d.className='float '+cls; d.textContent=txt; d.style.left='50%'; d.style.top='56%'; host.appendChild(d); setTimeout(()=>d.remove(),750) }
+function flash(txt){ const d=document.createElement('div'); d.className='flash'; d.innerHTML=txt; arena.appendChild(d); setTimeout(()=>d.remove(),820) }
+function burstAt(x,y,color='#fff3a0',count=8){
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=x+'px'; p.style.top=y+'px';
+    p.style.background=i%2?color:'#ffffff';
+    p.style.setProperty('--dx', ((Math.random()*90)-45)+'px');
+    p.style.setProperty('--dy', ((Math.random()*70)-35)+'px');
+    arena.appendChild(p);
+    setTimeout(()=>p.remove(),560);
+  }
+}
+function centerOf(id){ const host=arena.getBoundingClientRect(); const el=document.getElementById(id).getBoundingClientRect(); return {x:el.left-host.left+el.width/2,y:el.top-host.top+el.height/2}; }
+function slashFx(){ const d=document.createElement('div'); d.className='slash'; arena.appendChild(d); setTimeout(()=>d.remove(),260) }
+function wait(ms){ return new Promise(r=>setTimeout(r,ms)) }
+renderStart();
+</script>
+</body>
+</html>
