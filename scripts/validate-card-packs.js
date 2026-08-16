@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { CARD_PACK_LIST, CARD_DEFINITIONS, CARD_DEFINITION_BY_ID, CARD_PACKS, defaultEnabledPacks, validateEnabledPacks } = require('../cards.js');
+const { CARD_PACK_LIST, CARD_DEFINITIONS, CARD_DEFINITION_BY_ID, CARD_PACKS, CARD_DETAIL_BY_ID, PLAYER_EFFECT_LABELS, defaultEnabledPacks, validateEnabledPacks } = require('../cards.js');
 const { TRIGGERS, ACTIONS, conditions, handlers } = require('../effects.js');
 const { EFFECT_DURATIONS } = require('../battle-core.js');
 const root = path.resolve(__dirname, '..');
@@ -11,6 +11,8 @@ if (!termsSource) throw new Error('index.html에서 TERMS 레지스트리를 읽
 const TERMS = Function(`"use strict"; return (${termsSource[1]})`)();
 const errors = [];
 if(!CARD_PACKS.pack01||CARD_PACKS.pack01.cards.length!==10)errors.push('pack01은 정확히 10장이어야 함');
+if(Object.keys(CARD_DETAIL_BY_ID).length!==10)errors.push('pack01 플레이어 상세 정보는 정확히 10개여야 함');
+for(const group of ['triggers','conditions','actions','durations'])for(const [key,label] of Object.entries(PLAYER_EFFECT_LABELS[group]||{}))if(!label||label===key)errors.push(`플레이어 표시 매핑 누락: ${group}.${key}`);
 const duplicates = values => [...new Set(values.filter((value,index) => values.indexOf(value)!==index))];
 const duplicatePackIds=duplicates(CARD_PACK_LIST.map(pack=>pack.id));
 if(duplicatePackIds.length)errors.push(`중복 팩 ID: ${duplicatePackIds.join(', ')}`);
@@ -29,6 +31,9 @@ for (const pack of CARD_PACK_LIST) {
     if(!card.id.startsWith(`${pack.id}.`))errors.push(`${card.id}: 카드 ID가 팩 ID namespace를 사용하지 않음`);
     if (!card.image || !fs.existsSync(path.join(root,card.image))) errors.push(`${card.id}: 이미지 경로가 없거나 파일이 없음 (${card.image})`);
     for (const term of card.terms || []) if (!Object.hasOwn(TERMS,term)) errors.push(`${card.id}: 미등록 용어 ${term}`);
+    const detail=CARD_DETAIL_BY_ID[card.id];
+    if(pack.id==='pack01'&&(!detail?.activation||!detail?.effect))errors.push(`${card.id}: 발동/효과 플레이어 상세 정보 누락`);
+    for(const term of detail?.terms||[])if(!Object.hasOwn(TERMS,term))errors.push(`${card.id}: 상세 정보의 미등록 용어 ${term}`);
   }
 }
 for (const card of CARD_DEFINITIONS) {
