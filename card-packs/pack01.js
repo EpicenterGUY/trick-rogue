@@ -52,7 +52,7 @@
     "rank": 3,
     "description": "조건: 이 카드의 적용 숫자가 5 이하인 상태로 트릭 승리. 효과: 칩 +2.",
     "terms": [
-      "적용 값",
+      "적용 숫자",
       "트릭"
     ],
     "image": "assets/cards/pack01/dirty_gambler.png",
@@ -125,7 +125,7 @@
     "rank": 5,
     "description": "조건: 이 카드가 현재 세트의 3번 쇼다운 슬롯에 들어갈 때. 효과: 적 카드 예측 단계 +2.",
     "terms": [
-      "슬롯",
+      "쇼다운 슬롯",
       "예측"
     ],
     "image": "assets/cards/pack01/ambush_observer.png",
@@ -140,7 +140,11 @@
     "rank": 14,
     "description": "손에 들고 있는 동안 각 트릭 종료 시 20% 확률로 소진되어 이번 전투 동안 사용할 수 없다. 소진되지 않고 쇼다운 카드로 제출하면 최종 쇼다운 위력 +15. 손에 없으면 소진 판정하지 않는다.",
     "terms": [
-      "쇼다운"
+      "트릭",
+      "소진",
+      "전투",
+      "쇼다운",
+      "최종 위력"
     ],
     "image": "assets/cards/pack01/battery_1pct.png",
     "packId": "pack01",
