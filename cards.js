@@ -22,7 +22,6 @@ const IMPLEMENTED_CARD_EFFECTS = {
   'core.s9': [{trigger:'on_trick_win',handler:'sheathed_blade'}],
   'core.h5': [{trigger:'on_trick_loss',action:'heal_player',value:3},{trigger:'on_showdown_score',action:'showdown_power',value:3}],
   'core.dq': [{trigger:'on_showdown_score',action:'showdown_power',value:8,condition:'slot_at_least',conditionValue:4}],
-  'core.c6': [{trigger:'on_trick_win',action:'gain_edge',value:1,condition:'same_suit'}],
   'core.sj': [{trigger:'on_trick_win',handler:'black_signature'}],
   'core.hk': [{trigger:'on_play',action:'gain_shield',value:4},{trigger:'on_trick_win',action:'heal_player',value:2}],
   'core.da': [{trigger:'on_showdown_score',handler:'royal_seal'}],
@@ -36,7 +35,11 @@ const CARD_PACK_LIST=Object.freeze([
 const CARD_PACKS=Object.freeze(Object.fromEntries(CARD_PACK_LIST.map(pack=>[pack.id,pack])));
 
 const CARD_DEFINITIONS=Object.values(CARD_PACKS).flatMap(pack=>pack.cards);
-for(const card of CARD_DEFINITIONS){card.implemented=Object.hasOwn(IMPLEMENTED_CARD_EFFECTS,card.id);card.effects=IMPLEMENTED_CARD_EFFECTS[card.id]||[]}
+const REWORK_FLAGS={
+  'core.c6':'advantage-v2','core.s2':'advantage-v2','core.s6':'advantage-v2',
+  'core.d2':'hand-size-v2','core.h2':'hand-size-v2','core.h10':'hand-size-v2'
+};
+for(const card of CARD_DEFINITIONS){card.implemented=Object.hasOwn(IMPLEMENTED_CARD_EFFECTS,card.id);card.effects=IMPLEMENTED_CARD_EFFECTS[card.id]||[];if(REWORK_FLAGS[card.id])card.needsRework=REWORK_FLAGS[card.id]}
 const CARD_DEFINITION_BY_ID=Object.fromEntries(CARD_DEFINITIONS.map(card=>[card.id,card]));
 const CARD_DEFINITION_BY_BASE=Object.fromEntries(CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
 function defaultEnabledPacks(){return Object.values(CARD_PACKS).filter(pack=>pack.enabledByDefault).map(pack=>pack.id)}
@@ -44,5 +47,5 @@ function rewardCardIds(enabledPacks=defaultEnabledPacks()){
   const enabled=new Set(enabledPacks);
   return Object.values(CARD_PACKS).filter(pack=>enabled.has(pack.id)).flatMap(pack=>pack.cards.flatMap(card=>Array(Math.max(0,pack.rewardWeight)).fill(card.id)));
 }
-return{CARD_PACK_LIST,CARD_DEFINITIONS,CARD_DEFINITION_BY_ID,CARD_DEFINITION_BY_BASE,CARD_PACKS,defaultEnabledPacks,rewardCardIds};
+return{CARD_PACK_LIST,CARD_DEFINITIONS,CARD_DEFINITION_BY_ID,CARD_DEFINITION_BY_BASE,CARD_PACKS,REWORK_FLAGS,defaultEnabledPacks,rewardCardIds};
 });
