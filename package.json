@@ -1,0 +1,8 @@
+{
+  "name": "trick-rogue",
+  "private": true,
+  "scripts": {
+    "validate:cards": "node scripts/validate-card-packs.js",
+    "test": "npm run validate:cards"
+  }
+}
