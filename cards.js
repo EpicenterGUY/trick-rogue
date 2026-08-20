@@ -21,7 +21,7 @@ const IMPLEMENTED_CARD_EFFECTS = {
 // engine identifiers never have to leak into card details or future UI surfaces.
 const PLAYER_EFFECT_LABELS=Object.freeze({
   triggers:{on_play:'이 카드를 낼 때',on_set_start:'세트 시작 시',before_compare:'트릭 승패 비교 전',after_compare:'트릭 승패 비교 후',on_trick_win:'이 카드로 트릭 승리 시',on_trick_loss:'이 카드로 트릭 패배 시',on_trick_draw:'이 카드로 트릭 무승부 시',after_card_slotted:'쇼다운 슬롯에 놓인 후',on_trick_end:'트릭 종료 시',before_showdown:'쇼다운 계산 전',on_showdown_advantage:'쇼다운 우세 판정 시',on_showdown_score:'쇼다운 위력 계산 시',after_showdown_result:'쇼다운 결과 판정 후',on_set_end:'세트 종료 시',before_damage:'피해를 받기 전',after_damage:'피해를 받은 후'},
-  conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'적용 숫자가 지정된 수 이하',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음'},
+  conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'트릭 숫자가 지정된 수 이하',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음'},
   actions:{damage_enemy:'적에게 피해',heal_player:'체력 회복',gain_chips:'칩 획득',gain_shield:'보호막 획득',apply_enemy_bleed:'적에게 출혈 부여',increase_enemy_forecast:'적 카드 예측 단계 증가',draw_tactic:'전술 카드 드로우',increase_effective_rank:'트릭 숫자 증가',showdown_power:'쇼다운 최종 위력 증가',reserve_next_win_damage:'다음 트릭 승리 시 추가 피해 예약'},
   durations:{trick:'트릭',set:'세트',battle:'전투',run:'런'}
 });
@@ -56,14 +56,14 @@ function createCardRecord({suit,rank,cardId=null,definitionId=null,effects,metad
   const effectList=effects===undefined?(definition?.effects||[]):effects;
   if(!Array.isArray(effectList))throw new TypeError('Card effects must be an array');
   return{
+    ...metadata,
     suit,rank,printedSuit:suit,printedRank:rank,
     cardId:definition?.id||cardId||null,
     definition,
     // named is a temporary compatibility alias for current renderer/details. New effect
     // execution does not require it; ordinary cards may carry effects directly.
     named:definition,
-    effects:effectList.map(effect=>({...effect})),
-    ...metadata
+    effects:effectList.map(effect=>({...effect}))
   };
 }
 function createDefinitionCard(definitionId,metadata={}){
