@@ -41,6 +41,7 @@ test('매복한 관측자는 3번 슬롯에서 예측만 +2 하고 쇼다운 위
   assert.deepEqual(execute('pack01.ambush_observer','after_card_slotted',{slotIndex:2})[0].slice(0,2),['increase_enemy_forecast',2]);
   assert.equal(execute('pack01.ambush_observer','on_showdown_score',{slotIndex:2}).length,0);
 });
+test('무승부 전용 trigger가 공통 effect registry에 등록되어 있다',()=>assert(Effects.TRIGGERS.includes('on_trick_draw')));
 test('pack01의 모든 효과는 trigger와 지속 범위를 명시하고 전부 구현 상태다',()=>{
   for(const card of Object.values(CARD_DEFINITION_BY_ID)){assert.equal(card.implemented,true);assert(card.effects.length);for(const effect of card.effects){assert(Effects.TRIGGERS.includes(effect.trigger));assert(['trick','set','battle','run'].includes(effect.duration));}}
 });

@@ -38,14 +38,29 @@
     const entry={...effect};state.effects.push(entry);return entry;
   }
   function expireEffects(state,duration){state.effects=state.effects.filter(effect=>effect.duration!==duration);}
-  function createSetHistory(){return{trickResults:[]};}
+  function createSetHistory(){return{trickResults:[],wins:0,losses:0,draws:0,lastResult:null,winStreak:0,lossStreak:0};}
   function recordTrickResult(context,result){
     const history=context.setHistory||context;
     if(!history||!Array.isArray(history.trickResults))throw new TypeError('A setHistory with trickResults is required');
     const normalized=result===1||result==='player'?'player':result===-1||result==='enemy'?'enemy':result===0||result==='draw'?'draw':null;
     if(!normalized)throw new TypeError(`Unknown trick result: ${result}`);
     if(history.trickResults.length>=TRICKS_PER_SET)throw new RangeError('A set cannot record more than five tricks');
-    history.trickResults.push(normalized);return normalized;
+    history.trickResults.push(normalized);
+    history.lastResult=normalized;
+    if(normalized==='player'){
+      history.wins=(history.wins||0)+1;
+      history.winStreak=(history.winStreak||0)+1;
+      history.lossStreak=0;
+    }else if(normalized==='enemy'){
+      history.losses=(history.losses||0)+1;
+      history.lossStreak=(history.lossStreak||0)+1;
+      history.winStreak=0;
+    }else{
+      history.draws=(history.draws||0)+1;
+      history.winStreak=0;
+      history.lossStreak=0;
+    }
+    return normalized;
   }
   function endTrick(state,result){
     if(result!==undefined)recordTrickResult(state,result);
@@ -62,14 +77,21 @@
     return override===undefined?printedValue(card,key):override;
   }
   function effectiveCard(card,modifiers={}){
-    return{...card,printedRank:printedValue(card,'Rank'),printedSuit:printedValue(card,'Suit'),
-      effectiveRank:modifiers.rank??modifiers.effectiveRank??printedValue(card,'Rank'),
-      effectiveSuit:modifiers.suit??modifiers.effectiveSuit??printedValue(card,'Suit')};
+    const printedRank=printedValue(card,'Rank'),printedSuit=printedValue(card,'Suit');
+    const effectiveRank=modifiers.rank??modifiers.effectiveRank??card?.trickRank??card?.effectiveRank??printedRank;
+    const effectiveSuit=modifiers.suit??modifiers.effectiveSuit??card?.trickSuit??card?.effectiveSuit??printedSuit;
+    const treatedAsTrump=modifiers.treatedAsTrump??card?.treatedAsTrump??false;
+    return{...card,printedRank,printedSuit,rank:effectiveRank,suit:effectiveSuit,effectiveRank,effectiveSuit,trickRank:effectiveRank,trickSuit:effectiveSuit,treatedAsTrump};
   }
+  function isTrumpCard(card,trump){
+    const trickSuit=card?.trickSuit??card?.effectiveSuit??card?.suit;
+    return card?.treatedAsTrump===true||trickSuit===trump;
+  }
+  function trickRank(card){return card?.trickRank??card?.effectiveRank??card?.rank;}
   function compareTrick(playerCard,enemyCard,trump){
-    const playerTrump=playerCard.effectiveSuit===trump,enemyTrump=enemyCard.effectiveSuit===trump;
+    const playerTrump=isTrumpCard(playerCard,trump),enemyTrump=isTrumpCard(enemyCard,trump);
     if(playerTrump!==enemyTrump)return playerTrump?1:-1;
-    return Math.sign(playerCard.effectiveRank-enemyCard.effectiveRank);
+    return Math.sign(trickRank(playerCard)-trickRank(enemyCard));
   }
   function resolveShowdownAdvantage({playerCards,enemyCards}){
     if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
@@ -79,8 +101,9 @@
     for(const suit of SUITS){const difference=playerSuitCounts[suit]-enemySuitCounts[suit];if(difference>=2)playerAdvantages.push(suit);else if(difference<=-2)enemyAdvantages.push(suit)}
     return{playerAdvantages,enemyAdvantages,playerAdvantageCount:playerAdvantages.length,enemyAdvantageCount:enemyAdvantages.length,playerSuitCounts,enemySuitCounts};
   }
+  function showdownAdvantageBonus(advantages){return Array.isArray(advantages)&&advantages.length>0?SHOWDOWN_ADVANTAGE_POWER:0;}
   function applyShowdownAdvantage(playerPower,enemyPower,advantage){
-    return{playerPower:playerPower+advantage.playerAdvantageCount*SHOWDOWN_ADVANTAGE_POWER,enemyPower:enemyPower+advantage.enemyAdvantageCount*SHOWDOWN_ADVANTAGE_POWER};
+    return{playerPower:playerPower+showdownAdvantageBonus(advantage.playerAdvantages),enemyPower:enemyPower+showdownAdvantageBonus(advantage.enemyAdvantages)};
   }
   function finishShowdown(state){
     if(state.phase!=='showdown')throw new Error('No showdown to finish');
@@ -89,5 +112,5 @@
     return state;
   }
   function endBattle(state){expireEffects(state,'battle');state.phase='ended';}
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,compareTrick,resolveShowdownAdvantage,applyShowdownAdvantage,finishShowdown,endBattle};
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,isTrumpCard,trickRank,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle};
 });
