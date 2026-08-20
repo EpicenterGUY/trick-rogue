@@ -90,3 +90,11 @@ test('pack01 화면·덱·전투·보상은 동일 정의와 이미지를 참조
     assert(rewardCardIds(['pack01']).includes(definition.id));
   }
 });
+
+test('5번째 트릭의 다음 트릭 예약은 다음 세트 1트릭에서 처리된다',()=>{
+  const reservations=[{type:'nextWinDamage',value:6,eligibleSet:2,eligibleTrick:1}];
+  const calls=[];
+  assert.equal(Effects.resolveNextWinReservations(reservations,{set:1,trick:5},true,(...x)=>calls.push(x)).length,1);
+  assert.deepEqual(Effects.resolveNextWinReservations(reservations,{set:2,trick:1},true,(...x)=>calls.push(x)),[]);
+  assert.deepEqual(calls,[['damage_enemy',6]]);
+});

@@ -19,7 +19,8 @@
   };
   function run(trigger,card,context){if(!card?.named?.implemented)return;for(const effect of card.named.effects.filter(x=>x.trigger===trigger)){if(effect.condition&&!conditions[effect.condition]?.(context,effect))continue;if(effect.handler)handlers[effect.handler](context,effect);else context.perform(effect.action,effect.value,effect)}}
   function resolveNextWinReservations(reservations,trick,won,perform){
-    const due=reservations.filter(reservation=>reservation.type==='nextWinDamage'&&reservation.eligibleTrick===trick);
+    const turn=typeof trick==='object'?trick:{trick};
+    const due=reservations.filter(reservation=>reservation.type==='nextWinDamage'&&reservation.eligibleTrick===turn.trick&&(reservation.eligibleSet===undefined||reservation.eligibleSet===turn.set));
     if(won)due.forEach(reservation=>perform('damage_enemy',reservation.value));
     return reservations.filter(reservation=>!due.includes(reservation));
   }
