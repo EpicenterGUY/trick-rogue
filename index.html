@@ -75,8 +75,8 @@ button{font:inherit;color:inherit}
 .intentBox{padding:8px}.intentTitle{font-size:11px;color:#ffb5bc}.intentMain{font-size:14px;font-weight:700;margin-top:3px}.intentSub{font-size:10px;color:var(--soft);margin-top:3px;line-height:1.3}
 .arenaMeta{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
 .forecastRow{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;position:relative;z-index:2}
-#versus{display:grid;grid-template-columns:1fr 28px 1fr;align-items:center;gap:6px;position:relative;z-index:2;min-height:150px}
-.stageCard{height:138px;min-height:138px;display:none;position:relative;overflow:visible;background:transparent;border:none;box-shadow:none;padding:0;justify-self:center;align-self:center;transform-origin:center;will-change:transform,filter}.stageCard.show{display:grid;place-items:center;animation:cardPop .24s cubic-bezier(.18,.8,.2,1)}.stageInner{position:relative;width:92px;height:136px;filter:drop-shadow(0 6px 0 #0008)}.stageInner svg,.stageInner img{width:100%;height:100%;display:block;image-rendering:pixelated}.stageLabel{position:absolute;left:50%;top:-8px;transform:translateX(-50%);font-size:9px;padding:2px 6px;border:var(--px) solid #000;background:#152032;box-shadow:0 0 0 var(--px) #3b4f72 inset;color:#dce6f8;white-space:nowrap}.vsText{text-align:center;font-size:18px;font-weight:800;color:#c7d0e3}
+#versus{display:grid;grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);align-items:center;gap:6px;position:relative;z-index:2;min-height:150px;isolation:isolate}
+.stageCard{width:100%;height:138px;min-height:138px;display:none;position:relative;z-index:1;overflow:visible;background:transparent;border:none;box-shadow:none;padding:0;justify-self:stretch;align-self:center;transform-origin:center;will-change:transform,filter}.stageCard.show{display:grid;place-items:center;animation:cardPop .24s cubic-bezier(.18,.8,.2,1)}.stageInner{position:relative;width:min(92px,100%);aspect-ratio:92/136;filter:drop-shadow(0 6px 0 #0008)}.stageInner svg,.stageInner img{width:100%;height:100%;display:block;image-rendering:pixelated}.stageLabel{position:absolute;left:50%;top:-8px;transform:translateX(-50%);font-size:9px;padding:2px 6px;border:var(--px) solid #000;background:#152032;box-shadow:0 0 0 var(--px) #3b4f72 inset;color:#dce6f8;white-space:nowrap}.vsText{position:relative;z-index:3;text-align:center;font-size:18px;font-weight:800;color:#c7d0e3}
 #slotRow{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;position:relative;z-index:2}
 .slot{height:94px;border:var(--px) dashed #384660;background:#091018;display:grid;place-items:center;font-size:10px;color:#7f8ca5;transition:transform .16s cubic-bezier(.2,.8,.2,1),filter .16s ease;overflow:hidden}.slot.fill{border-style:solid;background:#0f1622;color:var(--ink);box-shadow:0 0 0 var(--px) #445267 inset;cursor:pointer;padding:3px}.slot.fill:active{transform:translateY(1px)}.slot.fill:hover{filter:brightness(1.08)}.slot.inspecting{outline:2px solid var(--cyan);transform:translateY(-2px)}.slot small{display:block;font-size:9px}.slotArt{width:56px;height:82px;margin:0 auto 2px}.slotArt img,.slotArt svg{width:100%;height:100%;display:block;image-rendering:pixelated;filter:drop-shadow(0 2px 0 #0007)}
 #statuses{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;position:relative;z-index:2}
@@ -303,9 +303,9 @@ button:disabled{cursor:not-allowed;opacity:.38;filter:saturate(.35) brightness(.
           <span class="badge">적 다음 카드 <b id="enemyForecast"></b></span>
         </div>
         <div id="versus">
-          <div class="stageCard" id="enemyStage"></div>
-          <div class="vsText">VS</div>
           <div class="stageCard" id="playerStage"></div>
+          <div class="vsText">VS</div>
+          <div class="stageCard" id="enemyStage"></div>
         </div>
         <div id="slotRow"></div>
         <div id="statuses"></div>
@@ -851,7 +851,7 @@ async function animateCardFlight(card){
  const appRect=app.getBoundingClientRect(),start=src.getBoundingClientRect(),center=versus.getBoundingClientRect(),end=slot.getBoundingClientRect();
  const clone=src.cloneNode(true);clone.removeAttribute('id');clone.className='flyingCard card '+(card.named?'named':'');
  Object.assign(clone.style,{left:(start.left-appRect.left)+'px',top:(start.top-appRect.top)+'px',width:start.width+'px',height:start.height+'px',margin:'0',animation:'none',transition:'none'});
- app.appendChild(clone);src.style.visibility='hidden';
+ const originalVisibility=src.style.visibility;app.appendChild(clone);src.style.visibility='hidden';
  const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  const transition=(styles,duration,easing='cubic-bezier(.2,.8,.2,1)')=>new Promise(async resolve=>{clone.style.transition=`all ${duration}ms ${easing}`;await frame();Object.assign(clone.style,styles);setTimeout(resolve,duration)});
  try{
@@ -861,7 +861,11 @@ async function animateCardFlight(card){
   await clone.animate([{transform:'scale(1.08)'},{transform:'scale(.96)',offset:.55},{transform:'scale(1)'}],{duration:120,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}).finished;
   await wait(50);
   await transition({left:(end.left-appRect.left)+'px',top:(end.top-appRect.top)+'px',width:end.width+'px',height:end.height+'px',transform:'scale(1)'},180,'cubic-bezier(.18,.82,.2,1)');
- }finally{src.style.visibility='';clone.remove()}
+ }finally{clone.getAnimations().forEach(animation=>animation.cancel());src.style.visibility=originalVisibility;clone.remove()}
+}
+function clearStageAnimationStyles(element){
+ element.getAnimations().forEach(animation=>animation.cancel());
+ ['transform','filter','position','left','top','z-index'].forEach(property=>element.style.removeProperty(property));
 }
 async function animateTrickResult(result){
  const enemy=enemyStage,player=playerStage;
@@ -871,8 +875,11 @@ async function animateTrickResult(result){
  const enemyMeet=center-meetingGap-(enemyBox.left+enemyBox.width/2);
  const playerMeet=center+meetingGap-(playerBox.left+playerBox.width/2);
  const timing={duration:180,easing:'cubic-bezier(.18,.82,.2,1)',fill:'forwards'};
+ const animations=[];
+ try{
  const enemyApproach=enemy.animate([{transform:'translateX(0)'},{transform:`translateX(${enemyMeet}px)`}],timing);
  const playerApproach=player.animate([{transform:'translateX(0)'},{transform:`translateX(${playerMeet}px)`}],timing);
+ animations.push(enemyApproach,playerApproach);
  await Promise.all([enemyApproach.finished,playerApproach.finished]);
  await wait(90);
  const winner=result>0?player:result<0?enemy:null,loser=result>0?enemy:result<0?player:null;
@@ -891,8 +898,13 @@ async function animateTrickResult(result){
   resultAnimations.push(enemy.animate([{transform:`translateX(${enemyMeet}px)`},{transform:`translateX(${enemyMeet}px) scale(1.03)`}],{duration:120,fill:'forwards'}));
   resultAnimations.push(player.animate([{transform:`translateX(${playerMeet}px)`},{transform:`translateX(${playerMeet}px) scale(1.03)`}],{duration:120,fill:'forwards'}));
  }
+ animations.push(...resultAnimations);
  await Promise.all(resultAnimations.map(animation=>animation.finished));
  await wait(60);
+ }finally{
+  animations.forEach(animation=>animation.cancel());
+  clearStageAnimationStyles(enemy);clearStageAnimationStyles(player);
+ }
 }
 function effectContext(card,extra={}){ return {card,enemyCard:battle.enemyCard,history:battle.history,mods:battle.mods,effectiveRank:effective(card).rank,enemyForecast:battle.enemyForecast,lastNamed:battle.lastNamed,slots:battle.slots,random:Math.random,...extra,exhaust(target){const i=battle.hand.findIndex(c=>c.uid===target.uid);if(i<0)return;const exhausted=battle.hand.splice(i,1)[0];battle.exhausted.push(exhausted);floatText(arena,'배터리 소진','red')},perform(action,value,effect={}){
  if(action==='damage_enemy'){const dealt=damageEnemy(value);battle.history.damageDealt+=dealt}
