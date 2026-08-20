@@ -10,6 +10,7 @@
   --bg:#0e1118;--bg2:#0a0c12;--panel:#1b2130;--panel2:#232a3d;--line:#425072;
   --text:#f2ead8;--soft:#9ba7c2;--gold:#e4bd62;--cyan:#67d3d0;--red:#ef6575;--green:#78d68b;--violet:#9e89f2;
   --paper:#efe5cc;--paper2:#dfcfb0;--ink:#252933;--shadow:#0008;--px:2px;
+  --ui-duration:140ms;--ui-press-duration:65ms;--ui-ease:cubic-bezier(.2,.75,.25,1);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090b10;color:var(--text);font-family:"Courier New",monospace}
@@ -193,6 +194,43 @@ button{font:inherit;color:inherit}
   #handRow,#tacticRow{grid-template-columns:repeat(auto-fit,minmax(70px,1fr));padding-bottom:6px}
   #inspect{min-height:82px}#startScreen .option{min-height:112px}
   #mapWrap{min-height:400px}
+}
+
+/* Interaction feedback: one restrained motion language across battle controls. */
+.card,.tactic,.slot,.pixelBtn,.choice,.termBtn,.effectLabel,.rewardBtns button,.poolCard{
+  transition-duration:var(--ui-duration);
+  transition-timing-function:var(--ui-ease);
+}
+.card,.tactic{transition-property:transform,filter}
+@media (hover:hover){
+  .card:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.04)}
+  .tactic:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.04)}
+  .slot.fill:hover{transform:scale(1.03);filter:brightness(1.04)}
+}
+.card:active,.tactic:active,.slot.fill:active{transition-duration:var(--ui-press-duration);transform:translateY(1px) scale(.97);filter:brightness(.97)}
+.card.sel,.card.sel:hover{transform:translateY(-8px) scale(1.04)}
+.card.sel:active{transform:translateY(-5px) scale(1)}
+
+.pixelBtn,.choice,.termBtn,.effectLabel,.rewardBtns button{cursor:pointer;transition-property:transform,filter,opacity,box-shadow}
+@media (hover:hover){
+  .pixelBtn:not(:disabled):hover,.choice:not(:disabled):hover,.termBtn:not(:disabled):hover,.effectLabel:not(:disabled):hover,.rewardBtns button:not(:disabled):hover{filter:brightness(1.08)}
+}
+.pixelBtn:not(:disabled):active,.choice:not(:disabled):active,.termBtn:not(:disabled):active,.effectLabel:not(:disabled):active,.rewardBtns button:not(:disabled):active{transition-duration:var(--ui-press-duration);transform:translateY(1px) scale(.98);filter:brightness(.94)}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+button:disabled{cursor:not-allowed;opacity:.38;filter:saturate(.35) brightness(.72);box-shadow:0 0 0 var(--px) #394154 inset!important;transform:none!important}
+
+#overlay.show{animation:overlayIn var(--ui-duration) var(--ui-ease) both}
+#overlay.show .modal{animation:detailIn var(--ui-duration) var(--ui-ease) both}
+#overlay.closing{display:flex;pointer-events:none;animation:overlayOut var(--ui-duration) var(--ui-ease) both}
+#overlay.closing .modal{animation:detailOut var(--ui-duration) var(--ui-ease) both}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+@keyframes overlayOut{from{opacity:1}to{opacity:0}}
+@keyframes detailIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes detailOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
+
+@media (prefers-reduced-motion:reduce){
+  :root{--ui-duration:.01ms;--ui-press-duration:.01ms}
+  #overlay.show,#overlay.show .modal,#overlay.closing,#overlay.closing .modal{animation-duration:.01ms}
 }
 
 </style>
@@ -912,7 +950,9 @@ function campPick(id,type){ if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+Ma
 function showShop(node){ showModal(`<h2>상점</h2><p>골드 ${run.gold}</p><div class="choiceList"><button class="choice" onclick="shopPick('${node.id}','remove',45)"><b>카드 제거 · 45G</b><span>순수 카드 1장 제거</span></button><button class="choice" onclick="shopPick('${node.id}','scout',35)"><b>정찰 구매 · 35G</b><span>전술 카드 정찰 추가</span></button><button class="choice" onclick="shopPick('${node.id}','heal',28)"><b>응급 수리 · 28G</b><span>체력 +14</span></button><button class="choice" onclick="completeNode(run.map.find(n=>n.id==='${node.id}'))"><b>나가기</b></button></div>`) }
 function shopPick(id,type,cost){ if(run.gold<cost){ sfx('lose'); return } run.gold-=cost; if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(c=>!c.named); if(i>=0)run.deck.splice(i,1) } if(type==='scout'){ let t=TACTICS.find(t=>t.id==='scout'); run.tactics.push({...t,uid:Math.random().toString(36).slice(2)}) } if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+14); showShop(run.map.find(n=>n.id===id)) }
 function finishRun(){ showModal(`<h2 class="cyan">액트 1 클리어</h2><p>이번 리워크 프로토타입의 끝이다.<br>덱 ${run.deck.length}장 / 네임드 ${run.deck.filter(c=>c.named).length}장 / 전술 ${run.tactics.length}장</p><div class="choiceList"><button class="choice" onclick="location.reload()"><b>새 런</b></button></div>`) }
-function showModal(html){ modal.innerHTML=html; overlay.classList.add('show') } function closeOverlay(){ overlay.classList.remove('show') }
+let overlayCloseTimer=null;
+function showModal(html){ clearTimeout(overlayCloseTimer);modal.innerHTML=html;overlay.classList.remove('closing');overlay.classList.add('show') }
+function closeOverlay(){ if(!overlay.classList.contains('show'))return;overlay.classList.add('closing');overlayCloseTimer=setTimeout(()=>{overlay.classList.remove('show','closing')},140) }
 function showTerm(t){ showModal(`<h2>${t}</h2><p>${TERMS[t]}</p><div class="choiceList"><button class="choice" onclick="closeOverlay()"><b>닫기</b></button></div>`) }
 function showTerms(){ showModal(`<h2>용어 사전</h2><div class="choiceList">${Object.entries(TERMS).map(([k,v])=>`<button class="choice"><b>${k}</b><span>${v}</span></button>`).join('')}<button class="choice" onclick="closeOverlay()"><b>닫기</b></button></div>`) }
 function floatText(host,txt,cls=''){ const d=document.createElement('div'); d.className='float '+cls; d.textContent=txt; d.style.left='50%'; d.style.top='56%'; host.appendChild(d); setTimeout(()=>d.remove(),750) }
