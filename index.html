@@ -106,6 +106,7 @@ button{font:inherit;color:inherit}
 .card{min-width:100px;width:100px;height:148px;padding:0;border:none;background:transparent;box-shadow:none;color:var(--ink);position:relative;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s ease;overflow:visible;flex:0 0 auto;transform-origin:center bottom;will-change:transform}.card:hover{transform:translateY(-4px);filter:brightness(1.05)} .card:after{display:none}
 .card.named{filter:drop-shadow(0 5px 0 #0006)}#handRow.has-selection .card:not(.sel){transform:translateY(3px)}.card.sel,.card.sel:hover{transform:translateY(-8px) scale(1.04);filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 10px #63d3d599);z-index:2}
 .cardTop,.cardName,.cardDesc,.cardTag{display:none}.cardSuit{font-size:17px}.cardArt{height:100%;margin:0;border:none;background:transparent;display:grid;place-items:center;overflow:visible;position:relative}.cardArt:after{display:none}.cardArt svg,.cardArt img{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 #0006)}
+.textCardFace{position:relative;display:block;width:100%;height:100%;container-type:inline-size;overflow:hidden;border-radius:6px}.textCardFace>img,.textCardFace>svg{position:absolute;inset:0}.textCardName{position:absolute;z-index:1;inset:25% 8% 17%;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 4%;background:#faf7f0;color:#25292f;font-family:Arial,sans-serif;font-size:clamp(8px,12cqw,17px);font-weight:700;line-height:1.2;text-align:center;overflow-wrap:anywhere}.textCardName>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .tactic{min-width:86px;width:86px;height:132px;padding:0;border:none;background:transparent;color:var(--ink);cursor:pointer;position:relative;transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s ease;animation:handIn .24s cubic-bezier(.2,.8,.2,1);overflow:visible;flex:0 0 auto}.tactic:hover{transform:translateY(-3px);filter:brightness(1.05)} .tactic.off{opacity:.45}.tactic.sel{transform:translateY(-4px)}
 .tacticArt{height:100%}.tacticArt img,.tacticArt svg{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 #0006)}
 /* modal */
@@ -342,6 +343,8 @@ button:disabled{cursor:not-allowed;opacity:.38;filter:saturate(.35) brightness(.
 <script src="battle-feedback.js"></script>
 <script>
 const SUITS=[{k:'S',sym:'♠',red:false},{k:'H',sym:'♥',red:true},{k:'D',sym:'♦',red:true},{k:'C',sym:'♣',red:false}];
+// Temporary visual-only switch. Set to false to restore the existing card artwork.
+const TEXT_CARD_MODE=true;
 const suitObj=k=>SUITS.find(s=>s.k===k); const rankLabel=r=>({11:'J',12:'Q',13:'K',14:'A'}[r]||String(r)); const parseRank=x=>x==='A'?14:x==='K'?13:x==='Q'?12:x==='J'?11:Number(x);
 const shuffle=a=>{let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}; const pick=a=>a[Math.floor(Math.random()*a.length)];
 let soundOn=true,audioCtx=null; function ensureAudio(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)()} document.addEventListener('pointerdown',()=>{ensureAudio();audioCtx&&audioCtx.state==='suspended'&&audioCtx.resume()},{once:true}); function blip(f=420,d=.05,t='square',v=.03,s=0){if(!soundOn)return;ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t;o.frequency.setValueAtTime(f,audioCtx.currentTime); if(s)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+s),audioCtx.currentTime+d); g.gain.setValueAtTime(v,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d); o.connect(g).connect(audioCtx.destination); o.start();o.stop(audioCtx.currentTime+d)}
@@ -765,7 +768,13 @@ function pureCardSvg(c){
   <g transform="translate(100 148) rotate(180)"><text x="13" y="22" font-size="16" font-weight="800" fill="${col}" font-family="Arial">${rank}</text><text x="13" y="38" font-size="15" fill="${col}" font-family="Arial">${sym}</text></g>
  </svg>`;
 }
-function artHtml(c){if(c.named&&c.named.image)return `<img src="${c.named.image}" alt="${c.named.name}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:6px">`;return c.named?namedIconSvg(c):pureCardSvg(c)}
+function existingCardArtHtml(c){if(c.named&&c.named.image)return `<img src="${c.named.image}" alt="${c.named.name}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:6px">`;return c.named?namedIconSvg(c):pureCardSvg(c)}
+function artHtml(c){
+ const existingArt=existingCardArtHtml(c);
+ if(!TEXT_CARD_MODE)return existingArt;
+ const name=c.named?.name||'순수 카드';
+ return `<span class="textCardFace">${existingArt}<span class="textCardName"><span>${name}</span></span></span>`;
+}
 function stageHtml(c,label){ return `<div class="stageInner">${artHtml(c)}<div class="stageLabel">${label}</div></div>` }
 const TACTIC_ICON={paint:'palette',plus2:'plus',draw:'cards',scout:'eye',double:'double',barrier:'shield',burn:'flame',reverse:'reverse',pureboost:'pure',clean:'clean',recolor:'palette',fakeid:'id'};
 function tacticMiniIcon(kind){
