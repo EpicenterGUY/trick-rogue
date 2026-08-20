@@ -121,17 +121,18 @@
     const nextContext=createEffectContext(card,{...context,trigger,effectChain:chain});
     return withEffectChain(chain,()=>executeEffectList(effects.filter(effect=>effect.trigger===trigger),nextContext,chain));
   }
-  function createReservation({id,type,timing,duration='set',consume='when_due',action,value,eligibleSet,eligibleTrick,condition,label,metadata={}}={}){
+  function createReservation({id,type,timing,duration,consume='when_due',action,value,eligibleSet,eligibleTrick,condition,label,metadata={}}={}){
     const resolvedTiming=timing||(type==='nextWinDamage'?'on_trick_result':null);
+    const resolvedDuration=duration||(type==='nextWinDamage'?'battle':'set');
     if(!resolvedTiming||!RESERVATION_EVENTS.includes(resolvedTiming))throw new TypeError(`Unknown reservation timing: ${resolvedTiming}`);
-    if(!DURATIONS.includes(duration))throw new TypeError(`Unknown reservation duration: ${duration}`);
+    if(!DURATIONS.includes(resolvedDuration))throw new TypeError(`Unknown reservation duration: ${resolvedDuration}`);
     if(consume!=='when_due'&&consume!=='when_triggered')throw new TypeError(`Unknown reservation consume policy: ${consume}`);
-    return{...metadata,id:id||null,type:type||null,timing:resolvedTiming,duration,consume,action:action||(type==='nextWinDamage'?'damage_enemy':null),value,eligibleSet,eligibleTrick,condition:condition||(type==='nextWinDamage'?'player_win':null),label:label||null};
+    return{...metadata,id:id||null,type:type||null,timing:resolvedTiming,duration:resolvedDuration,consume,action:action||(type==='nextWinDamage'?'damage_enemy':null),value,eligibleSet,eligibleTrick,condition:condition||(type==='nextWinDamage'?'player_win':null),label:label||null};
   }
   function normalizeReservation(reservation){
     if(!reservation||typeof reservation!=='object')throw new TypeError('Reservation must be an object');
     if(reservation.timing)return createReservation(reservation);
-    if(reservation.type==='nextWinDamage')return createReservation({...reservation,timing:'on_trick_result',duration:reservation.duration||'set',consume:'when_due',action:'damage_enemy',condition:'player_win'});
+    if(reservation.type==='nextWinDamage')return createReservation({...reservation,timing:'on_trick_result',duration:reservation.duration||'battle',consume:'when_due',action:'damage_enemy',condition:'player_win'});
     throw new TypeError(`Reservation is missing timing: ${reservation.type||'unknown'}`);
   }
   function reservationMatches(reservation,event,context={}){
@@ -164,7 +165,7 @@
   }
   function resolveNextWinReservations(reservations,trick,won,perform){
     const turn=typeof trick==='object'?trick:{trick};
-    return resolveReservations(reservations,'on_trick_result',{set:turn.set,trick:turn.trick,result:won?'player':'other',won},perform);
+    return resolveReservations(reservations,'on_trick_result',{set:turn.set,trick:turn.trick,result:won?'player':'other',won},(action,value)=>perform(action,value));
   }
   function newHistory(){return{effectsUsed:false,effectUseCount:0,tacticsUsed:false,tacticUseCount:0,chipsSpent:0,cardsDrawn:0,damageDealt:0,healingDone:0}}
   function loadLegacyTacticRuntime(){
