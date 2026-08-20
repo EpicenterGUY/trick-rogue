@@ -19,12 +19,27 @@
     recolor:Object.freeze({effects:Object.freeze([{action:'set_last_showdown_suit_to_trump'}]),feedback:{text:'쇼다운 무늬 변경',tone:'violet'}}),
     fakeid:Object.freeze({effects:Object.freeze([{action:'increase_last_showdown_rank',value:1}]),feedback:{text:'쇼다운 숫자 +1',tone:'gold'}})
   });
+  const TACTIC_CARD_MIGRATION_BLOCKERS=Object.freeze({
+    missingCardIdentity:'기존 전술에는 일반 카드로 편입할 인쇄 숫자와 무늬가 아직 정해져 있지 않다.',
+    startingPackages:'시작 패키지가 전술 ID 목록을 직접 참조하므로 대체 일반 카드 구성이 필요하다.',
+    namedDependencies:'황금손의 전술 드로우와 재귀 함수의 전술 드로우 복사 범위가 레거시 전술 덱에 의존한다.',
+    targetedBurn:'번은 별도 전술 사용 중 선택한 손패 카드를 대상으로 삼아 일반 카드 사용 흐름에 그대로 옮길 수 없다.',
+    unresolvedDesign:'더블다운은 새 우세 규칙, 기본에 충실/무첨가는 순수 카드 분류 제거에 맞춘 재설계가 필요하다.'
+  });
   const REQUIREMENTS=Object.freeze({
     selected_card:context=>!!context.selectedCard
   });
   const REQUIREMENT_MESSAGES=Object.freeze({selected_card:'먼저 카드 선택'});
 
   function definition(id){return TACTIC_EFFECTS[id]||null}
+  function migrationStatus(){
+    return Object.freeze({
+      ready:false,
+      tacticIds:Object.freeze(Object.keys(TACTIC_EFFECTS)),
+      blockers:TACTIC_CARD_MIGRATION_BLOCKERS,
+      dependentCardIds:Object.freeze(['pack01.golden_hand','pack01.recursive_function'])
+    });
+  }
   function validateDefinitions(){
     const errors=[];
     for(const [id,entry] of Object.entries(TACTIC_EFFECTS)){
@@ -91,6 +106,8 @@
       battle.tacticUsing=true;
       try{
         battle.chip-=tactic.cost;
+        battle.history.effectsUsed=true;
+        battle.history.effectUseCount++;
         battle.history.tacticsUsed=true;
         battle.history.tacticUseCount++;
         battle.history.chipsSpent+=tactic.cost;
@@ -117,5 +134,5 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else setTimeout(install,0);
     return true;
   }
-  return{TACTIC_EFFECTS,REQUIREMENTS,definition,validateDefinitions,canRun,runTactic,installBrowserAdapter,installWhenReady};
+  return{TACTIC_EFFECTS,TACTIC_CARD_MIGRATION_BLOCKERS,REQUIREMENTS,definition,migrationStatus,validateDefinitions,canRun,runTactic,installBrowserAdapter,installWhenReady};
 });
