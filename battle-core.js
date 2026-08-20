@@ -1,7 +1,8 @@
 (function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.BattleCore=api})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const DEFAULT_MAX_HAND_SIZE=3;
   const TRICKS_PER_SET=5;
-  const SHOWDOWN_ADVANTAGE_POWER=6;
+  const SUITS=Object.freeze(['S','H','D','C']);
+  const SHOWDOWN_ADVANTAGE_POWER=3;
   const EFFECT_DURATIONS=Object.freeze(['trick','set','battle','run']);
   const ENCOUNTER_PROGRESSION=Object.freeze({
     battle:{setCount:null,bossPhases:[]},
@@ -52,17 +53,34 @@
     if(state.trickIndex===TRICKS_PER_SET){state.phase='showdown';return 'showdown';}
     state.trickIndex++;return 'trick';
   }
-  function resolveShowdownAdvantage(context){
-    const results=context?.setHistory?.trickResults||context?.trickResults;
-    if(!Array.isArray(results))throw new TypeError('Showdown advantage requires the current set trick history');
-    const playerWins=results.filter(result=>result==='player').length;
-    const enemyWins=results.filter(result=>result==='enemy').length;
-    const draws=results.filter(result=>result==='draw').length;
-    const result=playerWins>enemyWins?'player':enemyWins>playerWins?'enemy':'neutral';
-    return{result,playerWins,enemyWins,draws,powerBonus:result==='neutral'?0:SHOWDOWN_ADVANTAGE_POWER};
+  function printedValue(card,key){
+    const printed=card?.[`printed${key}`];
+    return printed===undefined?card?.[key.toLowerCase()]:printed;
+  }
+  function showdownValue(card,key){
+    const override=card?.[`showdown${key}`];
+    return override===undefined?printedValue(card,key):override;
+  }
+  function effectiveCard(card,modifiers={}){
+    return{...card,printedRank:printedValue(card,'Rank'),printedSuit:printedValue(card,'Suit'),
+      effectiveRank:modifiers.rank??modifiers.effectiveRank??printedValue(card,'Rank'),
+      effectiveSuit:modifiers.suit??modifiers.effectiveSuit??printedValue(card,'Suit')};
+  }
+  function compareTrick(playerCard,enemyCard,trump){
+    const playerTrump=playerCard.effectiveSuit===trump,enemyTrump=enemyCard.effectiveSuit===trump;
+    if(playerTrump!==enemyTrump)return playerTrump?1:-1;
+    return Math.sign(playerCard.effectiveRank-enemyCard.effectiveRank);
+  }
+  function resolveShowdownAdvantage({playerCards,enemyCards}){
+    if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
+    const count=cards=>Object.fromEntries(SUITS.map(suit=>[suit,cards.filter(entry=>showdownValue(entry.card||entry,'Suit')===suit).length]));
+    const playerSuitCounts=count(playerCards),enemySuitCounts=count(enemyCards);
+    const playerAdvantages=[],enemyAdvantages=[];
+    for(const suit of SUITS){const difference=playerSuitCounts[suit]-enemySuitCounts[suit];if(difference>=2)playerAdvantages.push(suit);else if(difference<=-2)enemyAdvantages.push(suit)}
+    return{playerAdvantages,enemyAdvantages,playerAdvantageCount:playerAdvantages.length,enemyAdvantageCount:enemyAdvantages.length,playerSuitCounts,enemySuitCounts};
   }
   function applyShowdownAdvantage(playerPower,enemyPower,advantage){
-    return{playerPower:playerPower+(advantage.result==='player'?advantage.powerBonus:0),enemyPower:enemyPower+(advantage.result==='enemy'?advantage.powerBonus:0)};
+    return{playerPower:playerPower+advantage.playerAdvantageCount*SHOWDOWN_ADVANTAGE_POWER,enemyPower:enemyPower+advantage.enemyAdvantageCount*SHOWDOWN_ADVANTAGE_POWER};
   }
   function finishShowdown(state){
     if(state.phase!=='showdown')throw new Error('No showdown to finish');
@@ -71,5 +89,5 @@
     return state;
   }
   function endBattle(state){expireEffects(state,'battle');state.phase='ended';}
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,resolveShowdownAdvantage,applyShowdownAdvantage,finishShowdown,endBattle};
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,compareTrick,resolveShowdownAdvantage,applyShowdownAdvantage,finishShowdown,endBattle};
 });
