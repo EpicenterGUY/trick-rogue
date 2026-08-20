@@ -1,4 +1,4 @@
-(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined')api.loadLegacyTacticRuntime()})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadLegacyTacticRuntime();api.loadTextCardRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const TRIGGERS=['on_play','on_set_start','before_compare','after_compare','on_trick_win','on_trick_loss','on_trick_draw','after_card_slotted','on_trick_end','before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
   const DURATIONS=['trick','set','battle','run'];
   const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage','set_next_trick_suit_to_trump','increase_next_trick_rank','draw_cards','increase_forecast','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank','discard_selected_card'];
@@ -94,5 +94,13 @@
     script.dataset.trickTacticRuntime='true';
     document.head.appendChild(script);
   }
-  return{TRIGGERS,DURATIONS,ACTIONS,COPYABLE_NUMERIC_ACTIONS,conditions,handlers,effectOwnerId,effectOwner,cardEffectList,attachEffects,createEffectContext,validateEffectList,runEffectList,run,resolveNextWinReservations,newHistory,loadLegacyTacticRuntime};
+  function loadTextCardRuntime(){
+    if(typeof document==='undefined'||document.querySelector('script[data-trick-text-card-runtime]'))return;
+    const script=document.createElement('script');
+    script.src='card-text-mode.js';
+    script.async=false;
+    script.dataset.trickTextCardRuntime='true';
+    document.head.appendChild(script);
+  }
+  return{TRIGGERS,DURATIONS,ACTIONS,COPYABLE_NUMERIC_ACTIONS,conditions,handlers,effectOwnerId,effectOwner,cardEffectList,attachEffects,createEffectContext,validateEffectList,runEffectList,run,resolveNextWinReservations,newHistory,loadLegacyTacticRuntime,loadTextCardRuntime};
 });
