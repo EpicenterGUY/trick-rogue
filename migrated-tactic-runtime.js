@@ -2,7 +2,10 @@
   const api=factory(root);
   if(typeof module!=='undefined')module.exports=api;
   root.MigratedTacticRuntime=api;
-  if(typeof document!=='undefined')api.installWhenReady();
+  if(typeof document!=='undefined'){
+    api.installWhenReady();
+    api.loadRetirementRuntime();
+  }
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
   let installed=false;
   let originalBaseDeck=null;
@@ -149,5 +152,14 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();
     return true;
   }
-  return{migratedDefinition,isMigratedCard,setupDeckCard,cleanSetupAliases,installBaseDeckAdapter,installBeginRunAdapter,installEffectContextAdapter,installUiAdapters,install,installWhenReady};
+  function loadRetirementRuntime(){
+    if(typeof document==='undefined'||document.querySelector('script[data-legacy-tactic-retirement]'))return false;
+    const script=document.createElement('script');
+    script.src='legacy-tactic-retirement.js';
+    script.async=false;
+    script.dataset.legacyTacticRetirement='true';
+    document.head.appendChild(script);
+    return true;
+  }
+  return{migratedDefinition,isMigratedCard,setupDeckCard,cleanSetupAliases,installBaseDeckAdapter,installBeginRunAdapter,installEffectContextAdapter,installUiAdapters,install,installWhenReady,loadRetirementRuntime};
 });
