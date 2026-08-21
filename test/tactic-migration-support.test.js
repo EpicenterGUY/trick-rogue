@@ -124,16 +124,19 @@ test('일반 카드 effect context는 선택된 2차 손패 대상을 효과 실
   assert.equal(context.secondaryTargetUid,'target');
 });
 
-test('남은 6종은 아직 비활성 상태지만 3-2A에서 요구 엔진 기능은 모두 제공된다',()=>{
-  assert.equal(Migration.RUNTIME_ACTIVE,false);
+test('3-2B에서 3-2A 지원을 사용하는 6종까지 모두 일반 카드로 활성화된다',()=>{
+  assert.equal(Migration.RUNTIME_ACTIVE,true);
   assert.equal(Migration.SUPPORT_STAGE,'3-2A');
-  assert.equal(Migration.summary().engineSupported,6);
-  for(const id of Migration.BLOCKED_IDS){
+  assert.equal(Migration.ACTIVATION_STAGE,'3-2B');
+  assert.equal(Migration.summary().engineSupported,12);
+  assert.equal(Migration.ACTIVE_IDS.length,12);
+  assert.deepEqual(Migration.BLOCKED_IDS,[]);
+  for(const id of Migration.ACTIVE_IDS){
     assert.equal(Migration.engineSupportReady(Migration.BY_ID[id]),true,id);
     assert.deepEqual(Migration.unsupportedRequirements(Migration.BY_ID[id]),[],id);
   }
   const activeLegacyIds=new Set(Cards.createBaseCardSlots().flatMap(card=>card.definition?.legacyTacticId?[card.definition.legacyTacticId]:[]));
-  for(const id of Migration.BLOCKED_IDS)assert.equal(activeLegacyIds.has(id),false,id);
+  for(const id of Migration.ACTIVE_IDS)assert.equal(activeLegacyIds.has(id),true,id);
 });
 
 test('effects.js는 브라우저에서 3-2A 지원 런타임을 자동 로드한다',()=>{
