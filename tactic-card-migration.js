@@ -6,7 +6,12 @@
   const SUITS=Object.freeze(['S','H','D','C']);
   const RANKS=Object.freeze([2,3,4,5,6,7,8,9,10,11,12,13,14]);
   const MIGRATION_STAGE='3-0';
+  const SUPPORT_STAGE='3-2A';
   const RUNTIME_ACTIVE=false;
+  const SUPPORTED_REQUIREMENTS=Object.freeze([
+    'temporary_hand_capacity','post_refill_draw','secondary_hand_target','next_enemy_preview_ui',
+    'advantage_count_condition','unmodified_trick_value_condition','printed_equals_trick_condition'
+  ]);
 
   const PLAN=Object.freeze([
     Object.freeze({
@@ -26,21 +31,21 @@
       cardText:'이 카드를 낸 뒤 다음 트릭의 손패가 1장 많아지도록 추가 드로우한다.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['temporary_hand_capacity','post_refill_draw']),
-      note:'현재 drawP는 최대 손패 3을 강제하므로 on_play 카드 1장 드로우만 옮기면 실질적인 이득이 사라진다.'
+      note:'3-2A에서 다음 트릭 한정 손패 한도와 보충 후 추가 드로우 기반을 마련했다. 실제 카드 활성화는 3-2B에서 한다.'
     }),
     Object.freeze({
       legacyId:'scout',name:'정찰',printedSuit:'D',printedRank:9,status:'redesign',
       cardText:'다음 트릭의 적 카드를 현재 트릭 종료 전에 미리 공개한다.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['next_enemy_preview_ui']),
-      note:'현재 트릭의 적 카드는 기본적으로 완전 공개되므로 기존 예측 +1 효과를 그대로 옮기면 가치가 없다.'
+      note:'현재 트릭의 적 카드는 기본 완전 공개이므로 다음 트릭 카드 선공개로 재설계한다. 3-2A에서 미리보기 공개 훅을 마련했다.'
     }),
     Object.freeze({
       legacyId:'double',name:'더블다운',printedSuit:'H',printedRank:2,status:'redesign',
       cardText:'쇼다운에서 내가 우세 무늬를 2개 이상 확보했다면 쇼다운 위력 +6.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['advantage_count_condition']),
-      note:'새 우세 규칙의 복수 우세 보상 카드로 재설계하는 후보. 수치는 3-1 전에 밸런스 확인 필요.'
+      note:'3-2A에서 우세 개수 조건을 지원한다. +6 수치는 3-2B 밸런스 확정 전까지 활성화하지 않는다.'
     }),
     Object.freeze({
       legacyId:'barrier',name:'임시 장벽',printedSuit:'S',printedRank:6,status:'direct',
@@ -53,7 +58,7 @@
       cardText:'사용 시 손패에서 이 카드 외 1장을 선택해 버리고 칩 +1, 카드 1장을 뽑는다.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['secondary_hand_target']),
-      note:'일반 카드 사용 흐름에는 별도 손패 대상 선택 단계가 없으므로 타깃 UI/컨텍스트가 먼저 필요하다.'
+      note:'3-2A에서 일반 카드 사용 전 2차 손패 대상 선택과 대상 전달 기반을 마련했다. 실제 카드 활성화는 3-2B에서 한다.'
     }),
     Object.freeze({
       legacyId:'reverse',name:'리버스',printedSuit:'H',printedRank:3,status:'direct',
@@ -66,14 +71,14 @@
       cardText:'이 카드에 다른 트릭 보정이 없다면 트릭 숫자 +2.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['unmodified_trick_value_condition']),
-      note:'폐지 예정인 순수 카드 타입 대신 인쇄값과 트릭값의 동일 여부를 조건으로 삼는다.'
+      note:'3-2A에서 순수 카드 타입 대신 인쇄값과 트릭값 동일 여부를 검사하는 조건을 지원한다.'
     }),
     Object.freeze({
       legacyId:'clean',name:'무첨가',printedSuit:'S',printedRank:4,status:'redesign',
       cardText:'이 카드의 트릭값이 인쇄값과 같은 상태로 승리하면 칩 +2.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['printed_equals_trick_condition']),
-      note:'순수 카드 타입 의존을 제거하고 값 변경 여부 자체를 조건으로 바꾸는 후보.'
+      note:'3-2A에서 순수 카드 타입 의존 없이 값 변경 여부를 판정하는 조건을 지원한다.'
     }),
     Object.freeze({
       legacyId:'recolor',name:'색칠공부',printedSuit:'C',printedRank:9,status:'direct',
@@ -109,18 +114,22 @@
     }
     return errors;
   }
+  function unsupportedRequirements(entry){return(entry?.requires||[]).filter(requirement=>!SUPPORTED_REQUIREMENTS.includes(requirement))}
+  function engineSupportReady(entry){return!!entry&&entry.status!=='direct'&&unsupportedRequirements(entry).length===0}
 
   function summary(){
     return Object.freeze({
       stage:MIGRATION_STAGE,
+      supportStage:SUPPORT_STAGE,
       runtimeActive:RUNTIME_ACTIVE,
       total:PLAN.length,
       direct:DIRECT_IDS.length,
       blocked:BLOCKED_IDS.length,
+      engineSupported:BLOCKED_IDS.filter(id=>engineSupportReady(BY_ID[id])).length,
       directIds:DIRECT_IDS,
       blockedIds:BLOCKED_IDS
     });
   }
 
-  return{SUITS,RANKS,MIGRATION_STAGE,RUNTIME_ACTIVE,PLAN,BY_ID,DIRECT_IDS,BLOCKED_IDS,validatePlan,summary};
+  return{SUITS,RANKS,MIGRATION_STAGE,SUPPORT_STAGE,RUNTIME_ACTIVE,SUPPORTED_REQUIREMENTS,PLAN,BY_ID,DIRECT_IDS,BLOCKED_IDS,validatePlan,unsupportedRequirements,engineSupportReady,summary};
 });
