@@ -9,6 +9,7 @@
   const SHOWDOWN_TRIGGERS=Object.freeze(['before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result']);
   const SET_TRIGGERS=Object.freeze(['on_set_start','on_set_end',...SHOWDOWN_TRIGGERS]);
   const RESULT_TRIGGERS=Object.freeze(['on_trick_win','on_trick_loss','on_trick_draw']);
+  const DAMAGE_TRIGGERS=Object.freeze(['before_damage','after_damage']);
   const LIFECYCLE_ORDER=Object.freeze([
     'on_set_start','on_trick_start','on_play','before_compare','after_compare',
     'on_trick_win/on_trick_loss/on_trick_draw','after_card_slotted','on_trick_end',
@@ -46,6 +47,7 @@
     const setIndex=extra.setIndex??extra.set??state?.setIndex??0;
     const trick=extra.trick??state?.trick??0;
     if(extra.eventToken)return String(extra.eventToken);
+    if(DAMAGE_TRIGGERS.includes(trigger)&&extra.effectChain?.id)return`damage:${extra.effectChain.id}:${trigger}`;
     if(SET_TRIGGERS.includes(trigger))return`set:${setIndex}:${trigger}`;
     return`set:${setIndex}:trick:${trick}:${trigger}`;
   }
@@ -142,7 +144,7 @@
       if(typeof primaryRunner==='function'){primaryRunner(trigger,primaryCard,{...extra,effectChain:chain});primaryExecuted=1}
       else{context.card=primaryCard;context.perform=perform||runtimePerform(state,runState,context,fallbackPerform);primaryExecuted=CardEffects.runOwner(trigger,primaryCard,context)}
     }
-    const globalExecuted=dispatchNonCardOwnersOnce(trigger,{state,runState,extra:{...extra,effectChain:chain},perform,fallbackPerform});
+    const globalExecuted=DAMAGE_TRIGGERS.includes(trigger)?0:dispatchNonCardOwnersOnce(trigger,{state,runState,extra:{...extra,effectChain:chain},perform,fallbackPerform});
     return{token:eventScopeToken(trigger,state,extra),chain,primaryExecuted,globalExecuted};
   }
   function dispatchTrickStart({state,runState,primaryRunner,perform,fallbackPerform}={}){
@@ -185,6 +187,7 @@
     if(typeof root.runCardEffects!=='function')return false;if(root.runCardEffects.__battleEventAdapter)return true;
     originalRunCardEffects=root.runCardEffects;
     const wrapped=function(trigger,card,extra={}){
+      if(DAMAGE_TRIGGERS.includes(trigger))return originalRunCardEffects.call(this,trigger,card,extra);
       const state=runtimeBattle(),runState=runtimeRun();
       if(!state)return originalRunCardEffects.call(this,trigger,card,extra);
       if(trigger==='on_set_start')beginSetLifecycle(state);
@@ -231,5 +234,5 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();
     return true;
   }
-  return{SHOWDOWN_TRIGGERS,SET_TRIGGERS,RESULT_TRIGGERS,LIFECYCLE_ORDER,eventScopeToken,eventChain,createBattleEventContext,nonCardOwners,runtimePerform,dispatchNonCardOwnersOnce,dispatchBattleEvent,dispatchTrickStart,beginSetLifecycle,beginTrickLifecycle,endLastTrickLifecycle,expireBattleLifecycle,resetBattleEventState,wrapRunCardEffects,wrapNextEnemy,wrapShowdown,wrapBattleEnd,installBrowserAdapter,installWhenReady};
+  return{SHOWDOWN_TRIGGERS,SET_TRIGGERS,RESULT_TRIGGERS,DAMAGE_TRIGGERS,LIFECYCLE_ORDER,eventScopeToken,eventChain,createBattleEventContext,nonCardOwners,runtimePerform,dispatchNonCardOwnersOnce,dispatchBattleEvent,dispatchTrickStart,beginSetLifecycle,beginTrickLifecycle,endLastTrickLifecycle,expireBattleLifecycle,resetBattleEventState,wrapRunCardEffects,wrapNextEnemy,wrapShowdown,wrapBattleEnd,installBrowserAdapter,installWhenReady};
 });
