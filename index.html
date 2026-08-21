@@ -433,7 +433,7 @@ function newUid(){return Math.random().toString(36).slice(2)}
 function makeCard(s,r,cardId=null){ const named=cardId?cardDefinition(cardId):null; return {uid:newUid(),suit:s,rank:r,named,cardId:named?named.id:null}; }
 function makeNamed(ref){ const named=cardDefinition(ref); return makeCard(named.suit,named.rank,named.id); }
 function makeGeneral(ref){return createDefinitionCard(ref,{uid:newUid()})}
-function cloneDeckCard(card){return {...card,uid:newUid(),effects:Array.isArray(card.effects)?card.effects.map(effect=>({...effect})):[]}}
+function cloneDeckCard(card){const next={...card,uid:newUid()};if(Array.isArray(card.effects))next.effects=card.effects.map(effect=>({...effect}));else delete next.effects;return next}
 function isPlainCard(card){return !!card&&!card.named&&!card.definition&&!card.cardId&&(!Array.isArray(card.effects)||card.effects.length===0)}
 function applyStartingPackage(deck,pack){let replaced=0;for(const cardId of pack.cardIds||[]){const i=deck.findIndex(isPlainCard);if(i<0)break;deck.splice(i,1,makeGeneral(cardId));replaced++}return replaced}
 
