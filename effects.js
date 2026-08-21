@@ -1,8 +1,8 @@
-(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadLegacyTacticRuntime();api.loadTextCardRuntime();api.loadCombatEffectsRuntime();api.loadBattleEventsRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadLegacyTacticRuntime();api.loadTextCardRuntime();api.loadCombatEffectsRuntime();api.loadBattleEventsRuntime();api.loadTacticMigrationSupportRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const TRIGGERS=['on_play','on_set_start','on_trick_start','before_compare','after_compare','on_trick_win','on_trick_loss','on_trick_draw','after_card_slotted','on_trick_end','before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
   const DURATIONS=['trick','set','battle','run'];
   const EFFECT_OWNER_TYPES=Object.freeze(['card','status','reservation','field','boss_rule','relic','passive']);
-  const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage','set_next_trick_suit_to_trump','increase_next_trick_rank','draw_cards','increase_forecast','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank','discard_selected_card','apply_status','remove_status','add_reservation'];
+  const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage','set_next_trick_suit_to_trump','increase_next_trick_rank','draw_cards','increase_forecast','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank','discard_selected_card','apply_status','remove_status','add_reservation','grant_next_trick_hand_capacity','discard_secondary_target','reveal_next_enemy_card'];
   const COPYABLE_NUMERIC_ACTIONS=Object.freeze(['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic']);
   const RESERVATION_EVENTS=Object.freeze(['on_trick_start','on_next_card_play','on_trick_result','on_next_trick_win','on_next_trick_loss','on_trick_end','before_showdown','after_showdown_score']);
   const MAX_EFFECT_EXECUTIONS=128;
@@ -11,13 +11,33 @@
   let chainCounter=0;
   const objectIds=new WeakMap();
   let objectCounter=0;
+  function printedValue(context,kind){
+    const key=`printed${kind}`,fallback=kind==='Rank'?'rank':'suit';
+    return context?.[key]??context?.card?.[key]??context?.card?.[fallback];
+  }
+  function trickValue(context,kind){
+    const key=`trick${kind}`,effective=`effective${kind}`,fallback=kind==='Rank'?'rank':'suit';
+    return context?.[key]??context?.[effective]??context?.card?.[key]??context?.card?.[effective]??context?.card?.[fallback];
+  }
+  function printedEqualsTrick(context){return printedValue(context,'Rank')===trickValue(context,'Rank')&&printedValue(context,'Suit')===trickValue(context,'Suit')}
+  function advantageCount(context,effect={}){
+    const side=effect.conditionSide==='enemy'?'enemy':'player',direct=context?.[`${side}AdvantageCount`];
+    if(Number.isFinite(direct))return direct;
+    const fromAdvantage=context?.advantage?.[`${side}AdvantageCount`];
+    if(Number.isFinite(fromAdvantage))return fromAdvantage;
+    const list=context?.[`${side}Advantages`]??context?.advantage?.[`${side}Advantages`];
+    return Array.isArray(list)?list.length:0;
+  }
   const conditions={
     chips_spent:c=>c.history.chipsSpent>0,
     effective_rank_at_most:(c,e)=>c.effectiveRank<=e.conditionValue,
     slot_is:(c,e)=>c.slotIndex+1===e.conditionValue,
     slot_at_least:(c,e)=>c.slotIndex+1>=e.conditionValue,
     same_suit:c=>c.card.suit===c.enemyCard.suit,
-    no_tactic_modifier:c=>!c.mods.paint&&!c.mods.plus&&!c.mods.reverse&&!c.mods.double
+    no_tactic_modifier:c=>!c.mods.paint&&!c.mods.plus&&!c.mods.reverse&&!c.mods.double,
+    advantage_count_at_least:(c,e)=>advantageCount(c,e)>=(e.conditionValue??1),
+    printed_equals_trick:c=>printedEqualsTrick(c),
+    unmodified_trick_value:c=>printedEqualsTrick(c)
   };
   const handlers={
     repeat_last_named_numeric(c){
@@ -228,5 +248,9 @@
     if(typeof document==='undefined'||document.querySelector('script[data-trick-battle-events-runtime]'))return;
     const script=document.createElement('script');script.src='battle-events.js';script.async=false;script.dataset.trickBattleEventsRuntime='true';document.head.appendChild(script);
   }
-  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadLegacyTacticRuntime,loadTextCardRuntime,loadCombatEffectsRuntime,loadBattleEventsRuntime};
+  function loadTacticMigrationSupportRuntime(){
+    if(typeof document==='undefined'||document.querySelector('script[data-trick-tactic-migration-support]'))return;
+    const script=document.createElement('script');script.src='tactic-migration-support.js';script.async=false;script.dataset.trickTacticMigrationSupport='true';document.head.appendChild(script);
+  }
+  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadLegacyTacticRuntime,loadTextCardRuntime,loadCombatEffectsRuntime,loadBattleEventsRuntime,loadTacticMigrationSupportRuntime};
 });
