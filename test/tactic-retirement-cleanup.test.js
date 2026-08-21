@@ -28,6 +28,13 @@ test('기본 덱 생성은 12개 일반 효과 카드 정의와 effects를 보�
   assert.equal(base.filter(card=>card.definition?.category==='general').length,12);
 });
 
+test('전투 덱 복제는 effects가 없는 네임드 카드에 빈 effects 배열을 덮어쓰지 않는다',()=>{
+  const clone=index.match(/function cloneDeckCard\(card\)\{([^\n]+)\}/)[1];
+  assert.match(clone,/if\(Array\.isArray\(card\.effects\)\)/);
+  assert.match(clone,/else delete next\.effects/);
+  assert.doesNotMatch(clone,/effects:Array\.isArray\(card\.effects\).*:\[\]/);
+});
+
 test('황금손과 재귀 함수는 전술 카드 의존 문구와 액션이 없다',()=>{
   const golden=Cards.CARD_DEFINITION_BY_ID['pack01.golden_hand'];
   assert.deepEqual(golden.effects.map(effect=>effect.action),['gain_chips','grant_next_trick_hand_capacity']);
