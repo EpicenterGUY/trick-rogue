@@ -122,17 +122,17 @@ test('공통 history는 일반 효과 통계를 추가하면서 레거시 전술
   assert.equal(history.tacticUseCount,0);
 });
 
-test('일반 카드 이관은 완료됐고 전술 시스템 완전 제거는 시작 패키지/의존 카드/UI 정리만 남는다',()=>{
+test('3-3A에서 시작 패키지와 네임드 의존은 일반 카드로 전환되고 물리적 소스 정리만 남는다',()=>{
   const status=TacticEffects.migrationStatus();
   assert.equal(status.ready,false);
   assert.equal(status.cardMigrationReady,true);
+  assert.equal(status.runtimeRetired,true);
+  assert.equal(status.startingPackagesMigrated,true);
+  assert.equal(status.namedDependenciesMigrated,true);
   assert.equal(status.activatedCardCount,12);
   assert.equal(status.tacticIds.length,12);
-  assert.equal(status.blockers.missingCardIdentity,undefined);
-  assert.equal(status.blockers.targetedBurn,undefined);
-  assert.equal(status.blockers.unresolvedDesign,undefined);
-  assert(status.blockers.startingPackages);
-  assert(status.blockers.namedDependencies);
-  assert(status.blockers.legacyBattleState);
-  assert.deepEqual(status.dependentCardIds,['pack01.golden_hand','pack01.recursive_function']);
+  assert.equal(status.blockers.startingPackages,undefined);
+  assert.equal(status.blockers.namedDependencies,undefined);
+  assert(status.blockers.legacySourceCleanup);
+  assert.deepEqual(status.dependentCardIds,[]);
 });
