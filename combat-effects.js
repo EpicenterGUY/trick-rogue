@@ -60,6 +60,11 @@
     const next=definition.stacking==='replace'?incoming:definition.stacking==='max'?Math.max(current,incoming):current+incoming;
     return setStatusValue(statuses,actor,id,next);
   }
+  function removeStatus(statuses,actor,id,{force=false}={}){
+    const definition=STATUS_DEFINITIONS[id];if(!definition)throw new TypeError(`Unknown status: ${id}`);
+    if(!definition.dispellable&&!force)return false;
+    setStatusValue(statuses,actor,id,0);return true;
+  }
   function statusSnapshot(statuses,actor,id){
     const definition=STATUS_DEFINITIONS[id];if(!definition)throw new TypeError(`Unknown status: ${id}`);
     return Object.freeze({...definition,value:getStatusValue(statuses,actor,id)});
@@ -69,6 +74,11 @@
     if(decay.type==='reset')return setStatusValue(statuses,actor,id,0);
     if(decay.type==='subtract')return setStatusValue(statuses,actor,id,getStatusValue(statuses,actor,id)-decay.amount);
     return getStatusValue(statuses,actor,id);
+  }
+  function clearStatusesByDuration(statuses,duration,{actors=['player','enemy']}={}){
+    if(!CardEffects.DURATIONS.includes(duration))throw new TypeError(`Unknown status duration: ${duration}`);
+    for(const actor of actors)for(const definition of Object.values(STATUS_DEFINITIONS))if(definition.duration===duration)setStatusValue(statuses,actor,definition.id,0);
+    return statuses;
   }
   function resolveStatusTrigger({statuses,actor,trigger,damage=()=>0,onStatus=()=>{}}={}){
     const events=[];
@@ -109,11 +119,38 @@
     if(!state)return[];
     return uniqueCards([...(state.hand||[]),...(state.slots||[]).map(slot=>slot?.card).filter(Boolean)]);
   }
-  function dispatchDamageHooks(trigger,cards,damage,{runEffect,chain}={}){
+  function hasEffects(source){return CardEffects.effectList(source).length>0}
+  function ownerDescriptor(source,ownerType,ownerId){return{source,ownerType,ownerId:ownerId??CardEffects.effectOwnerId(source,{ownerType})}}
+  function pushOwner(result,seen,source,ownerType,ownerId){
+    if(!source||typeof source!=='object'||!hasEffects(source))return;
+    const id=ownerId??CardEffects.effectOwnerId(source,{ownerType});
+    const key=id?`${ownerType}:${id}`:source;
+    if(seen.has(key))return;seen.add(key);result.push(ownerDescriptor(source,ownerType,id));
+  }
+  function activeEffectOwners(state,runState){
+    const result=[],seen=new Set();
+    activePlayerCards(state).forEach(card=>pushOwner(result,seen,card,'card',card.uid||card.cardId||card.named?.id));
+    pushOwner(result,seen,state?.field||state?.currentField,'field');
+    const bossRules=[];
+    if(Array.isArray(state?.bossRules))bossRules.push(...state.bossRules);else if(state?.bossRule)bossRules.push(state.bossRule);
+    if(Array.isArray(state?.enemy?.bossRules))bossRules.push(...state.enemy.bossRules);else if(state?.enemy?.bossRule)bossRules.push(state.enemy.bossRule);
+    bossRules.forEach(rule=>pushOwner(result,seen,rule,'boss_rule'));
+    (Array.isArray(runState?.relics)?runState.relics:[]).forEach(relic=>pushOwner(result,seen,relic,'relic'));
+    const passives=[];
+    if(Array.isArray(runState?.char?.passives))passives.push(...runState.char.passives);
+    if(runState?.char?.passive&&typeof runState.char.passive==='object')passives.push(runState.char.passive);
+    if(hasEffects(runState?.char))passives.push(runState.char);
+    passives.forEach(passive=>pushOwner(result,seen,passive,'passive'));
+    return result;
+  }
+  function dispatchDamageHooks(trigger,owners,damage,{runEffect,chain}={}){
     if(!['before_damage','after_damage'].includes(trigger))throw new TypeError(`Unsupported damage trigger: ${trigger}`);
-    const runner=runEffect||((card,nextTrigger,extra)=>CardEffects.run(nextTrigger,card,extra));
+    const runner=runEffect||((source,nextTrigger,extra)=>CardEffects.runOwner(nextTrigger,source,extra));
     let executed=0;
-    uniqueCards(cards||[]).forEach((card,index)=>{executed+=runner(card,trigger,{damage,effectChain:chain,effectOwnerOrdinal:index})||0});
+    for(const item of owners||[]){
+      const descriptor=item?.source?item:ownerDescriptor(item,'card');
+      executed+=runner(descriptor.source,trigger,{damage,effectChain:chain,ownerType:descriptor.ownerType,ownerId:descriptor.ownerId})||0;
+    }
     return executed;
   }
   function runtimeBattle(){
@@ -122,9 +159,48 @@
   function runtimeRun(){
     try{return typeof run!=='undefined'?run:root.run}catch(_error){return root.run||null}
   }
-  function runRuntimeCardEffect(card,trigger,extra){
-    if(typeof root.runCardEffects==='function'){root.runCardEffects(trigger,card,extra);return 1}
-    return CardEffects.run(trigger,card,{...extra,perform:()=>{}});
+  function runtimeStatuses(context={}){return context.statuses||runtimeBattle()?.statuses||null}
+  function runtimeReservations(context={}){return context.reservations||runtimeBattle()?.reservations||null}
+  function statusActionSpec(value,effect={}){
+    const data=value&&typeof value==='object'?value:{};
+    const target=effect.target??data.target??'player';
+    const statusId=effect.statusId??effect.status??data.statusId??data.status;
+    const amount=Number.isFinite(value)?value:(data.amount??effect.amount??0);
+    return{target,statusId,amount,force:effect.force===true||data.force===true};
+  }
+  function reservationActionSpec(value,effect={},context={}){
+    const data=value&&typeof value==='object'?value:(effect.reservation||{});
+    const owner=context.owner||{};
+    return{...data,ownerType:data.ownerType||owner.type||context.ownerType||null,ownerId:data.ownerId||owner.id||context.ownerId||null};
+  }
+  function registerRuntimeActions(){
+    CardEffects.registerActionHandler('apply_status',(context,value,effect)=>{
+      const statuses=runtimeStatuses(context),spec=statusActionSpec(value,effect);
+      if(!statuses)throw new TypeError('apply_status requires statuses');
+      if(!spec.statusId)throw new TypeError('apply_status requires statusId');
+      addStatus(statuses,spec.target,spec.statusId,spec.amount);
+    });
+    CardEffects.registerActionHandler('remove_status',(context,value,effect)=>{
+      const statuses=runtimeStatuses(context),spec=statusActionSpec(value,effect);
+      if(!statuses)throw new TypeError('remove_status requires statuses');
+      if(!spec.statusId)throw new TypeError('remove_status requires statusId');
+      removeStatus(statuses,spec.target,spec.statusId,{force:spec.force});
+    });
+    CardEffects.registerActionHandler('add_reservation',(context,value,effect)=>{
+      const reservations=runtimeReservations(context);if(!Array.isArray(reservations))throw new TypeError('add_reservation requires reservations');
+      reservations.push(CardEffects.createReservation(reservationActionSpec(value,effect,context)));
+    });
+  }
+  function runRuntimeEffectOwner(source,trigger,extra={}){
+    if((extra.ownerType||'card')==='card'&&typeof root.runCardEffects==='function'){root.runCardEffects(trigger,source,extra);return 1}
+    return CardEffects.runOwner(trigger,source,{...extra,statuses:runtimeStatuses(extra),reservations:runtimeReservations(extra),perform:extra.perform||(()=>{})});
+  }
+  function expireCombatDuration({state,duration}={}){
+    if(!state)return state;
+    if(Array.isArray(state.effects))state.effects=state.effects.filter(effect=>effect.duration!==duration);
+    if(Array.isArray(state.reservations))state.reservations=CardEffects.expireReservations(state.reservations,duration);
+    if(state.statuses)clearStatusesByDuration(state.statuses,duration);
+    return state;
   }
   function installDamageStateAdapter(){
     if(typeof root.applyDamageState!=='function')return false;
@@ -147,14 +223,14 @@
       const inherited=CardEffects.currentEffectChain(),chain=inherited||CardEffects.createEffectChain();
       return CardEffects.withEffectChain(chain,()=>{
         const damage=createDamageEvent({target,amount,feedback,source:metadata?.source});
-        if(target==='player')dispatchDamageHooks('before_damage',activePlayerCards(state),damage,{chain,runEffect:runRuntimeCardEffect});
+        if(target==='player')dispatchDamageHooks('before_damage',activeEffectOwners(state,runtimeRun()),damage,{chain,runEffect:runRuntimeEffectOwner});
         damage.amount=Math.max(0,Number(damage.amount)||0);
         if(damage.cancelled||damage.amount<=0){state.lastDamageEvent={...damage,blocked:0,dealt:0,hpBefore:runtimeRun()?.hp??0,hpAfter:runtimeRun()?.hp??0};return 0}
         const dealt=original.call(this,damage.amount,feedback);
         const resolved=state.lastDamageEvent||{target,requestedAmount:damage.requestedAmount,amount:damage.amount,blocked:0,dealt};
         const event={...damage,...resolved,requestedAmount:damage.requestedAmount,amount:damage.amount};
         state.lastDamageEvent=event;
-        if(target==='player')dispatchDamageHooks('after_damage',activePlayerCards(state),event,{chain,runEffect:runRuntimeCardEffect});
+        if(target==='player')dispatchDamageHooks('after_damage',activeEffectOwners(state,runtimeRun()),event,{chain,runEffect:runRuntimeEffectOwner});
         return dealt;
       });
     };
@@ -184,5 +260,6 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();
     return true;
   }
-  return{STATUS_STACKING,STATUS_DEFINITIONS,validateStatusDefinition,validateStatusRegistry,getStatusValue,setStatusValue,addStatus,statusSnapshot,applyDecay,resolveStatusTrigger,resolveDamageState,createDamageEvent,uniqueCards,activePlayerCards,dispatchDamageHooks,installDamageStateAdapter,wrapDamageFunction,installEndStatusAdapter,installBrowserAdapter,installWhenReady};
+  registerRuntimeActions();
+  return{STATUS_STACKING,STATUS_DEFINITIONS,validateStatusDefinition,validateStatusRegistry,getStatusValue,setStatusValue,addStatus,removeStatus,statusSnapshot,applyDecay,clearStatusesByDuration,resolveStatusTrigger,resolveDamageState,createDamageEvent,uniqueCards,activePlayerCards,hasEffects,ownerDescriptor,activeEffectOwners,dispatchDamageHooks,statusActionSpec,reservationActionSpec,registerRuntimeActions,runRuntimeEffectOwner,expireCombatDuration,installDamageStateAdapter,wrapDamageFunction,installEndStatusAdapter,installBrowserAdapter,installWhenReady};
 });
