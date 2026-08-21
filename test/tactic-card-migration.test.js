@@ -34,36 +34,52 @@ test('후보 인쇄 슬롯은 현재 pack01 네임드 슬롯과 겹치지 않는
   assert.deepEqual(collisions,[]);
 });
 
-test('직접 이관 6종은 현재 공통 action만 사용하고 trigger/duration을 명시한다',()=>{
+test('3-1 직접 이관 6종 분류는 유지한다',()=>{
   assert.deepEqual([...Migration.DIRECT_IDS].sort(),['barrier','fakeid','paint','plus2','recolor','reverse'].sort());
-  for(const id of Migration.DIRECT_IDS){
+  for(const id of Migration.DIRECT_IDS)assert.equal(Migration.BY_ID[id].activationStage,'3-1');
+});
+
+test('3-2B에서 기존 전술 12종이 모두 일반 카드 효과 정의를 가진다',()=>{
+  assert.equal(Migration.RUNTIME_ACTIVE,true);
+  assert.equal(Migration.ACTIVATION_STAGE,'3-2B');
+  assert.equal(Migration.ACTIVE_IDS.length,12);
+  assert.deepEqual(Migration.BLOCKED_IDS,[]);
+  for(const id of Migration.ACTIVE_IDS){
     const entry=Migration.BY_ID[id];
     assert.ok(entry.proposedEffects.length>0,`${id}: proposedEffects`);
+    assert.deepEqual(Migration.unsupportedRequirements(entry),[],`${id}: requirements`);
     for(const effect of entry.proposedEffects){
       assert.ok(effect.trigger,`${id}: trigger`);
       assert.ok(effect.duration,`${id}: duration`);
       assert.ok(CardEffects.TRIGGERS.includes(effect.trigger),`${id}: known trigger`);
       assert.ok(CardEffects.ACTIONS.includes(effect.action),`${id}: known action`);
-      assert.ok(TacticEffects.TACTIC_EFFECTS[id],`${id}: legacy definition`);
+      if(effect.condition)assert.equal(typeof CardEffects.conditions[effect.condition],'function',`${id}: known condition`);
     }
   }
 });
 
-test('새 규칙과 충돌하는 전술은 런타임 활성화 전에 명시적으로 차단한다',()=>{
-  assert.equal(Migration.RUNTIME_ACTIVE,false);
-  assert.deepEqual([...Migration.BLOCKED_IDS].sort(),['burn','clean','double','draw','pureboost','scout'].sort());
-  for(const id of Migration.BLOCKED_IDS){
-    const entry=Migration.BY_ID[id];
-    assert.notEqual(entry.status,'direct');
-    assert.ok(Array.isArray(entry.requires)&&entry.requires.length>0,`${id}: requires`);
-  }
+test('3-2B 드로우/번/정찰은 3-2A 지원 액션을 사용한다',()=>{
+  assert.deepEqual(Migration.BY_ID.draw.proposedEffects,[{trigger:'on_play',action:'grant_next_trick_hand_capacity',value:1,duration:'trick'}]);
+  assert.deepEqual(Migration.BY_ID.scout.proposedEffects,[{trigger:'on_play',action:'reveal_next_enemy_card',duration:'trick'}]);
+  assert.deepEqual(Migration.BY_ID.burn.proposedEffects.map(effect=>effect.action),['discard_secondary_target','gain_chips','draw_cards']);
+  assert.deepEqual(Migration.BY_ID.burn.targeting,{zone:'hand',count:1,excludeSelf:true});
 });
 
-test('드로우/정찰/순수 의존 효과를 예전 의미 그대로 활성화하지 않는다',()=>{
-  assert.equal(Migration.BY_ID.draw.status,'engine_support');
-  assert.match(Migration.BY_ID.draw.note,/최대 손패 3/);
-  assert.equal(Migration.BY_ID.scout.status,'redesign');
-  assert.match(Migration.BY_ID.scout.note,/완전 공개/);
-  assert.equal(Migration.BY_ID.pureboost.status,'redesign');
-  assert.equal(Migration.BY_ID.clean.status,'redesign');
+test('더블다운은 복수 우세 2개 이상에서 쇼다운 위력 +6으로 확정한다',()=>{
+  assert.deepEqual(Migration.BY_ID.double.proposedEffects,[{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'advantage_count_at_least',conditionValue:2,duration:'set'}]);
+});
+
+test('기본에 충실/무첨가는 순수 카드 분류 없이 인쇄값과 트릭값 조건을 사용한다',()=>{
+  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].condition,'unmodified_trick_value');
+  assert.equal(Migration.BY_ID.clean.proposedEffects[0].condition,'printed_equals_trick');
+  assert.equal(Migration.BY_ID.clean.proposedEffects[0].value,2);
+});
+
+test('마이그레이션 요약은 12장 활성화와 차단 0장을 보고한다',()=>{
+  const summary=Migration.summary();
+  assert.equal(summary.supportStage,'3-2A');
+  assert.equal(summary.activationStage,'3-2B');
+  assert.equal(summary.active,12);
+  assert.equal(summary.blocked,0);
+  assert.equal(summary.engineSupported,12);
 });

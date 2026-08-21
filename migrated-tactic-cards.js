@@ -5,20 +5,28 @@
   root.MigratedTacticCards=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(Migration){
   const DIRECT_IDS=Object.freeze(['paint','plus2','barrier','reverse','recolor','fakeid']);
+  const ACTIVE_IDS=Object.freeze(Migration?.ACTIVE_IDS?[...Migration.ACTIVE_IDS]:['paint','plus2','draw','scout','double','barrier','burn','reverse','pureboost','clean','recolor','fakeid']);
   const META=Object.freeze({
-    paint:Object.freeze({id:'core.paint',terms:Object.freeze(['트릭값','트럼프','인쇄값','쇼다운값'])}),
-    plus2:Object.freeze({id:'core.plus2',terms:Object.freeze(['트릭값','인쇄값'])}),
-    barrier:Object.freeze({id:'core.barrier',terms:Object.freeze(['보호막'])}),
-    reverse:Object.freeze({id:'core.reverse',terms:Object.freeze(['트릭','트릭값'])}),
-    recolor:Object.freeze({id:'core.recolor',terms:Object.freeze(['쇼다운값','트럼프'])}),
-    fakeid:Object.freeze({id:'core.fakeid',terms:Object.freeze(['쇼다운값'])})
+    paint:Object.freeze({id:'core.paint',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','트럼프','인쇄값','쇼다운값'])}),
+    plus2:Object.freeze({id:'core.plus2',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','인쇄값'])}),
+    draw:Object.freeze({id:'core.draw',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','손패','드로우'])}),
+    scout:Object.freeze({id:'core.scout',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','예측'])}),
+    double:Object.freeze({id:'core.double',activation:'쇼다운 위력 계산 시',terms:Object.freeze(['쇼다운','우세','최종 위력'])}),
+    barrier:Object.freeze({id:'core.barrier',activation:'이 카드를 낼 때',terms:Object.freeze(['보호막'])}),
+    burn:Object.freeze({id:'core.burn',activation:'이 카드를 낼 때',terms:Object.freeze(['손패','버림','칩','드로우']),targeting:Object.freeze({zone:'hand',count:1,excludeSelf:true})}),
+    reverse:Object.freeze({id:'core.reverse',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','트릭값'])}),
+    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','인쇄값'])}),
+    clean:Object.freeze({id:'core.clean',activation:'이 카드로 트릭 승리 시',terms:Object.freeze(['트릭','트릭값','인쇄값','칩'])}),
+    recolor:Object.freeze({id:'core.recolor',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값','트럼프'])}),
+    fakeid:Object.freeze({id:'core.fakeid',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값'])})
   });
 
   function createDefinition(legacyId){
     const plan=Migration?.BY_ID?.[legacyId];
     const meta=META[legacyId];
-    if(!plan||plan.status!=='direct'||!meta)throw new TypeError(`Unknown direct tactic migration: ${legacyId}`);
+    if(!plan||!Array.isArray(plan.proposedEffects)||!plan.proposedEffects.length||!meta)throw new TypeError(`Unknown active tactic migration: ${legacyId}`);
     const effects=plan.proposedEffects.map(effect=>Object.freeze({...effect}));
+    const targeting=meta.targeting||plan.targeting||null;
     return Object.freeze({
       id:meta.id,
       name:plan.name,
@@ -27,18 +35,23 @@
       rank:plan.printedRank,
       printedSuit:plan.printedSuit,
       printedRank:plan.printedRank,
-      description:`발동: 이 카드를 낼 때. 효과: ${plan.cardText}`,
+      description:`발동: ${meta.activation}. 효과: ${plan.cardText}`,
       terms:meta.terms,
       effects:Object.freeze(effects),
+      targeting:targeting?Object.freeze({...targeting}):null,
       implemented:true,
       category:'general',
       rarity:'common',
       legacyTacticId:legacyId,
-      migrationStage:'3-1'
+      migrationStage:plan.activationStage||'3-2B'
     });
   }
 
-  const DIRECT_CARD_DEFINITIONS=Object.freeze(DIRECT_IDS.map(createDefinition));
+  const ACTIVE_CARD_DEFINITIONS=Object.freeze(ACTIVE_IDS.map(createDefinition));
+  const ACTIVE_CARD_BY_ID=Object.freeze(Object.fromEntries(ACTIVE_CARD_DEFINITIONS.map(card=>[card.id,card])));
+  const ACTIVE_CARD_BY_LEGACY_ID=Object.freeze(Object.fromEntries(ACTIVE_CARD_DEFINITIONS.map(card=>[card.legacyTacticId,card])));
+  const ACTIVE_CARD_BY_BASE=Object.freeze(Object.fromEntries(ACTIVE_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card])));
+  const DIRECT_CARD_DEFINITIONS=Object.freeze(DIRECT_IDS.map(id=>ACTIVE_CARD_BY_LEGACY_ID[id]));
   const DIRECT_CARD_BY_ID=Object.freeze(Object.fromEntries(DIRECT_CARD_DEFINITIONS.map(card=>[card.id,card])));
   const DIRECT_CARD_BY_LEGACY_ID=Object.freeze(Object.fromEntries(DIRECT_CARD_DEFINITIONS.map(card=>[card.legacyTacticId,card])));
   const DIRECT_CARD_BY_BASE=Object.freeze(Object.fromEntries(DIRECT_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card])));
@@ -46,7 +59,7 @@
   function validateDefinitions(){
     const errors=[];
     const ids=new Set(),slots=new Set();
-    for(const card of DIRECT_CARD_DEFINITIONS){
+    for(const card of ACTIVE_CARD_DEFINITIONS){
       if(ids.has(card.id))errors.push(`duplicate id: ${card.id}`);else ids.add(card.id);
       const slot=`${card.suit}${card.rank}`;
       if(slots.has(slot))errors.push(`duplicate slot: ${slot}`);else slots.add(slot);
@@ -54,9 +67,11 @@
       if(!Migration.RANKS.includes(card.rank))errors.push(`${card.id}: invalid rank ${card.rank}`);
       if(!Array.isArray(card.effects)||!card.effects.length)errors.push(`${card.id}: missing effects`);
       if(card.category!=='general')errors.push(`${card.id}: must be a general card`);
+      if(!card.migrationStage)errors.push(`${card.id}: missing migration stage`);
+      if(card.legacyTacticId==='burn'&&(!card.targeting||card.targeting.zone!=='hand'||card.targeting.count!==1||card.targeting.excludeSelf!==true))errors.push('core.burn: invalid hand targeting');
     }
     return errors;
   }
 
-  return{DIRECT_IDS,META,DIRECT_CARD_DEFINITIONS,DIRECT_CARD_BY_ID,DIRECT_CARD_BY_LEGACY_ID,DIRECT_CARD_BY_BASE,createDefinition,validateDefinitions};
+  return{DIRECT_IDS,ACTIVE_IDS,META,ACTIVE_CARD_DEFINITIONS,ACTIVE_CARD_BY_ID,ACTIVE_CARD_BY_LEGACY_ID,ACTIVE_CARD_BY_BASE,DIRECT_CARD_DEFINITIONS,DIRECT_CARD_BY_ID,DIRECT_CARD_BY_LEGACY_ID,DIRECT_CARD_BY_BASE,createDefinition,validateDefinitions};
 });
