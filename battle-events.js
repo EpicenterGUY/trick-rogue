@@ -104,9 +104,6 @@
       if(action==='increase_forecast'){
         if(state)state.myForecast=Math.min(3,(Number(state.myForecast)||0)+(Number(value)||0));return;
       }
-      if(action==='draw_tactic'){
-        if(typeof root.drawT==='function')root.drawT(Number(value)||0);return;
-      }
       if(action==='draw_cards'){
         if(typeof root.drawP==='function')root.drawP(Number(value)||0);return;
       }

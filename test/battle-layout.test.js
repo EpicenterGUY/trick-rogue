@@ -41,17 +41,15 @@ test('텍스트 카드 모드는 네임드 카드에만 safe-area 이름을 덮�
   assert.match(html, /\.textCardName>span\{[^}]*-webkit-line-clamp:2/);
 });
 
-test('모바일 손패는 document flow의 3열이고 전술은 bottom sheet carousel이다', () => {
+
+test('모바일 손패는 전술 드로어 없이 document flow 3열을 유지한다', () => {
   assert.match(html, /#handPanel\{position:static/);
   assert.match(html, /#handRow\{display:grid;grid-template-columns:repeat\(3,minmax\(0,92px\)\)/);
-  assert.match(html, /#tacticPanel\.open\{position:fixed/);
-  assert.match(html, /#tacticRow\{[^}]*scroll-padding-inline:10px/);
-  assert.match(html, /\.tactic\{[^}]*flex:0 0 auto/);
+  assert.doesNotMatch(html, /id="tacticPanel"/);
+  assert.doesNotMatch(html, /#tacticPanel/);
 });
 
-test('전술 사용은 재진입을 막고 사용 후 drawer를 닫는다', () => {
-  const useTactic = html.match(/function useTactic\(uid\)\{([\s\S]*?)\nfunction /)[1];
-  assert.match(useTactic, /battle\.animating\|\|battle\.tacticUsing/);
-  assert.match(useTactic, /battle\.tacticsOpen=false/);
-  assert.match(useTactic, /battle\.tacticUsing=false/);
+test('레거시 전술 실행 코드와 전술 전투 상태가 index에서 제거됐다', () => {
+  for(const token of ['const TACTICS=','function useTactic(','function drawT(','tdeck:','thand:','tdisc:','selectedTactic','tacticsOpen','tacticUsing'])assert.equal(html.includes(token),false,token);
+  assert.doesNotMatch(html, /grid-area:tactic/);
 });

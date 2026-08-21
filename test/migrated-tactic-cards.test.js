@@ -5,7 +5,6 @@ const path=require('node:path');
 const Cards=require('../cards.js');
 const Effects=require('../effects.js');
 const Migrated=require('../migrated-tactic-cards.js');
-const Runtime=require('../migrated-tactic-runtime.js');
 
 function runCard(card,trigger,overrides={}){
   const calls=[];
@@ -105,37 +104,3 @@ test('기존 pack01 네임드 레지스트리와 보상 풀은 일반 효과 카
   assert(Cards.rewardCardIds().every(id=>id.startsWith('pack01.')));
 });
 
-test('런 시작용 임시 named alias는 3-2B 카드도 순수 제거를 피한 뒤 깨끗하게 제거한다',()=>{
-  const card=Cards.createDefinitionCard('core.draw');
-  const prepared=Runtime.setupDeckCard(card);
-  assert.equal(prepared.named,prepared.definition);
-  assert.equal(prepared.__migrationSetupAlias,true);
-  Runtime.cleanSetupAliases([prepared]);
-  assert.equal(prepared.named,null);
-  assert.equal('__migrationSetupAlias' in prepared,false);
-  assert.equal(prepared.effects[0].action,'grant_next_trick_hand_capacity');
-});
-
-test('브라우저 카드 레지스트리는 마이그레이션 런타임을 자동 로드한다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','cards.js'),'utf8');
-  assert.match(source,/migrated-tactic-runtime\.js/);
-  assert.match(source,/data-migrated-tactic-card-runtime|migratedTacticCardRuntime/);
-  for(const id of ['core.draw','core.scout','core.double','core.burn','core.pureboost','core.clean'])assert.match(source,new RegExp(id.replace('.','\\.')));
-});
-
-test('마이그레이션 런타임은 3-1/3-2B 단계를 가리지 않고 일반 효과 카드를 인식한다',()=>{
-  const oldCard=Cards.createDefinitionCard('core.plus2'),newCard=Cards.createDefinitionCard('core.clean');
-  assert.equal(Runtime.isMigratedCard(oldCard),true);
-  assert.equal(Runtime.isMigratedCard(newCard),true);
-  assert.equal(Runtime.migratedDefinition(newCard).migrationStage,'3-2B');
-});
-
-test('런타임은 트릭/쇼다운 직접 이관 action을 실제 전투 context에 연결한다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','migrated-tactic-runtime.js'),'utf8');
-  for(const action of ['set_next_trick_suit_to_trump','increase_next_trick_rank','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank'])assert.match(source,new RegExp(action));
-  assert.match(source,/battle\.mods\.paint=true/);
-  assert.match(source,/battle\.mods\.plus\+=/);
-  assert.match(source,/battle\.mods\.reverse=true/);
-  assert.match(source,/showdownSuit=battle\.trump/);
-  assert.match(source,/showdownRank=Math\.min\(14/);
-});

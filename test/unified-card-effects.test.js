@@ -2,7 +2,6 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const Effects=require('../effects.js');
 const Cards=require('../cards.js');
-const TacticEffects=require('../tactic-effects.js');
 
 function run(card,trigger,overrides={}){
   const calls=[];
@@ -114,25 +113,15 @@ test('52장 기본 카드 슬롯은 유지하면서 전술 출신 일반 효과 
   assert(cards.every(card=>card.printedSuit===card.suit&&card.printedRank===card.rank));
 });
 
-test('공통 history는 일반 효과 통계를 추가하면서 레거시 전술 통계를 유지한다',()=>{
+test('공통 history는 일반 효과 통계만 유지한다',()=>{
   const history=Effects.newHistory();
   assert.equal(history.effectsUsed,false);
   assert.equal(history.effectUseCount,0);
-  assert.equal(history.tacticsUsed,false);
-  assert.equal(history.tacticUseCount,0);
+  assert.equal('tacticsUsed' in history,false);
+  assert.equal('tacticUseCount' in history,false);
 });
 
-test('3-3A에서 시작 패키지와 네임드 의존은 일반 카드로 전환되고 물리적 소스 정리만 남는다',()=>{
-  const status=TacticEffects.migrationStatus();
-  assert.equal(status.ready,false);
-  assert.equal(status.cardMigrationReady,true);
-  assert.equal(status.runtimeRetired,true);
-  assert.equal(status.startingPackagesMigrated,true);
-  assert.equal(status.namedDependenciesMigrated,true);
-  assert.equal(status.activatedCardCount,12);
-  assert.equal(status.tacticIds.length,12);
-  assert.equal(status.blockers.startingPackages,undefined);
-  assert.equal(status.blockers.namedDependencies,undefined);
-  assert(status.blockers.legacySourceCleanup);
-  assert.deepEqual(status.dependentCardIds,[]);
+test('3-3B에서 레거시 전술 effect action은 공통 registry에서 제거된다',()=>{
+  assert.equal(Effects.ACTIONS.includes('draw_tactic'),false);
+  assert.equal(Effects.COPYABLE_NUMERIC_ACTIONS.includes('draw_tactic'),false);
 });
