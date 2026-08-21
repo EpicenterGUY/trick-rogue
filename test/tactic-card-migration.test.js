@@ -2,6 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const Migration=require('../tactic-card-migration.js');
 const TacticEffects=require('../tactic-effects.js');
+const CardEffects=require('../effects.js');
 const Cards=require('../cards.js');
 
 test('3-0 전술 마이그레이션 계획은 기존 12종 전술을 빠짐없이 포함한다',()=>{
@@ -34,13 +35,15 @@ test('후보 인쇄 슬롯은 현재 pack01 네임드 슬롯과 겹치지 않는
 });
 
 test('직접 이관 6종은 현재 공통 action만 사용하고 trigger/duration을 명시한다',()=>{
-  assert.deepEqual(Migration.DIRECT_IDS.sort(),['barrier','fakeid','paint','plus2','recolor','reverse'].sort());
+  assert.deepEqual([...Migration.DIRECT_IDS].sort(),['barrier','fakeid','paint','plus2','recolor','reverse'].sort());
   for(const id of Migration.DIRECT_IDS){
     const entry=Migration.BY_ID[id];
     assert.ok(entry.proposedEffects.length>0,`${id}: proposedEffects`);
     for(const effect of entry.proposedEffects){
       assert.ok(effect.trigger,`${id}: trigger`);
       assert.ok(effect.duration,`${id}: duration`);
+      assert.ok(CardEffects.TRIGGERS.includes(effect.trigger),`${id}: known trigger`);
+      assert.ok(CardEffects.ACTIONS.includes(effect.action),`${id}: known action`);
       assert.ok(TacticEffects.TACTIC_EFFECTS[id],`${id}: legacy definition`);
     }
   }
@@ -48,7 +51,7 @@ test('직접 이관 6종은 현재 공통 action만 사용하고 trigger/duratio
 
 test('새 규칙과 충돌하는 전술은 런타임 활성화 전에 명시적으로 차단한다',()=>{
   assert.equal(Migration.RUNTIME_ACTIVE,false);
-  assert.deepEqual(Migration.BLOCKED_IDS.sort(),['burn','clean','double','draw','pureboost','scout'].sort());
+  assert.deepEqual([...Migration.BLOCKED_IDS].sort(),['burn','clean','double','draw','pureboost','scout'].sort());
   for(const id of Migration.BLOCKED_IDS){
     const entry=Migration.BY_ID[id];
     assert.notEqual(entry.status,'direct');
