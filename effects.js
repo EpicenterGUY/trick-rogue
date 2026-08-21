@@ -1,4 +1,4 @@
-(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadTextCardRuntime();api.loadCombatEffectsRuntime();api.loadBattleEventsRuntime();api.loadTacticMigrationSupportRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadTextCardRuntime();api.loadCombatEffectsRuntime();api.loadBattleEventsRuntime();api.loadTacticMigrationSupportRuntime();api.loadEnemyBehaviorRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const TRIGGERS=['on_play','on_set_start','on_trick_start','before_compare','after_compare','on_trick_win','on_trick_loss','on_trick_draw','after_card_slotted','on_trick_end','before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
   const DURATIONS=['trick','set','battle','run'];
   const EFFECT_OWNER_TYPES=Object.freeze(['card','status','reservation','field','boss_rule','relic','passive']);
@@ -247,5 +247,9 @@
     if(typeof document==='undefined'||document.querySelector('script[data-trick-tactic-migration-support]'))return;
     const script=document.createElement('script');script.src='tactic-migration-support.js';script.async=false;script.dataset.trickTacticMigrationSupport='true';document.head.appendChild(script);
   }
-  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadTextCardRuntime,loadCombatEffectsRuntime,loadBattleEventsRuntime,loadTacticMigrationSupportRuntime};
+  function loadEnemyBehaviorRuntime(){
+    if(typeof document==='undefined'||document.querySelector('script[data-trick-enemy-behavior-runtime]'))return;
+    const script=document.createElement('script');script.src='enemy-behavior.js';script.async=false;script.dataset.trickEnemyBehaviorRuntime='true';document.head.appendChild(script);
+  }
+  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadTextCardRuntime,loadCombatEffectsRuntime,loadBattleEventsRuntime,loadTacticMigrationSupportRuntime,loadEnemyBehaviorRuntime};
 });
