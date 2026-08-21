@@ -22,9 +22,10 @@ test('4-2 적 행동 프로필은 일반/엘리트/보스의 전술 가중치와
   }
 });
 
-test('폐허 약탈자의 맥락 없는 기본 선택은 기존 55% 고랭크 / 45% 전범위 경계를 보존한다',()=>{
-  const high=EnemyBehavior.chooseEnemyPlay('battle',{},sequence(0.54,0,0));
-  const wild=EnemyBehavior.chooseEnemyPlay('battle',{},sequence(0.55,0,0));
+test('폐허 약탈자의 중립 맥락 선택은 기존 55% 고랭크 / 45% 전범위 경계를 보존한다',()=>{
+  const neutral={trick:3,setHistory:{wins:0,losses:0},playerSuitCounts:{S:0,H:0,D:0,C:0},enemySuitCounts:{S:0,H:0,D:0,C:0}};
+  const high=EnemyBehavior.chooseEnemyPlay('battle',neutral,sequence(0.54,0,0));
+  const wild=EnemyBehavior.chooseEnemyPlay('battle',neutral,sequence(0.55,0,0));
   assert.equal(high.patternId,'high_pressure');
   assert.equal(high.card.rank,8);
   assert.equal(high.card.suit,'S');
