@@ -1,10 +1,11 @@
 (function(root,factory){
   const api=factory(
-    typeof module!=='undefined'?require('./card-packs/index.js'):root
+    typeof module!=='undefined'?require('./card-packs/index.js'):root,
+    typeof module!=='undefined'?require('./migrated-tactic-cards.js'):root.MigratedTacticCards
   );
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
-})(typeof globalThis!=='undefined'?globalThis:this,function(packRegistry){
+})(typeof globalThis!=='undefined'?globalThis:this,function(packRegistry,migratedCards){
 const IMPLEMENTED_CARD_EFFECTS = {
   'pack01.black_bullet': [{trigger:'on_trick_win',action:'damage_enemy',value:3,duration:'trick'},{trigger:'on_showdown_score',action:'showdown_power',value:4,duration:'set'}],
   'pack01.phoenix': [{trigger:'on_trick_win',action:'heal_player',value:4,duration:'trick'}],
@@ -17,12 +18,10 @@ const IMPLEMENTED_CARD_EFFECTS = {
   'pack01.ambush_observer': [{trigger:'after_card_slotted',action:'increase_enemy_forecast',value:2,condition:'slot_is',conditionValue:3,duration:'set'}],
   'pack01.battery_1pct': [{trigger:'on_trick_end',handler:'deplete_battery_in_hand',chance:0.2,duration:'battle'},{trigger:'on_showdown_score',action:'showdown_power',value:15,duration:'set'}]
 };
-// Effect data stays machine-readable above; every player-facing label lives here so
-// engine identifiers never have to leak into card details or future UI surfaces.
 const PLAYER_EFFECT_LABELS=Object.freeze({
   triggers:{on_play:'이 카드를 낼 때',on_set_start:'세트 시작 시',before_compare:'트릭 승패 비교 전',after_compare:'트릭 승패 비교 후',on_trick_win:'이 카드로 트릭 승리 시',on_trick_loss:'이 카드로 트릭 패배 시',on_trick_draw:'이 카드로 트릭 무승부 시',after_card_slotted:'쇼다운 슬롯에 놓인 후',on_trick_end:'트릭 종료 시',before_showdown:'쇼다운 계산 전',on_showdown_advantage:'쇼다운 우세 판정 시',on_showdown_score:'쇼다운 위력 계산 시',after_showdown_result:'쇼다운 결과 판정 후',on_set_end:'세트 종료 시',before_damage:'피해를 받기 전',after_damage:'피해를 받은 후'},
   conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'트릭 숫자가 지정된 수 이하',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음'},
-  actions:{damage_enemy:'적에게 피해',heal_player:'체력 회복',gain_chips:'칩 획득',gain_shield:'보호막 획득',apply_enemy_bleed:'적에게 출혈 부여',increase_enemy_forecast:'적 카드 예측 단계 증가',draw_tactic:'전술 카드 드로우',increase_effective_rank:'트릭 숫자 증가',showdown_power:'쇼다운 최종 위력 증가',reserve_next_win_damage:'다음 트릭 승리 시 추가 피해 예약'},
+  actions:{damage_enemy:'적에게 피해',heal_player:'체력 회복',gain_chips:'칩 획득',gain_shield:'보호막 획득',apply_enemy_bleed:'적에게 출혈 부여',increase_enemy_forecast:'적 카드 예측 단계 증가',draw_tactic:'전술 카드 드로우',increase_effective_rank:'트릭 숫자 증가',showdown_power:'쇼다운 최종 위력 증가',reserve_next_win_damage:'다음 트릭 승리 시 추가 피해 예약',set_next_trick_suit_to_trump:'트릭 무늬를 현재 트럼프로 변경',increase_next_trick_rank:'트릭 숫자 증가',set_reverse_compare:'트릭 숫자 비교 반전',set_last_showdown_suit_to_trump:'쇼다운 무늬를 현재 트럼프로 변경',increase_last_showdown_rank:'쇼다운 숫자 증가'},
   durations:{trick:'트릭',set:'세트',battle:'전투',run:'런'}
 });
 const CARD_DETAIL_BY_ID=Object.freeze({
@@ -39,10 +38,14 @@ const CARD_DETAIL_BY_ID=Object.freeze({
 });
 const {CARD_PACK_LIST,CARD_PACKS,defaultEnabledPacks,validateEnabledPacks,createRunPackState}=packRegistry;
 
+// CARD_DEFINITIONS remains the named/pack registry for compatibility.
 const CARD_DEFINITIONS=Object.values(CARD_PACKS).flatMap(pack=>pack.cards);
 for(const card of CARD_DEFINITIONS){card.implemented=Object.hasOwn(IMPLEMENTED_CARD_EFFECTS,card.id);card.effects=IMPLEMENTED_CARD_EFFECTS[card.id]||[]}
-const CARD_DEFINITION_BY_ID=Object.fromEntries(CARD_DEFINITIONS.map(card=>[card.id,card]));
-const CARD_DEFINITION_BY_BASE=Object.fromEntries(CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
+const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.DIRECT_CARD_DEFINITIONS||[])]);
+const ALL_CARD_DEFINITIONS=Object.freeze([...CARD_DEFINITIONS,...GENERAL_EFFECT_CARD_DEFINITIONS]);
+const CARD_DEFINITION_BY_ID=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[card.id,card]));
+const CARD_DEFINITION_BY_BASE=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
+const GENERAL_EFFECT_CARD_BY_BASE=Object.fromEntries(GENERAL_EFFECT_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
 function rewardCardIds(enabledPacks=defaultEnabledPacks()){
   const enabled=new Set(validateEnabledPacks(enabledPacks));
   return CARD_PACK_LIST.filter(pack=>enabled.has(pack.id)).flatMap(pack=>pack.cards.flatMap(card=>Array(pack.rewardWeight).fill(card.id)));
@@ -60,9 +63,10 @@ function createCardRecord({suit,rank,cardId=null,definitionId=null,effects,metad
     suit,rank,printedSuit:suit,printedRank:rank,
     cardId:definition?.id||cardId||null,
     definition,
-    // named is a temporary compatibility alias for current renderer/details. New effect
-    // execution does not require it; ordinary cards may carry effects directly.
-    named:definition,
+    name:metadata.name??definition?.name??null,
+    // `named` is now strictly a compatibility alias for named pack cards. Ordinary
+    // effect-bearing cards use definition/effects without becoming named gameplay cards.
+    named:definition?.packId?definition:null,
     effects:effectList.map(effect=>({...effect}))
   };
 }
@@ -72,6 +76,11 @@ function createDefinitionCard(definitionId,metadata={}){
   return createCardRecord({suit:definition.suit,rank:definition.rank,definitionId,metadata});
 }
 const BASE_CARD_SLOTS=Object.freeze(['S','H','D','C'].flatMap(suit=>Array.from({length:13},(_,index)=>Object.freeze({suit,rank:index+2}))));
-function createBaseCardSlots(){return BASE_CARD_SLOTS.map(slot=>createCardRecord({suit:slot.suit,rank:slot.rank}))}
-return{CARD_PACK_LIST,CARD_DEFINITIONS,CARD_DEFINITION_BY_ID,CARD_DEFINITION_BY_BASE,CARD_PACKS,BASE_CARD_SLOTS,PLAYER_EFFECT_LABELS,CARD_DETAIL_BY_ID,createCardRecord,createDefinitionCard,createBaseCardSlots,defaultEnabledPacks,validateEnabledPacks,createRunPackState,rewardCardIds};
+function createBaseCardSlots(){
+  return BASE_CARD_SLOTS.map(slot=>{
+    const migrated=GENERAL_EFFECT_CARD_BY_BASE[`${slot.suit}${slot.rank}`];
+    return migrated?createCardRecord({suit:slot.suit,rank:slot.rank,definitionId:migrated.id}):createCardRecord({suit:slot.suit,rank:slot.rank});
+  });
+}
+return{CARD_PACK_LIST,CARD_DEFINITIONS,GENERAL_EFFECT_CARD_DEFINITIONS,ALL_CARD_DEFINITIONS,CARD_DEFINITION_BY_ID,CARD_DEFINITION_BY_BASE,CARD_PACKS,BASE_CARD_SLOTS,PLAYER_EFFECT_LABELS,CARD_DETAIL_BY_ID,createCardRecord,createDefinitionCard,createBaseCardSlots,defaultEnabledPacks,validateEnabledPacks,createRunPackState,rewardCardIds};
 });
