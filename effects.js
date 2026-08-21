@@ -1,10 +1,12 @@
 (function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadLegacyTacticRuntime();api.loadTextCardRuntime();api.loadCombatEffectsRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const TRIGGERS=['on_play','on_set_start','before_compare','after_compare','on_trick_win','on_trick_loss','on_trick_draw','after_card_slotted','on_trick_end','before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
   const DURATIONS=['trick','set','battle','run'];
-  const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage','set_next_trick_suit_to_trump','increase_next_trick_rank','draw_cards','increase_forecast','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank','discard_selected_card'];
+  const EFFECT_OWNER_TYPES=Object.freeze(['card','status','reservation','field','boss_rule','relic','passive']);
+  const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic','increase_effective_rank','showdown_power','reserve_next_win_damage','set_next_trick_suit_to_trump','increase_next_trick_rank','draw_cards','increase_forecast','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank','discard_selected_card','apply_status','remove_status','add_reservation'];
   const COPYABLE_NUMERIC_ACTIONS=Object.freeze(['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','draw_tactic']);
   const RESERVATION_EVENTS=Object.freeze(['on_trick_start','on_next_card_play','on_trick_result','on_next_trick_win','on_next_trick_loss','on_trick_end','before_showdown','after_showdown_score']);
   const MAX_EFFECT_EXECUTIONS=128;
+  const actionHandlers=Object.create(null);
   let activeEffectChain=null;
   let chainCounter=0;
   const objectIds=new WeakMap();
@@ -24,14 +26,18 @@
     },
     deplete_battery_in_hand(c,e){if(c.inHand&&c.random()<e.chance)c.exhaust(c.card)}
   };
-  function effectOwnerId(card,context={}){
-    return context.ownerId??context.cardId??card?.cardId??card?.definition?.id??card?.named?.id??null;
+  function effectOwnerType(source,context={}){
+    const type=context.ownerType??source?.effectOwnerType??source?.ownerType??'card';
+    return EFFECT_OWNER_TYPES.includes(type)?type:type||'card';
   }
-  function effectOwner(card,context={}){
+  function effectOwnerId(source,context={}){
+    return context.ownerId??context.cardId??source?.cardId??source?.definition?.id??source?.named?.id??source?.id??null;
+  }
+  function effectOwner(source,context={}){
     return Object.freeze({
-      type:context.ownerType||'card',
-      id:effectOwnerId(card,context),
-      instanceId:context.ownerInstanceId??context.cardInstanceId??card?.uid??null
+      type:effectOwnerType(source,context),
+      id:effectOwnerId(source,context),
+      instanceId:context.ownerInstanceId??context.cardInstanceId??source?.uid??source?.instanceId??null
     });
   }
   function runtimeObjectId(value){
@@ -50,29 +56,32 @@
     try{return callback()}finally{activeEffectChain=previous}
   }
   function effectExecutionKey(effect,index,context={}){
-    const owner=context.owner||effectOwner(context.card,context);
-    const ownerKey=owner.instanceId||owner.id||runtimeObjectId(context.card)||context.ownerType||'anonymous';
+    const owner=context.owner||effectOwner(context.source||context.card,context);
+    const ownerKey=owner.instanceId||owner.id||runtimeObjectId(context.source||context.card)||context.ownerType||'anonymous';
     const trigger=effect.trigger||context.trigger||'direct';
     const effectKey=effect.id||`${effect.action||effect.handler||'effect'}:${index}`;
     return`${owner.type||'effect'}:${ownerKey}:${trigger}:${effectKey}`;
   }
-  function cardEffectList(card){
-    if(Array.isArray(card?.effects))return card.effects;
-    if(Array.isArray(card?.definition?.effects))return card.definition.effects;
-    if(Array.isArray(card?.named?.effects))return card.named.effects;
+  function effectList(source){
+    if(Array.isArray(source?.effects))return source.effects;
+    if(Array.isArray(source?.definition?.effects))return source.definition.effects;
+    if(Array.isArray(source?.named?.effects))return source.named.effects;
     return [];
   }
-  function attachEffects(card,effects,{cardId}={}){
-    if(!card||typeof card!=='object')throw new TypeError('attachEffects requires a card object');
+  function cardEffectList(card){return effectList(card)}
+  function attachEffects(source,effects,{cardId,ownerType,ownerId}={}){
+    if(!source||typeof source!=='object')throw new TypeError('attachEffects requires an object');
     if(!Array.isArray(effects))throw new TypeError('attachEffects requires an effect list');
-    const next={...card,effects:effects.map(effect=>({...effect}))};
+    const next={...source,effects:effects.map(effect=>({...effect}))};
     if(cardId!==undefined)next.cardId=cardId;
+    if(ownerType!==undefined)next.effectOwnerType=ownerType;
+    if(ownerId!==undefined)next.id=ownerId;
     return next;
   }
-  function createEffectContext(card,context={}){
-    const owner=effectOwner(card,context);
+  function createEffectContext(source,context={}){
+    const owner=effectOwner(source,context);
     const chain=context.effectChain||currentEffectChain()||null;
-    return{...context,card,owner,cardId:context.cardId??owner.id,cardInstanceId:context.cardInstanceId??owner.instanceId,effectChain:chain};
+    return{...context,source,card:context.card??source,owner,ownerType:owner.type,ownerId:owner.id,cardId:context.cardId??(owner.type==='card'?owner.id:null),cardInstanceId:context.cardInstanceId??(owner.type==='card'?owner.instanceId:null),effectChain:chain};
   }
   function validateEffectList(effects,{requireTrigger=false,requireDuration=false}={}){
     if(!Array.isArray(effects))return['effects must be an array'];
@@ -91,6 +100,23 @@
     });
     return errors;
   }
+  function registerActionHandler(action,handler){
+    if(!ACTIONS.includes(action))throw new TypeError(`Unknown effect action: ${action}`);
+    if(typeof handler!=='function')throw new TypeError('Action handler must be a function');
+    actionHandlers[action]=handler;return handler;
+  }
+  function unregisterActionHandler(action,handler){
+    if(handler&&actionHandlers[action]!==handler)return false;
+    if(!actionHandlers[action])return false;
+    delete actionHandlers[action];return true;
+  }
+  function executeAction(context,effect){
+    const action=effect.action;if(!ACTIONS.includes(action))throw new TypeError(`Unknown effect action: ${action}`);
+    const registered=actionHandlers[action];
+    if(registered){registered(context,effect.value,effect);return}
+    if(typeof context.perform!=='function')throw new TypeError('Effect context requires perform(action, value, effect)');
+    context.perform(action,effect.value,effect);
+  }
   function executeEffectList(effects,context,chain){
     let executed=0;
     for(let index=0;index<effects.length;index++){
@@ -103,9 +129,7 @@
       chain.executions++;
       if(effect.handler){const handler=handlers[effect.handler];if(!handler)throw new TypeError(`Unknown effect handler: ${effect.handler}`);handler(context,effect);executed++;continue}
       if(!effect.action)continue;
-      if(!ACTIONS.includes(effect.action))throw new TypeError(`Unknown effect action: ${effect.action}`);
-      if(typeof context.perform!=='function')throw new TypeError('Effect context requires perform(action, value, effect)');
-      context.perform(effect.action,effect.value,effect);executed++;
+      executeAction(context,effect);executed++;
     }
     return executed;
   }
@@ -115,19 +139,34 @@
     const nextContext={...context,effectChain:chain};
     return withEffectChain(chain,()=>executeEffectList(effects,nextContext,chain));
   }
-  function run(trigger,card,context={}){
-    const effects=cardEffectList(card);if(!effects.length)return 0;
+  function runOwner(trigger,source,context={}){
+    const effects=effectList(source);if(!effects.length)return 0;
     const chain=context.effectChain||currentEffectChain()||createEffectChain();
-    const nextContext=createEffectContext(card,{...context,trigger,effectChain:chain});
+    const nextContext=createEffectContext(source,{...context,trigger,effectChain:chain});
     return withEffectChain(chain,()=>executeEffectList(effects.filter(effect=>effect.trigger===trigger),nextContext,chain));
   }
-  function createReservation({id,type,timing,duration,consume='when_due',action,value,eligibleSet,eligibleTrick,condition,label,metadata={}}={}){
+  function run(trigger,card,context={}){return runOwner(trigger,card,context)}
+  function dispatchOwners(trigger,owners,context={}){
+    if(!Array.isArray(owners))return 0;
+    const chain=context.effectChain||currentEffectChain()||createEffectChain();let executed=0;
+    return withEffectChain(chain,()=>{
+      owners.forEach((entry,index)=>{
+        const source=entry?.source||entry;
+        if(!source)return;
+        const ownerType=entry?.source?entry.ownerType:source.effectOwnerType;
+        const ownerId=entry?.source?entry.ownerId:undefined;
+        executed+=runOwner(trigger,source,{...context,effectChain:chain,ownerType:ownerType||context.ownerType,ownerId:ownerId??context.ownerId,effectOwnerOrdinal:index});
+      });
+      return executed;
+    });
+  }
+  function createReservation({id,type,timing,duration,consume='when_due',action,value,eligibleSet,eligibleTrick,condition,label,ownerType,ownerId,metadata={}}={}){
     const resolvedTiming=timing||(type==='nextWinDamage'?'on_trick_result':null);
     const resolvedDuration=duration||(type==='nextWinDamage'?'battle':'set');
     if(!resolvedTiming||!RESERVATION_EVENTS.includes(resolvedTiming))throw new TypeError(`Unknown reservation timing: ${resolvedTiming}`);
     if(!DURATIONS.includes(resolvedDuration))throw new TypeError(`Unknown reservation duration: ${resolvedDuration}`);
     if(consume!=='when_due'&&consume!=='when_triggered')throw new TypeError(`Unknown reservation consume policy: ${consume}`);
-    return{...metadata,id:id||null,type:type||null,timing:resolvedTiming,duration:resolvedDuration,consume,action:action||(type==='nextWinDamage'?'damage_enemy':null),value,eligibleSet,eligibleTrick,condition:condition||(type==='nextWinDamage'?'player_win':null),label:label||null};
+    return{...metadata,id:id||null,type:type||null,timing:resolvedTiming,duration:resolvedDuration,consume,action:action||(type==='nextWinDamage'?'damage_enemy':null),value,eligibleSet,eligibleTrick,condition:condition||(type==='nextWinDamage'?'player_win':null),label:label||null,ownerType:ownerType||null,ownerId:ownerId||null};
   }
   function normalizeReservation(reservation){
     if(!reservation||typeof reservation!=='object')throw new TypeError('Reservation must be an object');
@@ -163,6 +202,11 @@
     }
     return remaining;
   }
+  function expireReservations(reservations,duration){
+    if(!DURATIONS.includes(duration))throw new TypeError(`Unknown reservation duration: ${duration}`);
+    if(!Array.isArray(reservations))return[];
+    return reservations.filter(raw=>normalizeReservation(raw).duration!==duration);
+  }
   function resolveNextWinReservations(reservations,trick,won,perform){
     const turn=typeof trick==='object'?trick:{trick};
     return resolveReservations(reservations,'on_trick_result',{set:turn.set,trick:turn.trick,result:won?'player':'other',won},(action,value)=>perform(action,value));
@@ -170,27 +214,15 @@
   function newHistory(){return{effectsUsed:false,effectUseCount:0,tacticsUsed:false,tacticUseCount:0,chipsSpent:0,cardsDrawn:0,damageDealt:0,healingDone:0}}
   function loadLegacyTacticRuntime(){
     if(typeof document==='undefined'||document.querySelector('script[data-trick-tactic-runtime]'))return;
-    const script=document.createElement('script');
-    script.src='tactic-effects.js';
-    script.async=false;
-    script.dataset.trickTacticRuntime='true';
-    document.head.appendChild(script);
+    const script=document.createElement('script');script.src='tactic-effects.js';script.async=false;script.dataset.trickTacticRuntime='true';document.head.appendChild(script);
   }
   function loadTextCardRuntime(){
     if(typeof document==='undefined'||document.querySelector('script[data-trick-text-card-runtime]'))return;
-    const script=document.createElement('script');
-    script.src='card-text-mode.js';
-    script.async=false;
-    script.dataset.trickTextCardRuntime='true';
-    document.head.appendChild(script);
+    const script=document.createElement('script');script.src='card-text-mode.js';script.async=false;script.dataset.trickTextCardRuntime='true';document.head.appendChild(script);
   }
   function loadCombatEffectsRuntime(){
     if(typeof document==='undefined'||document.querySelector('script[data-trick-combat-effects-runtime]'))return;
-    const script=document.createElement('script');
-    script.src='combat-effects.js';
-    script.async=false;
-    script.dataset.trickCombatEffectsRuntime='true';
-    document.head.appendChild(script);
+    const script=document.createElement('script');script.src='combat-effects.js';script.async=false;script.dataset.trickCombatEffectsRuntime='true';document.head.appendChild(script);
   }
-  return{TRIGGERS,DURATIONS,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,conditions,handlers,effectOwnerId,effectOwner,cardEffectList,attachEffects,createEffectContext,validateEffectList,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,run,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,resolveNextWinReservations,newHistory,loadLegacyTacticRuntime,loadTextCardRuntime,loadCombatEffectsRuntime};
+  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadLegacyTacticRuntime,loadTextCardRuntime,loadCombatEffectsRuntime};
 });
