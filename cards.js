@@ -5,6 +5,9 @@
   );
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
+  if(typeof document!=='undefined'&&!document.querySelector('script[data-migrated-tactic-card-runtime]')){
+    const script=document.createElement('script');script.src='migrated-tactic-runtime.js';script.async=false;script.dataset.migratedTacticCardRuntime='true';document.head.appendChild(script);
+  }
 })(typeof globalThis!=='undefined'?globalThis:this,function(packRegistry,migratedCards){
 const IMPLEMENTED_CARD_EFFECTS = {
   'pack01.black_bullet': [{trigger:'on_trick_win',action:'damage_enemy',value:3,duration:'trick'},{trigger:'on_showdown_score',action:'showdown_power',value:4,duration:'set'}],
@@ -38,10 +41,22 @@ const CARD_DETAIL_BY_ID=Object.freeze({
 });
 const {CARD_PACK_LIST,CARD_PACKS,defaultEnabledPacks,validateEnabledPacks,createRunPackState}=packRegistry;
 
+function browserFallbackMigratedDefinitions(){
+  const rows=[
+    ['core.paint','paint','페인트','D',4,'이 카드의 트릭 무늬를 현재 트럼프로 바꾼다. 인쇄값과 쇼다운값은 변하지 않는다.',['트릭값','트럼프','인쇄값','쇼다운값'],{trigger:'on_play',action:'set_next_trick_suit_to_trump',duration:'trick'}],
+    ['core.plus2','plus2','숫자 +2','S',3,'이 카드의 트릭 숫자 +2.',['트릭값','인쇄값'],{trigger:'on_play',action:'increase_next_trick_rank',value:2,duration:'trick'}],
+    ['core.barrier','barrier','임시 장벽','S',6,'사용 시 보호막 3을 얻는다.',['보호막'],{trigger:'on_play',action:'gain_shield',value:3,duration:'battle'}],
+    ['core.reverse','reverse','리버스','H',3,'이번 트릭은 낮은 트릭 숫자가 승리한다.',['트릭','트릭값'],{trigger:'on_play',action:'set_reverse_compare',duration:'trick'}],
+    ['core.recolor','recolor','색칠공부','C',9,'이 카드의 쇼다운 무늬를 현재 트럼프 무늬로 바꾼다.',['쇼다운값','트럼프'],{trigger:'on_play',action:'set_last_showdown_suit_to_trump',duration:'set'}],
+    ['core.fakeid','fakeid','가짜 신분증','H',10,'이 카드의 쇼다운 숫자 +1.',['쇼다운값'],{trigger:'on_play',action:'increase_last_showdown_rank',value:1,duration:'set'}]
+  ];
+  return rows.map(([id,legacyTacticId,name,suit,rank,text,terms,effect])=>Object.freeze({id,legacyTacticId,name,short:name,suit,rank,printedSuit:suit,printedRank:rank,description:`발동: 이 카드를 낼 때. 효과: ${text}`,terms:Object.freeze(terms),effects:Object.freeze([Object.freeze(effect)]),implemented:true,category:'general',rarity:'common',migrationStage:'3-1'}));
+}
+
 // CARD_DEFINITIONS remains the named/pack registry for compatibility.
 const CARD_DEFINITIONS=Object.values(CARD_PACKS).flatMap(pack=>pack.cards);
 for(const card of CARD_DEFINITIONS){card.implemented=Object.hasOwn(IMPLEMENTED_CARD_EFFECTS,card.id);card.effects=IMPLEMENTED_CARD_EFFECTS[card.id]||[]}
-const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.DIRECT_CARD_DEFINITIONS||[])]);
+const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.DIRECT_CARD_DEFINITIONS||browserFallbackMigratedDefinitions())]);
 const ALL_CARD_DEFINITIONS=Object.freeze([...CARD_DEFINITIONS,...GENERAL_EFFECT_CARD_DEFINITIONS]);
 const CARD_DEFINITION_BY_ID=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[card.id,card]));
 const CARD_DEFINITION_BY_BASE=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
@@ -64,8 +79,6 @@ function createCardRecord({suit,rank,cardId=null,definitionId=null,effects,metad
     cardId:definition?.id||cardId||null,
     definition,
     name:metadata.name??definition?.name??null,
-    // `named` is now strictly a compatibility alias for named pack cards. Ordinary
-    // effect-bearing cards use definition/effects without becoming named gameplay cards.
     named:definition?.packId?definition:null,
     effects:effectList.map(effect=>({...effect}))
   };
