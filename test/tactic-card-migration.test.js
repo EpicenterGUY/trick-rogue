@@ -1,14 +1,14 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const Migration=require('../tactic-card-migration.js');
-const TacticEffects=require('../tactic-effects.js');
+const Migrated=require('../migrated-tactic-cards.js');
 const CardEffects=require('../effects.js');
 const Cards=require('../cards.js');
 
 test('3-0 전술 마이그레이션 계획은 기존 12종 전술을 빠짐없이 포함한다',()=>{
   const planned=Migration.PLAN.map(entry=>entry.legacyId).sort();
-  const legacy=Object.keys(TacticEffects.TACTIC_EFFECTS).sort();
-  assert.deepEqual(planned,legacy);
+  const migrated=Migrated.ACTIVE_CARD_DEFINITIONS.map(card=>card.legacyTacticId).sort();
+  assert.deepEqual(planned,migrated);
   assert.equal(Migration.PLAN.length,12);
   assert.deepEqual(Migration.validatePlan(),[]);
 });

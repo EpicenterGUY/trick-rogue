@@ -101,15 +101,12 @@ button{font:inherit;color:inherit}
 .effectDetails{display:grid;gap:5px}.effectSection{display:grid;grid-template-columns:42px minmax(0,1fr);gap:6px;align-items:start}.effectLabel{border:0;background:none;padding:0;color:var(--gold);font-weight:800;text-align:left;cursor:pointer}.effectCopy{color:#d5dcea}.termHeading{display:block;margin:9px 0 4px;color:#9fb1ce;font-weight:800}
 #playBtn{padding:10px 12px;min-width:76px;align-self:center;position:sticky;right:0}
 .panelTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;color:#b4bfd2;font-size:11px}
-#handPanel,#tacticPanel{padding:8px;overflow:visible}
-#handRow,#tacticRow{display:flex;gap:6px;overflow-x:auto;overflow-y:visible;align-items:flex-start;padding:4px 2px 10px}
+#handPanel{padding:8px;overflow:visible}
+#handRow{display:flex;gap:6px;overflow-x:auto;overflow-y:visible;align-items:flex-start;padding:4px 2px 10px}
 .card{min-width:100px;width:100px;height:148px;padding:0;border:none;background:transparent;box-shadow:none;color:var(--ink);position:relative;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s ease;overflow:visible;flex:0 0 auto;transform-origin:center bottom;will-change:transform}.card:hover{transform:translateY(-4px);filter:brightness(1.05)} .card:after{display:none}
 .card.named{filter:drop-shadow(0 5px 0 #0006)}#handRow.has-selection .card:not(.sel){transform:translateY(3px)}.card.sel,.card.sel:hover{transform:translateY(-8px) scale(1.04);filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 10px #63d3d599);z-index:2}
 .cardTop,.cardName,.cardDesc,.cardTag{display:none}.cardSuit{font-size:17px}.cardArt{height:100%;margin:0;border:none;background:transparent;display:grid;place-items:center;overflow:visible;position:relative}.cardArt:after{display:none}.cardArt svg,.cardArt img{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 #0006)}
 .textCardFace{position:relative;display:block;width:100%;height:100%;aspect-ratio:100/148;container-type:inline-size;overflow:visible;border-radius:6px}.textCardFace>img,.textCardFace>svg{position:absolute;inset:0}.textCardName{position:absolute;z-index:1;inset:26% 12% 25%;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:2px 4%;color:#25292f;font-family:Arial,sans-serif;font-size:clamp(10px,12cqw,16px);font-weight:700;line-height:1.15;text-align:center;word-break:keep-all;overflow-wrap:break-word}.textCardName>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:100%}
-.tactic{min-width:86px;width:86px;height:132px;padding:0;border:none;background:transparent;color:var(--ink);cursor:pointer;position:relative;transition:transform .18s cubic-bezier(.2,.8,.2,1), filter .18s ease;animation:handIn .24s cubic-bezier(.2,.8,.2,1);overflow:visible;flex:0 0 auto}.tactic:hover{transform:translateY(-3px);filter:brightness(1.05)} .tactic.off{opacity:.45}.tactic.sel{transform:translateY(-4px)}
-.tacticArt{height:100%}.tacticArt img,.tacticArt svg{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 #0006)}
-.tacticName{position:absolute;left:12%;right:12%;bottom:12%;z-index:2;color:#29323a;font-family:Arial,sans-serif;font-size:clamp(9px,11cqw,12px);font-weight:700;line-height:1.1;text-align:center;word-break:keep-all;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.tacticDetail{display:none;padding:7px 8px 9px;border-top:1px solid #3d4962;font-size:10px;line-height:1.35}.tacticDetail.show{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.tacticDetail b{display:block;color:var(--gold);margin-bottom:2px}.tacticDetail .pixelBtn{padding:7px 10px}
 /* modal */
 #overlay{position:absolute;inset:0;background:#06080ecc;display:none;align-items:center;justify-content:center;padding:10px;z-index:20}
 #overlay.show{display:flex}.modal{width:100%;max-height:92dvh;padding:10px;overflow:auto;border:var(--px) solid #000;background:linear-gradient(180deg,#232b3f,#171e2d);box-shadow:0 0 0 var(--px) #556789 inset,calc(var(--px)*2) calc(var(--px)*2) 0 #0006;animation:modalPop .2s cubic-bezier(.2,.8,.2,1)}
@@ -121,14 +118,13 @@ button{font:inherit;color:inherit}
 @keyframes float{0%{opacity:0;transform:translate(-50%,8px)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-30px)}}@keyframes damagePop{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.25)}36%{opacity:1;transform:translate(-50%,-50%) scale(.9)}52%{opacity:1;transform:translate(-50%,-50%) scale(1)}78%{opacity:1;transform:translate(-50%,-58%) scale(1)}100%{opacity:0;transform:translate(-50%,-85%) scale(1)}}@keyframes flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}@keyframes nodePulse{0%{filter:brightness(1)}50%{filter:brightness(1.18)}100%{filter:brightness(1)}}@keyframes cardPop{0%{opacity:0;transform:scale(.86) translateY(8px)}100%{opacity:1;transform:scale(1) translateY(0)}}@keyframes handIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}@keyframes modalPop{0%{opacity:0;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}@keyframes burst{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}@keyframes slash{0%{opacity:0;transform:translate(-50%,-50%) rotate(-18deg) scaleX(.4)}100%{opacity:0;transform:translate(-50%,-50%) rotate(-18deg) scaleX(1.1)}}
 @media (prefers-reduced-motion:reduce){.slot.showdownScan,#showdownSequence.show,#showdownSequence.finalPower .sequenceValue,#showdownSequence.impact .sequenceValue,#arena.showdownImpact{animation-duration:.01ms}}
 @media (max-height:820px){
-  .hero h1{font-size:25px}.hero p{max-width:60%}.option{min-height:96px}.portrait{width:60px;height:60px}.intentWrap{grid-template-columns:60px 1fr}.stageCard{height:128px}.card{min-width:86px;width:86px;height:132px}.cardArt{height:100%}.tactic{min-width:88px;width:88px}.node{width:66px;height:50px}
+  .hero h1{font-size:25px}.hero p{max-width:60%}.option{min-height:96px}.portrait{width:60px;height:60px}.intentWrap{grid-template-columns:60px 1fr}.stageCard{height:128px}.card{min-width:86px;width:86px;height:132px}.cardArt{height:100%}.node{width:66px;height:50px}
 }
 
 /* v25 — icon-first card system */
 .card.named{filter:drop-shadow(0 3px 0 #0007)}
 .card.sel,.card.sel:hover{transform:translateY(-8px) scale(1.04);filter:drop-shadow(0 0 8px #68d1d788)}
-.cardArt svg,.tacticArt svg,.slotArt svg,.stageCard svg,.poolCard .cardArt svg,.miniCard svg{shape-rendering:geometricPrecision;filter:drop-shadow(0 3px 0 #0005)}
-.tacticArt svg{filter:drop-shadow(0 3px 0 #0006)}
+.cardArt svg,.slotArt svg,.stageCard svg,.poolCard .cardArt svg,.miniCard svg{shape-rendering:geometricPrecision;filter:drop-shadow(0 3px 0 #0005)}
 .poolCard{background:#161d2a;border:2px solid #080b10;box-shadow:0 0 0 2px #344158 inset;padding:7px;border-radius:5px}
 .poolCard b{font-size:11px}.poolCard span{color:#c6cfdd}
 
@@ -167,16 +163,16 @@ button{font:inherit;color:inherit}
   /* Battle */
   #battleScreen{overflow:auto}
   #battleScreen>.topbar{padding:0 0 12px}
-  #battleMain{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.85fr);grid-template-areas:"status status" "arena hand" "arena tactic" "arena inspect";grid-template-rows:auto auto auto minmax(104px,1fr);gap:10px;padding:0;min-height:calc(100dvh - 94px)}
+  #battleMain{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.85fr);grid-template-areas:"status status" "arena hand" "arena inspect";grid-template-rows:auto auto minmax(104px,1fr);gap:10px;padding:0;min-height:calc(100dvh - 94px)}
   #statusTop{grid-area:status}.hpPanel{padding:10px 12px}.hpBar{height:14px}.midStat{min-width:150px}
   #arena{grid-area:arena;min-height:0;height:100%;padding:14px;gap:10px;justify-content:space-between;overflow:hidden}
   .intentWrap{grid-template-columns:90px 1fr}.portrait{width:90px;height:90px}.intentBox{padding:12px}
   #versus{min-height:190px}.stageCard{height:184px;min-height:184px}.stageInner{width:122px;height:181px}.vsText{font-size:24px}
   #slotRow{gap:9px}.slot{height:132px}.slotArt{width:82px;height:121px}
-  #handPanel{grid-area:hand}#tacticPanel{grid-area:tactic}#inspect{grid-area:inspect}
-  #handPanel,#tacticPanel{padding:10px;min-width:0;overflow:hidden}
-  #handRow,#tacticRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));overflow-x:hidden;gap:8px;padding:5px 3px 12px}
-  .card,.tactic{min-width:0;width:100%;height:auto;aspect-ratio:100/148}
+  #handPanel{grid-area:hand}#inspect{grid-area:inspect}
+  #handPanel{padding:10px;min-width:0;overflow:hidden}
+  #handRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(82px,1fr));overflow-x:hidden;gap:8px;padding:5px 3px 12px}
+  .card{min-width:0;width:100%;height:auto;aspect-ratio:100/148}
   #inspect{min-height:104px;max-height:none;align-self:stretch}#inspect>div{max-height:none}
   #playBtn{min-width:104px;padding:12px 16px}
 
@@ -193,23 +189,22 @@ button{font:inherit;color:inherit}
   #arena{padding:9px;gap:5px}.intentWrap{grid-template-columns:64px 1fr}.portrait{width:64px;height:64px}.intentBox{padding:7px}
   #versus{min-height:128px}.stageCard{height:126px;min-height:126px}.stageInner{width:84px;height:124px}
   .slot{height:96px}.slotArt{width:60px;height:88px}
-  #handRow,#tacticRow{grid-template-columns:repeat(auto-fit,minmax(70px,1fr));padding-bottom:6px}
+  #handRow{grid-template-columns:repeat(auto-fit,minmax(70px,1fr));padding-bottom:6px}
   #inspect{min-height:82px}#startScreen .option{min-height:112px}
   #mapWrap{min-height:400px}
 }
 
 /* Interaction feedback: one restrained motion language across battle controls. */
-.card,.tactic,.slot,.pixelBtn,.choice,.termBtn,.effectLabel,.rewardBtns button,.poolCard{
+.card,.slot,.pixelBtn,.choice,.termBtn,.effectLabel,.rewardBtns button,.poolCard{
   transition-duration:var(--ui-duration);
   transition-timing-function:var(--ui-ease);
 }
-.card,.tactic{transition-property:transform,filter}
+.card{transition-property:transform,filter}
 @media (hover:hover){
   .card:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.04)}
-  .tactic:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.04)}
   .slot.fill:hover{transform:scale(1.03);filter:brightness(1.04)}
 }
-.card:active,.tactic:active,.slot.fill:active{transition-duration:var(--ui-press-duration);transform:translateY(1px) scale(.97);filter:brightness(.97)}
+.card:active,.slot.fill:active{transition-duration:var(--ui-press-duration);transform:translateY(1px) scale(.97);filter:brightness(.97)}
 .card.sel,.card.sel:hover{transform:translateY(-8px) scale(1.04)}
 .card.sel:active{transform:translateY(-5px) scale(1)}
 
@@ -241,9 +236,6 @@ button:disabled{cursor:not-allowed;opacity:.38;filter:saturate(.35) brightness(.
   #slotRow{gap:3px}.slot{height:auto;min-height:56px;aspect-ratio:3/4}.slotArt{width:min(36px,100%);height:auto;aspect-ratio:100/148}.slot small{display:none}#statuses{max-height:22px;overflow:auto}.stateChip{font-size:8px;padding:2px 4px}
   #handPanel{position:static;z-index:auto;padding:5px 7px;overflow:hidden;background:#1b2130}
   #handRow{display:grid;grid-template-columns:repeat(3,minmax(0,92px));justify-content:center;overflow:visible;padding:2px 2px 5px;gap:clamp(5px,2vw,9px)}#handRow .card{min-width:0;width:100%;height:auto;aspect-ratio:100/148}.panelTitle{margin-bottom:2px}
-  #tacticPanel{position:static;z-index:auto;padding:0 7px;overflow:visible;max-height:29px;transition:max-height .18s ease,padding .18s ease}
-  #tacticPanel.open{position:fixed;z-index:18;left:max(6px,calc((100vw - 460px)/2 + 6px));right:max(6px,calc((100vw - 460px)/2 + 6px));bottom:0;max-height:min(360px,72dvh);padding:5px 7px calc(7px + env(safe-area-inset-bottom));overflow:hidden;background:#1b2130fa;box-shadow:0 -12px 30px #000b}.tacticToggle{width:100%;border:0;background:none;color:#d7dfec;padding:5px 0;cursor:pointer}#tacticRow{gap:8px;padding:7px 10px 12px;scroll-snap-type:x mandatory;scroll-padding-inline:10px;overscroll-behavior-inline:contain;touch-action:pan-x}.tactic{min-width:calc((100vw - 64px)/3);width:calc((100vw - 64px)/3);max-width:112px;height:auto;aspect-ratio:100/148;flex:0 0 auto;scroll-snap-align:start}.tactic.sel{transform:translateY(-3px);filter:drop-shadow(0 0 7px #67d3d0)}
-  #tacticPanel:not(.open) #tacticRow,#tacticPanel:not(.open) .tacticDetail{display:none}
   #inspect{position:fixed;z-index:17;left:max(8px,calc((100vw - 456px)/2 + 8px));right:max(8px,calc((100vw - 456px)/2 + 8px));bottom:8px;max-height:min(190px,45dvh);background:#1b2130fa}#inspect.collapsed{display:none}
 }
 @media (prefers-reduced-motion:reduce){
@@ -333,11 +325,6 @@ button:disabled{cursor:not-allowed;opacity:.38;filter:saturate(.35) brightness(.
         <div class="panelTitle"><span>트럼프 패</span><span id="drawInfo"></span></div>
         <div id="handRow" class="scrollX"></div>
       </div>
-      <div id="tacticPanel" class="pixel">
-        <button class="panelTitle tacticToggle" type="button" onclick="toggleTactics()" aria-expanded="false"><span>전술 열기</span><span id="tacticInfo"></span></button>
-        <div id="tacticRow" class="scrollX"></div>
-        <div id="tacticDetail" class="tacticDetail" aria-live="polite"></div>
-      </div>
       <div id="inspect" class="pixel">
         <div>
           <div id="inspectTitle">카드를 선택</div>
@@ -391,14 +378,14 @@ const TERMS={
  '보호막':'다음 피해를 수치만큼 먼저 막는 상태.',
  '예약':'지금 등록해 두었다가 다음 트릭/다음 쇼다운 등에 발동하는 효과.',
  '번':'손의 카드 1장을 버리고 칩을 얻으며 새 카드를 뽑는 행동.',
- '더블다운':'호환용 전술 자리표시자. 현재는 효과가 없으며 우세 판정에 영향을 주지 않는다.',
+ '더블다운':'쇼다운에서 내 우세 무늬가 2개 이상이면 쇼다운 위력 +6을 주는 일반 효과 카드.',
  '압승':'적용 숫자 차이 5 이상으로 승리한 경우.',
  '아슬아슬':'적용 숫자 차이 1로 승리한 경우.',
  '역전':'인쇄 숫자가 더 낮았지만 트릭값 조작이나 트럼프로 승리한 경우.',
  '슬롯':'쇼다운에 쌓이는 1~5번째 위치. 일부 카드는 위치를 참조한다.',
  '쇼다운 슬롯':'트릭마다 낸 카드가 차례대로 쌓이는 1~5번 위치. 쇼다운의 다섯 장이 된다.',
  '랜덤':'정해진 확률에 따라 결과가 달라지는 효과.',
- '칩':'전술 카드를 사용하는 데 쓰는 전투 자원.',
+ '칩':'카드 효과로 획득하거나 소비하는 전투 자원.',
  '드로우':'덱에서 카드를 손패로 가져오는 행동.',
  '피해':'대상의 체력을 감소시키는 수치.',
  '무늬':'스페이드, 하트, 다이아, 클럽 중 카드의 분류.',
@@ -408,10 +395,7 @@ const TERMS={
  '최종 위력':'쇼다운에서 피해를 결정하는 최종 계산 수치.',
  '회복':'플레이어 체력을 최대 체력 이내에서 되돌리는 효과.',
  '손패':'현재 손에 있어 사용할 수 있는 카드.',
- '순수':'네임드 효과가 없는 기본 트럼프 카드.',
- '전술':'칩을 소비해 카드나 전투 규칙을 바꾸는 레거시 보조 시스템. 일반 카드 통합 전까지 유지한다.',
- '전술 카드':'칩을 소비하는 기존 별도 카드. 최신 설계에서는 일반 카드 효과로 통합할 예정인 레거시 시스템이다.',
- '전술 패':'현재 손에 있어 사용할 수 있는 전술 카드.',
+ '순수':'효과가 없는 일반 트럼프 카드를 가리키는 설명 표현. 별도 카드 타입은 아니다.',
  '족보':'쇼다운 다섯 장의 조합으로 정해지는 기본 위력.',
  '골드':'상점과 이벤트에서 사용하는 런 자원.',
  '인텐트':'적이 다음에 하려는 행동을 알려 주는 정보.',
@@ -421,7 +405,7 @@ const TERMS={
 };
 const SYSTEM_NOTES={
  '발동':'이 카드가 언제 작동하는지 알려 주는 말. 예: 트릭 승리 시, 카드를 냈을 때.',
- '조건':'효과가 켜지기 위해 먼저 만족해야 하는 전제. 예: 트릭 숫자 5 이하, 전술 사용 후 승리.',
+ '조건':'효과가 켜지기 위해 먼저 만족해야 하는 전제. 예: 트릭 숫자 5 이하, 우세 무늬 2개 이상.',
  '효과':'조건을 만족했을 때 실제로 일어나는 결과 수치. 예: 피해 3, 칩 +2.',
  '추가':'기본 효과와 별도로 적용되는 또 하나의 고유 효과 또는 특별 규칙.',
  '지속':'효과가 유지되는 기간. 트릭은 현재 또는 지정 트릭까지, 세트는 5트릭과 쇼다운까지, 전투와 런은 각각 해당 구간이 끝날 때까지를 뜻한다.'
@@ -433,34 +417,25 @@ function cardDefinition(ref){
 }
 function effectKey(card){ return card&&card.named?baseDefinitionKey(card.named.suit,card.named.rank):null; }
 
-const TACTICS=[
- {id:'paint',name:'페인트',cost:1,desc:'비용 1. 다음에 낼 카드 1장의 트릭 무늬를 현재 트럼프로 바꾼다. 인쇄값과 쇼다운값은 변하지 않는다.',terms:['트릭값','트럼프']},
- {id:'plus2',name:'숫자 +2',cost:1,desc:'비용 1. 다음에 낼 카드 1장의 트릭 숫자를 +2 한다. 인쇄값과 쇼다운값은 유지된다.',terms:['트릭값']},
- {id:'draw',name:'드로우',cost:1,desc:'비용 1. 카드 1장을 즉시 뽑는다.',terms:[]},
- {id:'scout',name:'정찰',cost:1,desc:'비용 1. 내 다음 카드와 적 다음 카드의 예측 단계를 각각 +1 한다.',terms:['예측']},
- {id:'double',name:'더블다운',cost:0,desc:'호환용 자리표시자. 현재 효과 없음.',terms:['더블다운','우세'],needsRework:'advantage-v2'},
- {id:'barrier',name:'임시 장벽',cost:1,desc:'비용 1. 즉시 보호막 3을 얻는다.',terms:['보호막']},
- {id:'burn',name:'번',cost:0,desc:'비용 0. 선택한 카드 1장을 버리고 칩 +1, 카드 1장 드로우.',terms:['번']},
- {id:'reverse',name:'리버스',cost:2,desc:'비용 2. 이번 트릭 한정으로 높은 숫자 대신 낮은 숫자가 승리한다.',terms:['트릭']},
-{id:'pureboost',name:'기본에 충실',cost:0,desc:'비용 0. 다음 순수 카드의 트릭 숫자 +2.',terms:['순수','트릭값']},
- {id:'clean',name:'무첨가',cost:1,desc:'비용 1. 다음 순수 카드로 승리하면 칩 +2.',terms:['순수','칩']},
- {id:'recolor',name:'색칠공부',cost:2,desc:'비용 2. 가장 최근 쇼다운 카드의 쇼다운 무늬를 현재 트럼프로 바꾼다.',terms:['쇼다운값','트럼프']},
- {id:'fakeid',name:'가짜 신분증',cost:2,desc:'비용 2. 가장 최근 쇼다운 카드의 쇼다운 숫자를 +1 한다.',terms:['쇼다운값']}
-];
 const CHARACTERS=[
  {id:'modder',name:'개조공',hp:54,desc:'네임드 밀도가 높고 압축된 시작.',passive:'시작 네임드 5장 / 순수 카드 2장 제거',named:['pack01.black_bullet','pack01.phoenix','pack01.golden_hand','pack01.dirty_gambler','pack01.recursive_function'],remove:2,sprite:'modder'},
  {id:'scout',name:'정찰가',hp:58,desc:'예측과 예약 계열에 강하다.',passive:'전투 시작 시 예측 +1',named:['pack01.ambush_observer','pack01.scheduled_delivery','pack01.phoenix','pack01.sharp_glass'],remove:1,sprite:'scout'},
  {id:'keeper',name:'보관인',hp:62,desc:'안정적이고 장기전에 유리한 시작.',passive:'시작 보호막 +2',named:['pack01.emergency_guard','pack01.golden_hand','pack01.black_bullet'],remove:0,sprite:'keeper'}
 ];
 const PACKS=[
- {id:'steady',name:'정석',desc:'숫자 조작과 드로우 위주.',t:['plus2','plus2','paint','draw','draw','scout','double','barrier','burn','reverse']},
- {id:'future',name:'예측',desc:'정찰과 예약 운영.',t:['scout','scout','draw','draw','paint','plus2','double','barrier','burn','reverse']},
- {id:'rush',name:'난전',desc:'더블다운과 속공용 전술.',t:['double','double','plus2','draw','draw','paint','barrier','burn','reverse','scout']}
+ {id:'steady',name:'정석',desc:'숫자 조작과 드로우 효과 카드를 더 많이 포함한다.',cardIds:['core.plus2','core.plus2','core.paint','core.draw','core.draw','core.scout','core.double','core.barrier','core.burn','core.reverse']},
+ {id:'future',name:'예측',desc:'정찰과 다음 트릭 준비 효과 카드 중심.',cardIds:['core.scout','core.scout','core.draw','core.draw','core.paint','core.plus2','core.double','core.barrier','core.burn','core.reverse']},
+ {id:'rush',name:'난전',desc:'더블다운과 저랭크 효과 카드 중심.',cardIds:['core.double','core.double','core.plus2','core.draw','core.draw','core.paint','core.barrier','core.burn','core.reverse','core.scout']}
 ];
 const ENEMIES={battle:{name:'폐허 약탈자',hp:58,intent:'고랭크 압박',sub:'높은 숫자를 자주 낸다.',sprite:'raider',setCount:null,bossPhases:[]},elite:{name:'철갑 사냥꾼',hp:86,intent:'봉인 탄환',sub:'세트가 길어질수록 네임드 억제를 건다.',sprite:'hunter',setCount:null,bossPhases:[]},boss:{name:'탑의 감시자',hp:130,intent:'규칙 재작성',sub:'세트마다 전장 규칙이 바뀐다.',sprite:'boss',setCount:null,bossPhases:[]}};
 let selectedChar='modder',selectedPack='steady',selectedCardPacks=defaultEnabledPacks(),run=null,battle=null;
-function makeCard(s,r,cardId=null){ const named=cardId?cardDefinition(cardId):null; return {uid:Math.random().toString(36).slice(2),suit:s,rank:r,named,cardId:named?named.id:null}; }
+function newUid(){return Math.random().toString(36).slice(2)}
+function makeCard(s,r,cardId=null){ const named=cardId?cardDefinition(cardId):null; return {uid:newUid(),suit:s,rank:r,named,cardId:named?named.id:null}; }
 function makeNamed(ref){ const named=cardDefinition(ref); return makeCard(named.suit,named.rank,named.id); }
+function makeGeneral(ref){return createDefinitionCard(ref,{uid:newUid()})}
+function cloneDeckCard(card){const next={...card,uid:newUid()};if(Array.isArray(card.effects))next.effects=card.effects.map(effect=>({...effect}));else delete next.effects;return next}
+function isPlainCard(card){return !!card&&!card.named&&!card.definition&&!card.cardId&&(!Array.isArray(card.effects)||card.effects.length===0)}
+function applyStartingPackage(deck,pack){let replaced=0;for(const cardId of pack.cardIds||[]){const i=deck.findIndex(isPlainCard);if(i<0)break;deck.splice(i,1,makeGeneral(cardId));replaced++}return replaced}
 
 function parseEffectSections(desc=''){
   const keys=['발동','조건','효과','추가'];
@@ -494,8 +469,8 @@ function systemLegendHtml(desc=''){
   return order.filter(k=>parts[k]).map(k=>`<button class="legendChip" onclick="showSystemNote('${k}')">${k}</button>`).join('');
 }
 function showSystemNote(k){ showModal(`<h2>${k}</h2><p>${SYSTEM_NOTES[k]}</p><div class="choiceList"><button class="choice" onclick="closeOverlay()"><b>닫기</b></button></div>`)}
-function shortFrontLabel(c){ return c.named ? c.named.name : '순수 카드'; }
-function baseDeck(){return createBaseCardSlots().map(card=>makeCard(card.suit,card.rank))}
+function shortFrontLabel(c){ const def=c.named||c.definition; return def?.name||`${suitObj(c.suit).sym}${rankLabel(c.rank)}`; }
+function baseDeck(){return createBaseCardSlots().map(cloneDeckCard)}
 function charSprite(kind){
  const map={
    modder:{hair:'#66d4d5',coat:'#253043',shade:'#1a2230',acc:'#7fe8e6',skin:'#f0d2b7'},
@@ -538,16 +513,16 @@ function makeMap(){return[
  {id:'n5',type:'elite',lane:1,row:3,next:['n6']},
  {id:'n6',type:'boss',lane:1,row:4,next:[]}
 ]}
-function currentBuild(){ if(!run) return '-'; let tags={}; run.deck.filter(c=>c.named).forEach(c=>(c.named.terms||[]).forEach(t=>tags[t]=(tags[t]||0)+1)); let top=Object.entries(tags).sort((a,b)=>b[1]-a[1])[0]; return top?top[0]:'혼합'; }
+function currentBuild(){ if(!run) return '-'; let tags={}; run.deck.map(c=>c.named||c.definition).filter(Boolean).forEach(def=>(def.terms||[]).forEach(t=>tags[t]=(tags[t]||0)+1)); let top=Object.entries(tags).sort((a,b)=>b[1]-a[1])[0]; return top?top[0]:'혼합'; }
 function renderStart(){ heroSprite.innerHTML=charSprite(selectedChar); charGrid.innerHTML=CHARACTERS.map(c=>`<button class="option pixel ${selectedChar===c.id?'sel':''}" onclick="selectedChar='${c.id}';sfx('click');renderStart()"><div class="optionSprite">${charSprite(c.sprite)}</div><h3>${c.name}</h3><p>${c.desc}<br><span class="cyan">${c.passive}</span></p></button>`).join(''); packGrid.innerHTML=PACKS.map(p=>`<button class="option pixel ${selectedPack===p.id?'sel':''}" onclick="selectedPack='${p.id}';sfx('click');renderStart()"><div class="optionSprite" style="font-size:28px">${p.id==='steady'?'◫':p.id==='future'?'◎':'⚔'}</div><h3>${p.name}</h3><p>${p.desc}</p></button>`).join('') }
-function beginRun(){ sfx('reward'); const ch=CHARACTERS.find(c=>c.id===selectedChar), pk=PACKS.find(p=>p.id===selectedPack); let deck=baseDeck(); for(const id of ch.named){ const named=cardDefinition(id); let i=deck.findIndex(c=>c.suit===named.suit&&c.rank===named.rank); if(i>=0) deck[i]=makeNamed(id) } for(let i=0;i<ch.remove;i++){ let pureIdx=deck.findIndex(c=>!c.named); if(pureIdx>=0) deck.splice(pureIdx,1) } run={char:ch,pack:pk,...createRunPackState(selectedCardPacks),hp:ch.hp,maxHp:ch.hp,gold:60,deck,tactics:pk.t.map(id=>({...TACTICS.find(t=>t.id===id),uid:Math.random().toString(36).slice(2)})),map:makeMap(),available:new Set(['n0']),completed:new Set()}; showScreen('mapScreen'); renderMap() }
+function beginRun(){ sfx('reward'); const ch=CHARACTERS.find(c=>c.id===selectedChar), pk=PACKS.find(p=>p.id===selectedPack); let deck=baseDeck(); for(const id of ch.named){ const named=cardDefinition(id); let i=deck.findIndex(c=>c.suit===named.suit&&c.rank===named.rank); if(i>=0) deck[i]=makeNamed(id) } for(let i=0;i<ch.remove;i++){ let plainIdx=deck.findIndex(isPlainCard); if(plainIdx>=0) deck.splice(plainIdx,1) } applyStartingPackage(deck,pk); run={char:ch,pack:pk,...createRunPackState(selectedCardPacks),hp:ch.hp,maxHp:ch.hp,gold:60,deck,map:makeMap(),available:new Set(['n0']),completed:new Set()}; showScreen('mapScreen'); renderMap() }
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active') }
 function renderMap(){ mapHp.textContent=`${run.hp}/${run.maxHp}`; mapGold.textContent=run.gold; mapDeck.textContent=run.deck.length; mapBuild.textContent=currentBuild(); const wrap=document.getElementById('mapWrap'); const grid=document.getElementById('mapGrid'); const svg=document.getElementById('mapSvg'); const W=wrap.clientWidth-20,H=wrap.clientHeight-20; svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width',W); svg.setAttribute('height',H); const lanes=[W*0.2,W*0.5,W*0.8]; const rows=[H*0.08,H*0.27,H*0.47,H*0.67,H*0.86]; const pos={}; run.map.forEach(n=>pos[n.id]={x:lanes[n.lane],y:rows[n.row]}); svg.innerHTML=''; run.map.forEach(n=>n.next.forEach(id=>{ let a=pos[n.id],b=pos[id]; svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#5e6f90" stroke-width="4" stroke-linecap="square" opacity=".7"/>` })); grid.innerHTML=''; const label={battle:'전투',event:'이벤트',camp:'캠프',shop:'상점',elite:'엘리트',boss:'보스'}, icon={battle:'⚔',event:'?',camp:'⌂',shop:'$',elite:'◆',boss:'♛'}; run.map.forEach(n=>{ let d=document.createElement('button'); d.className='node '+(run.completed.has(n.id)?'done ':run.available.has(n.id)?'current ':'lock '); d.style.left=(pos[n.id].x-36)+'px'; d.style.top=(pos[n.id].y-27)+'px'; d.innerHTML=`<div class="icon">${icon[n.type]}</div><div class="nm">${label[n.type]}</div>`; d.onclick=()=>enterNode(n); grid.appendChild(d) }); let show=run.deck.filter(c=>c.named).slice(0,7); if(show.length<7) show=show.concat(run.deck.filter(c=>!c.named).slice(0,7-show.length)); mapDeckStrip.innerHTML=show.map(c=>`<div class="miniCard"><div class="cardArt">${artHtml(c)}</div></div>`).join('') }
 let poolView={mode:'deck',title:'',items:[],selected:0};
 function poolItemFromCard(c){
- return {type:'card',card:c,html:artHtml(c),title:`${c.named?c.named.name:'순수 카드'} ${suitObj(c.suit).sym}${rankLabel(c.rank)}`,desc:c.named?cardDetailHtml(c.named):'효과 없음. 족보 구성과 쇼다운 재료로 사용된다.',meta:c.named?termExplainHtml(cardTerms(c.named)):'기본 카드 · 족보 재료'};
+ const def=c.named||c.definition;
+ return {type:'card',card:c,html:artHtml(c),title:`${def?def.name+' ':''}${suitObj(c.suit).sym}${rankLabel(c.rank)}`,desc:def?cardDetailHtml(def):'효과 없음. 족보 구성과 쇼다운 재료로 사용된다.',meta:def?termExplainHtml(cardTerms(def)):'일반 카드 · 족보 재료'};
 }
-function poolItemFromTactic(t){ return {type:'tactic',tactic:t,html:tacticIcon(t.id),title:`${t.name} · 비용 ${t.cost}`,desc:t.desc,meta:`용어: ${(t.terms||[]).join(' · ')||'없음'}`}; }
 function renderPoolModal(){
  const item=poolView.items[poolView.selected]||poolView.items[0];
  const tabs = poolView.mode==='all'
@@ -564,14 +539,13 @@ function renderPoolModal(){
 }
 function poolSelect(i){ poolView.selected=i; renderPoolModal(); }
 function showDeck(){ const namedCount=run.deck.filter(c=>c.named).length; poolView={mode:'deck',title:`현재 덱 · 총 ${run.deck.length}장 / 네임드 ${namedCount}장`,items:run.deck.map(poolItemFromCard),selected:0}; renderPoolModal(); }
-function showPool(activePackId='all'){ const definitions=activePackId==='all'?CARD_DEFINITIONS:CARD_PACKS[activePackId].cards,suitOrder=['S','H','D','C'],rankOrder=[14,2,3,4,5,6,7,8,9,10,11,12,13]; const extras=activePackId==='all'?[...suitOrder.flatMap(s=>rankOrder.map(r=>poolItemFromCard(makeCard(s,r)))),...TACTICS.map(poolItemFromTactic)]:[]; const items=[...definitions.map(d=>poolItemFromCard(makeNamed(d.id))),...extras]; const title=activePackId==='all'?`전체 카드풀 · 효과 카드 ${definitions.length+TACTICS.length}장 + 순수 카드 52장`:`${CARD_PACKS[activePackId].name} 카드풀 · ${definitions.length}장`; poolView={mode:'all',activePackId,title,items,selected:0}; renderPoolModal(); }
+function showPool(activePackId='all'){ const definitions=activePackId==='all'?CARD_DEFINITIONS:CARD_PACKS[activePackId].cards; const extras=activePackId==='all'?createBaseCardSlots().map(cloneDeckCard).map(poolItemFromCard):[]; const items=[...definitions.map(d=>poolItemFromCard(makeNamed(d.id))),...extras]; const title=activePackId==='all'?`전체 카드풀 · 일반 카드 52장 + 네임드 ${definitions.length}장`:`${CARD_PACKS[activePackId].name} 카드풀 · ${definitions.length}장`; poolView={mode:'all',activePackId,title,items,selected:0}; renderPoolModal(); }
 function enterNode(n){ if(!run.available.has(n.id))return; sfx('click'); if(['battle','elite','boss'].includes(n.type)) startBattle(n); else if(n.type==='event') showEvent(n); else if(n.type==='camp') showCamp(n); else if(n.type==='shop') showShop(n) }
 function completeNode(node){ run.completed.add(node.id); run.available.delete(node.id); node.next.forEach(id=>run.available.add(id)); if(node.type==='boss'){ finishRun(); return } closeOverlay(); showScreen('mapScreen'); renderMap() }
 function newTrumpBag(){return shuffle(SUITS.map(s=>s.k))}
 function drawSetTrump(state){if(!state.trumpBag?.length)state.trumpBag=newTrumpBag();return state.trumpBag.shift()}
-function startBattle(node){ const e=ENEMIES[node.type]; battle={node,type:node.type,enemy:{...e,hp:e.hp,maxHp:e.hp},deck:shuffle(run.deck.map(c=>({...c}))),discard:[],hand:[],exhausted:[],maxHandSize:BattleCore.DEFAULT_MAX_HAND_SIZE,tdeck:shuffle(run.tactics.map(t=>({...t}))),tdisc:[],thand:[],trick:1,setIndex:1,phase:'trick',setHistory:BattleCore.createSetHistory(),advantage:null,encounter:{setCount:e.setCount,bossPhases:e.bossPhases},effects:[],trumpBag:newTrumpBag(),trump:null,maxChip:3,chip:3,mods:{paint:false,plus:0,reverse:false,double:false},myForecast:0,enemyForecast:0,slots:[],enemySlots:[],statuses:{player:{shield: run.char.id==='keeper'?2:0,bleed:0,poison:0,seal:0},enemy:{shield:0,bleed:0,poison:0}},reservations:[],lastNamed:null,slotBonus:0,history:CardEffects.newHistory(),selected:null,selectedTactic:null,inspectSlot:null,inspectStage:null,animating:false,tacticsOpen:false,ended:false}; battle.trump=drawSetTrump(battle);dealOpeningHand(); drawT(5); battle.hand.forEach(card=>runCardEffects('on_set_start',card,{trump:battle.trump,setIndex:battle.setIndex})); if(run.char.id==='scout') {battle.myForecast=1;battle.enemyForecast=1} nextEnemy(); showScreen('battleScreen'); renderBattle() }
+function startBattle(node){ const e=ENEMIES[node.type]; battle={node,type:node.type,enemy:{...e,hp:e.hp,maxHp:e.hp},deck:shuffle(run.deck.map(cloneDeckCard)),discard:[],hand:[],exhausted:[],maxHandSize:BattleCore.DEFAULT_MAX_HAND_SIZE,trick:1,setIndex:1,phase:'trick',setHistory:BattleCore.createSetHistory(),advantage:null,encounter:{setCount:e.setCount,bossPhases:e.bossPhases},effects:[],trumpBag:newTrumpBag(),trump:null,maxChip:3,chip:3,mods:{paint:false,plus:0,reverse:false,double:false},myForecast:0,enemyForecast:0,slots:[],enemySlots:[],statuses:{player:{shield: run.char.id==='keeper'?2:0,bleed:0,poison:0,seal:0},enemy:{shield:0,bleed:0,poison:0}},reservations:[],lastNamed:null,slotBonus:0,history:CardEffects.newHistory(),selected:null,inspectSlot:null,inspectStage:null,animating:false,ended:false}; battle.trump=drawSetTrump(battle);dealOpeningHand(); battle.hand.forEach(card=>runCardEffects('on_set_start',card,{trump:battle.trump,setIndex:battle.setIndex})); if(run.char.id==='scout') {battle.myForecast=1;battle.enemyForecast=1} nextEnemy(); showScreen('battleScreen'); renderBattle() }
 function recycleP(){ if(!battle.deck.length && battle.discard.length){ battle.deck=shuffle(battle.discard); battle.discard=[] } } function drawP(n=1){ while(n-- && battle.hand.length<battle.maxHandSize){ recycleP(); if(battle.deck.length){battle.hand.push(battle.deck.pop());if(battle.history)battle.history.cardsDrawn++} } }
-function recycleT(){ if(!battle.tdeck.length && battle.tdisc.length){ battle.tdeck=shuffle(battle.tdisc); battle.tdisc=[] } } function drawT(n=1){ while(n--){ recycleT(); if(battle.tdeck.length){battle.thand.push(battle.tdeck.pop());if(battle.history)battle.history.cardsDrawn++} } }
 function dealOpeningHand(){ drawP(battle.maxHandSize) }
 function genEnemyCard(){ let r=battle.type==='battle'?(Math.random()<.55?8+Math.floor(Math.random()*7):2+Math.floor(Math.random()*13)):6+Math.floor(Math.random()*9); return {suit:pick(SUITS).k,rank:Math.min(14,r)} }
 function nextEnemy(){ battle.enemyCard=battle.nextEnemyPreview||genEnemyCard(); battle.nextEnemyPreview=genEnemyCard() }
@@ -798,44 +772,9 @@ function artHtml(c){
  return `<span class="textCardFace">${existingArt}<span class="textCardName"><span>${c.named.name}</span></span></span>`;
 }
 function stageHtml(c,label){ return `<div class="stageInner">${artHtml(c)}<div class="stageLabel">${label}</div></div>` }
-const TACTIC_ICON={paint:'palette',plus2:'plus',draw:'cards',scout:'eye',double:'double',barrier:'shield',burn:'flame',reverse:'reverse',pureboost:'pure',clean:'clean',recolor:'palette',fakeid:'id'};
-function tacticMiniIcon(kind){
- const s='stroke="#e9edf2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"';
- const a='stroke="#7ec7d1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"';
- switch(kind){
-  case 'palette':return `<path ${s} d="M14 35c0-14 10-23 23-23 12 0 20 7 20 17 0 8-5 11-11 11h-6c-3 0-4 4-2 6 3 4-1 8-7 8-10 0-17-8-17-19z"/><circle cx="27" cy="24" r="3" fill="#d87684"/><circle cx="39" cy="21" r="3" fill="#d9b45e"/><circle cx="49" cy="28" r="3" fill="#7ec7d1"/>`;
-  case 'plus':return `<path ${s} d="M32 15v34M15 32h34"/><path ${a} d="M47 13h10v10"/>`;
-  case 'cards':return `<rect ${s} x="13" y="18" width="27" height="35" rx="3"/><rect ${a} x="25" y="11" width="27" height="35" rx="3"/>`;
-  case 'eye':return `<path ${s} d="M7 32s9-15 25-15 25 15 25 15-9 15-25 15S7 32 7 32z"/><circle ${a} cx="32" cy="32" r="7"/>`;
-  case 'double':return `<circle ${s} cx="23" cy="32" r="12"/><circle ${a} cx="42" cy="32" r="12"/><path ${s} d="M28 32h9"/>`;
-  case 'shield':return iconBody('shield','#e9edf2','#7ec7d1');
-  case 'flame':return iconBody('flame','#e9edf2','#e08b68');
-  case 'reverse':return `<path ${s} d="M12 23h35l-8-8M52 41H17l8 8"/><path ${a} d="M47 23l-8 8M17 41l8-8"/>`;
-  case 'pure':return `<path ${s} d="M32 10l6 13 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2z"/>`;
-  case 'clean':return `<path ${s} d="M18 43c9-20 19-28 30-30-2 12-9 28-30 30z"/><path ${a} d="M19 43l25-24"/>`;
-  case 'id':return `<rect ${s} x="9" y="17" width="46" height="30" rx="4"/><circle ${a} cx="21" cy="30" r="6"/><path ${s} d="M32 26h16M32 34h12"/>`;
-  default:return `<circle ${s} cx="32" cy="32" r="18"/>`;
- }
-}
-function tacticIcon(id){
- const base=TACTICS.find(x=>x.id===id)||{name:id,cost:0}; const kind=TACTIC_ICON[id]||id;
- const accent='#4e8790', fg='#25292f';
- return `<svg viewBox="0 0 100 148" preserveAspectRatio="none" aria-label="전술 비용 ${base.cost}">
- <rect x="2" y="2" width="96" height="144" rx="7" fill="#f3f0e8" stroke="#22272d" stroke-width="2.6"/>
- <rect x="6.5" y="6.5" width="87" height="135" rx="5" fill="none" stroke="#b9c8c7" stroke-width="1.2"/>
- <path d="M9 18V9h9M82 9h9v9M9 130v9h9M82 139h9v-9" stroke="${accent}" stroke-width="1.7" fill="none" opacity=".7"/>
- <circle cx="17" cy="18" r="9" fill="#29323a"/><text x="17" y="22" text-anchor="middle" font-size="11" font-weight="800" fill="#f2d17b" font-family="Arial">${base.cost}</text>
- <circle cx="50" cy="71" r="31" fill="${accent}" opacity=".06"/>
- <g transform="translate(18 39)">${tacticMiniIcon(kind).replaceAll('#e9edf2',fg).replaceAll('#7ec7d1',accent).replaceAll('#d87684','#b94d50').replaceAll('#d9b45e','#b78532').replaceAll('#e08b68','#c96d51')}</g>
- <path d="M40 126h20" stroke="${accent}" stroke-width="1.4" opacity=".65"/><path d="M50 121l5 5-5 3-3-3z" fill="none" stroke="${accent}" stroke-width="1.5"/>
- </svg>`;
-}
-function tacticView(t){ return `<button class="tactic ${battle.chip<t.cost?'off':''} ${battle.selectedTactic===t.uid?'sel':''}" onclick="selectTactic('${t.uid}')" aria-label="${t.name}, 비용 ${t.cost}"><div class="tacticArt">${tacticIcon(t.id)}</div><span class="tacticName">${t.name}</span></button>` }
-function inspectTactic(t){ inspect.classList.add('collapsed'); tacticDetail.classList.add('show'); tacticDetail.innerHTML=`<div><b>${t.name} · 비용 ${t.cost}</b><span>${t.desc}</span></div><button class="pixelBtn primary" type="button" onclick="useTactic('${t.uid}')" ${battle.chip<t.cost?'disabled':''}>사용</button>`; }
-function inspectStageCard(which){ if(which==='player' && !battle.playerStage) return; if(which==='enemy' && !battle.enemyCard) return; if(battle.inspectStage===which){ battle.inspectStage=null; sfx('click'); renderBattle(); return } battle.inspectStage=which; battle.selected=null; battle.selectedTactic=null; battle.inspectSlot=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function toggleTactics(force){battle.tacticsOpen=typeof force==='boolean'?force:!battle.tacticsOpen;tacticPanel.classList.toggle('open',battle.tacticsOpen);tacticPanel.querySelector('.tacticToggle').setAttribute('aria-expanded',String(battle.tacticsOpen))}
-function useSelectedAction(){ if(battle.animating)return; if(battle.selectedTactic){ useTactic(battle.selectedTactic); return } playSelected() }
-function shortEffect(c){ if(!c.named) return '효과 없음 · 족보/순수 빌드'; const d=c.named.description; if(effectKey(c)==='S7')return '승리: 피해 3 · 쇼다운 +4'; if(effectKey(c)==='H4')return '승리: 체력 +4'; if(effectKey(c)==='D7')return '칩 소비 후 승리: 칩 +1 · 전술 +1'; if(effectKey(c)==='C3')return '트릭 숫자 5↓ 승리: 칩 +2'; if(effectKey(c)==='C8')return '승리: 직전 수치효과 복사'; if(effectKey(c)==='D6')return '다음 트릭 승리: 피해 6 예약'; if(effectKey(c)==='H8')return '낼 때: 보호막 +5'; if(effectKey(c)==='S5')return '승리: 적 출혈 +2'; if(effectKey(c)==='C5')return '3번 슬롯: 적 예측 +2'; if(effectKey(c)==='SA')return '손에서 20% 소진 · 쇼다운 +15'; return d.slice(0,28); }
+function inspectStageCard(which){ if(which==='player' && !battle.playerStage) return; if(which==='enemy' && !battle.enemyCard) return; if(battle.inspectStage===which){ battle.inspectStage=null; sfx('click'); renderBattle(); return } battle.inspectStage=which; battle.selected=null; battle.inspectSlot=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function useSelectedAction(){ if(battle.animating)return; playSelected() }
+function shortEffect(c){ const def=c.named||c.definition; if(!def) return '효과 없음 · 족보 재료'; if(c.cardId==='pack01.black_bullet')return '승리: 피해 3 · 쇼다운 +4'; if(c.cardId==='pack01.phoenix')return '승리: 체력 +4'; if(c.cardId==='pack01.golden_hand')return '승리: 칩 +1 · 다음 트릭 손패 +1'; if(c.cardId==='pack01.dirty_gambler')return '트릭 숫자 5↓ 승리: 칩 +2'; if(c.cardId==='pack01.recursive_function')return '승리: 직전 수치효과 복사'; if(c.cardId==='pack01.scheduled_delivery')return '다음 트릭 승리: 피해 6 예약'; if(c.cardId==='pack01.emergency_guard')return '낼 때: 보호막 +5'; if(c.cardId==='pack01.sharp_glass')return '승리: 적 출혈 +2'; if(c.cardId==='pack01.ambush_observer')return '3번 슬롯: 적 예측 +2'; if(c.cardId==='pack01.battery_1pct')return '손에서 20% 소진 · 쇼다운 +15'; return (def.description||def.text||'효과 카드').slice(0,40); }
 function cardView(c,sel=false){ return `<button id="card-${c.uid}" class="card ${c.named?'named':''} ${sel?'sel':''}" onclick="selectCard('${c.uid}')"><div class="cardArt">${artHtml(c)}</div></button>` }
 const HAND_MOTION_MS=180;
 function handMotionDisabled(){return matchMedia('(prefers-reduced-motion: reduce)').matches}
@@ -848,7 +787,7 @@ function animateRemovedHandCard(el,rect){
 function renderHand(){
  const previous=new Map([...handRow.children].map(el=>[el.dataset.uid,{el,rect:el.getBoundingClientRect()}]));
  const oldRects=new Map([...previous].map(([uid,item])=>[uid,item.rect]));
- const selectedUid=battle.selected&&!battle.selectedTactic?battle.selected:null,fragment=document.createDocumentFragment();
+ const selectedUid=battle.selected||null,fragment=document.createDocumentFragment();
  for(const card of battle.hand){
   const prior=previous.get(card.uid),el=prior?.el||document.createElement('button');
   if(!prior){el.id=`card-${card.uid}`;el.innerHTML=`<div class="cardArt">${artHtml(card)}</div>`;el.onclick=()=>selectCard(card.uid)}
@@ -867,17 +806,15 @@ function renderHand(){
  }
 }
 function statusList(){ const out=[]; const p=battle.statuses.player,e=battle.statuses.enemy; if(p.shield) out.push(`<span class="stateChip cyan">보호막 ${p.shield}</span>`); if(p.bleed) out.push(`<span class="stateChip red">출혈 ${p.bleed}</span>`); if(e.bleed) out.push(`<span class="stateChip red">적 출혈 ${e.bleed}</span>`); battle.reservations.forEach(r=>out.push(`<span class="stateChip gold">예약 · ${r.label}</span>`)); return out.join('')||'<span class="stateChip">상태 없음</span>' }
-function renderBattle(){ battleTitle.textContent=battle.type==='battle'?'일반 전투':battle.type==='elite'?'엘리트 전투':'보스 전투'; battleSub.textContent=`세트 ${battle.setIndex} · 5트릭 후 쇼다운`; pName.textContent=run.char.name; eName.textContent=battle.enemy.name; pHpText.textContent=`${run.hp}/${run.maxHp}`; eHpText.textContent=`${battle.enemy.hp}/${battle.enemy.maxHp}`; pHpFill.style.width=(run.hp/run.maxHp*100)+'%'; eHpFill.style.width=(battle.enemy.hp/battle.enemy.maxHp*100)+'%'; edgeText.textContent=battle.phase==='showdown'&&battle.advantage&&battle.showdownVisualStage!=='scan'?advantageText(battle.advantage):'쇼다운에서 판정'; trickText.textContent=`${battle.trick}/5`; trumpText.textContent=suitObj(battle.trump).sym; trumpText.className=suitObj(battle.trump).red?'red':''; chipText.textContent=`${battle.chip}/${battle.maxChip}`; intentMain.textContent=battle.enemy.intent; intentSub.textContent=battle.enemy.sub; enemyPortrait.innerHTML=charSprite(battle.enemy.sprite); myForecast.textContent=forecastText('me'); enemyForecast.textContent=forecastText('enemy'); enemyStage.className='stageCard show'; enemyStage.innerHTML=stageHtml(battle.enemyCard,'적 카드'); enemyStage.onclick=()=>inspectStageCard('enemy'); enemyStage.style.cursor='pointer'; if(battle.playerStage){ playerStage.className='stageCard show'; playerStage.innerHTML=stageHtml(battle.playerStage,'내 카드'); playerStage.onclick=()=>inspectStageCard('player'); playerStage.style.cursor='pointer'; } else { playerStage.className='stageCard'; playerStage.innerHTML=''; playerStage.onclick=null; playerStage.style.cursor='default'; } slotRow.innerHTML=Array.from({length:5},(_,i)=>{ let s=battle.slots[i]; return s?`<button id="showdown-slot-${i}" class="slot fill ${battle.inspectSlot===i?'inspecting':''}" onclick="inspectPlaced(${i})"><div class="slotArt">${artHtml(s.card)}</div><small>${i+1}번 슬롯</small></button>`:`<div id="showdown-slot-${i}" class="slot"><div>${i+1}</div></div>` }).join(''); statuses.innerHTML=statusList(); renderHand(); tacticRow.innerHTML=battle.thand.map(t=>tacticView(t)).join(''); drawInfo.textContent=`덱 ${battle.deck.length} · 버림 ${battle.discard.length}`; tacticInfo.textContent=`전술 ${battle.thand.length}`; tacticPanel.classList.toggle('open',battle.tacticsOpen); tacticPanel.querySelector('.tacticToggle').setAttribute('aria-expanded',String(battle.tacticsOpen)); tacticDetail.classList.remove('show'); tacticDetail.replaceChildren(); if(battle.selectedTactic){ const t=battle.thand.find(x=>x.uid===battle.selectedTactic); if(t) inspectTactic(t); else battle.selectedTactic=null; } else if(battle.selected){ const c=battle.hand.find(x=>x.uid===battle.selected); if(c) inspectCard(c); else battle.selected=null; } else if(battle.inspectSlot!==null && battle.slots[battle.inspectSlot]){ inspectCard(battle.slots[battle.inspectSlot].card,true,battle.inspectSlot); } else if(battle.inspectStage==='player' && battle.playerStage){ inspectCard(battle.playerStage,true,null); } else if(battle.inspectStage==='enemy' && battle.enemyCard){ inspectCard(battle.enemyCard,true,null); } else { inspect.classList.add('collapsed'); inspectTitle.textContent='카드를 선택'; inspectDesc.textContent='손패, 전술 카드, 전장 카드, 쇼다운 슬롯 카드를 누르면 아래에 설명이 뜬다.'; inspectApply.textContent=''; systemLegend.innerHTML=''; termRow.innerHTML=''; playBtn.textContent='내기'; playBtn.disabled=true; } }
+function renderBattle(){ battleTitle.textContent=battle.type==='battle'?'일반 전투':battle.type==='elite'?'엘리트 전투':'보스 전투'; battleSub.textContent=`세트 ${battle.setIndex} · 5트릭 후 쇼다운`; pName.textContent=run.char.name; eName.textContent=battle.enemy.name; pHpText.textContent=`${run.hp}/${run.maxHp}`; eHpText.textContent=`${battle.enemy.hp}/${battle.enemy.maxHp}`; pHpFill.style.width=(run.hp/run.maxHp*100)+'%'; eHpFill.style.width=(battle.enemy.hp/battle.enemy.maxHp*100)+'%'; edgeText.textContent=battle.phase==='showdown'&&battle.advantage&&battle.showdownVisualStage!=='scan'?advantageText(battle.advantage):'쇼다운에서 판정'; trickText.textContent=`${battle.trick}/5`; trumpText.textContent=suitObj(battle.trump).sym; trumpText.className=suitObj(battle.trump).red?'red':''; chipText.textContent=`${battle.chip}/${battle.maxChip}`; intentMain.textContent=battle.enemy.intent; intentSub.textContent=battle.enemy.sub; enemyPortrait.innerHTML=charSprite(battle.enemy.sprite); myForecast.textContent=forecastText('me'); enemyForecast.textContent=forecastText('enemy'); enemyStage.className='stageCard show'; enemyStage.innerHTML=stageHtml(battle.enemyCard,'적 카드'); enemyStage.onclick=()=>inspectStageCard('enemy'); enemyStage.style.cursor='pointer'; if(battle.playerStage){ playerStage.className='stageCard show'; playerStage.innerHTML=stageHtml(battle.playerStage,'내 카드'); playerStage.onclick=()=>inspectStageCard('player'); playerStage.style.cursor='pointer'; } else { playerStage.className='stageCard'; playerStage.innerHTML=''; playerStage.onclick=null; playerStage.style.cursor='default'; } slotRow.innerHTML=Array.from({length:5},(_,i)=>{ let s=battle.slots[i]; return s?`<button id="showdown-slot-${i}" class="slot fill ${battle.inspectSlot===i?'inspecting':''}" onclick="inspectPlaced(${i})"><div class="slotArt">${artHtml(s.card)}</div><small>${i+1}번 슬롯</small></button>`:`<div id="showdown-slot-${i}" class="slot"><div>${i+1}</div></div>` }).join(''); statuses.innerHTML=statusList(); renderHand(); drawInfo.textContent=`덱 ${battle.deck.length} · 버림 ${battle.discard.length}`; if(battle.selected){ const c=battle.hand.find(x=>x.uid===battle.selected); if(c) inspectCard(c); else battle.selected=null; } else if(battle.inspectSlot!==null && battle.slots[battle.inspectSlot]){ inspectCard(battle.slots[battle.inspectSlot].card,true,battle.inspectSlot); } else if(battle.inspectStage==='player' && battle.playerStage){ inspectCard(battle.playerStage,true,null); } else if(battle.inspectStage==='enemy' && battle.enemyCard){ inspectCard(battle.enemyCard,true,null); } else { inspect.classList.add('collapsed'); inspectTitle.textContent='카드를 선택'; inspectDesc.textContent='손패, 전장 카드, 쇼다운 슬롯 카드를 누르면 아래에 설명이 뜬다.'; inspectApply.textContent=''; systemLegend.innerHTML=''; termRow.innerHTML=''; playBtn.textContent='내기'; playBtn.disabled=true; } }
 function advantageText(a){ const labels=x=>x.map(s=>suitObj(s).sym).join(' · ')||'없음',bonus=x=>x.length?' (+3)':''; return `나 ${labels(a.playerAdvantages)}${bonus(a.playerAdvantages)} / 적 ${labels(a.enemyAdvantages)}${bonus(a.enemyAdvantages)}` }
 function effective(c){ const rank=Math.min(14,c.rank+battle.mods.plus+(c.effectiveRankBonus||0)),suit=battle.mods.paint?battle.trump:c.suit; return BattleCore.effectiveCard(c,{rank,suit,treatedAsTrump:c.treatedAsTrump===true}) }
 function compare(c,e){ let p=effective(c),enemy=BattleCore.effectiveCard(e); if(battle.mods.reverse&&p.trickSuit===enemy.trickSuit)return Math.sign(enemy.trickRank-p.trickRank); return BattleCore.compareTrick(p,enemy,battle.trump) }
 function classifyWin(c,e,res){ if(res<=0) return null; let p=effective(c),enemy=BattleCore.effectiveCard(e),diff=Math.abs(p.trickRank-enemy.trickRank),sameTrump=BattleCore.isTrumpCard(p,battle.trump)===BattleCore.isTrumpCard(enemy,battle.trump); if(c.rank<e.rank) return '역전'; if(sameTrump&&diff===1) return '아슬아슬'; if(sameTrump&&diff>=5) return '압승'; return null }
-function clearInspect(){ battle.selected=null; battle.selectedTactic=null; battle.inspectSlot=null; battle.inspectStage=null; renderBattle() }
-function selectCard(uid){ if(battle.animating)return; if(battle.selected===uid&&!battle.selectedTactic&&battle.inspectSlot===null){battle.selected=null;sfx('cardSelect');renderBattle();return} battle.selected=uid; battle.selectedTactic=null; battle.inspectSlot=null; battle.inspectStage=null; sfx('cardSelect'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function selectTactic(uid){ if(battle.animating||battle.tacticUsing)return; if(battle.selectedTactic===uid){battle.selectedTactic=null;sfx('click');renderBattle();return} battle.selectedTactic=uid; battle.inspectSlot=null; battle.inspectStage=null; sfx('click'); renderBattle(); if(battle.tacticsOpen)tacticPanel.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function inspectPlaced(i){ const item=battle.slots[i]; if(!item)return; if(battle.inspectSlot===i&&!battle.selected&&!battle.selectedTactic){battle.inspectSlot=null;sfx('click');renderBattle();return} battle.inspectSlot=i; battle.selected=null; battle.selectedTactic=null; battle.inspectStage=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
-function inspectCard(c,placed=false,slotIndex=null){ if(!c)return; inspect.classList.remove('collapsed'); playBtn.textContent='내기'; const eff=effective(c),result=compare(c,battle.enemyCard),label=result>0?'예상 승리':result<0?'예상 패배':'예상 동점'; const slotLabel=(slotIndex!==null&&slotIndex!==undefined)?` · ${slotIndex+1}번 슬롯`:''; inspectTitle.textContent=`${c.named?c.named.name:'순수 카드'} ${suitObj(c.suit).sym}${rankLabel(c.rank)}${placed?slotLabel:''}`; inspectDesc.innerHTML=c.named?cardDetailHtml(c.named):'효과 없음. 순수 카드는 족보 구성과 쇼다운 재료로 사용된다.'; inspectApply.textContent=placed?`전장/쇼다운 카드 · 인쇄값 ${suitObj(BattleCore.printedValue(c,'Suit')).sym}${rankLabel(BattleCore.printedValue(c,'Rank'))} · 쇼다운값 ${suitObj(BattleCore.showdownValue(c,'Suit')).sym}${rankLabel(BattleCore.showdownValue(c,'Rank'))}`:`인쇄 ${suitObj(BattleCore.printedValue(c,'Suit')).sym}${rankLabel(BattleCore.printedValue(c,'Rank'))} → 트릭 ${suitObj(eff.trickSuit).sym}${rankLabel(eff.trickRank)}${BattleCore.isTrumpCard(eff,battle.trump)?' · 트럼프':''} · ${label}`; systemLegend.innerHTML=''; const terms=[...new Set([...(c.named?cardTerms(c.named):[]),'인쇄값','트릭값','쇼다운값'])]; termRow.innerHTML=terms.map(t=>`<button class="termBtn" onclick="showTerm('${t}')">${t}</button>`).join(''); playBtn.disabled=placed||!!battle.selectedTactic }
-function useTactic(uid){ if(battle.animating||battle.tacticUsing)return; battle.tacticUsing=true; const idx=battle.thand.findIndex(t=>t.uid===uid); if(idx<0){battle.tacticUsing=false;return;} const t=battle.thand[idx]; if(battle.chip<t.cost){floatText(arena,'칩 부족','red');sfx('lose');battle.tacticUsing=false;return} if(t.id==='burn'&&!battle.selected){floatText(arena,'먼저 카드 선택','cyan');battle.tacticUsing=false;return} battle.chip-=t.cost; battle.history.tacticsUsed=true; battle.history.tacticUseCount++; battle.history.chipsSpent+=t.cost; battle.tdisc.push(battle.thand.splice(idx,1)[0]); battle.selectedTactic=null; sfx('click'); if(t.id==='paint') flash('페인트'),battle.mods.paint=true; if(t.id==='plus2') battle.mods.plus+=2,floatText(arena,'숫자 +2','cyan'); if(t.id==='draw'){drawP(1);floatText(arena,'카드 +1','cyan')} if(t.id==='scout'){battle.myForecast=Math.min(3,battle.myForecast+1);battle.enemyForecast=Math.min(3,battle.enemyForecast+1);floatText(arena,'예측 +1','violet')} if(t.id==='double') floatText(arena,'현재 효과 없음','violet'); if(t.id==='barrier'){battle.statuses.player.shield+=3;floatText(arena,'보호막 +3','cyan')} if(t.id==='reverse') battle.mods.reverse=true,flash('리버스'); if(t.id==='pureboost') battle.mods.plus+=2,floatText(arena,'순수 보정 +2','cyan'); if(t.id==='clean'){battle.chip=Math.min(9,battle.chip+1);floatText(arena,'무첨가 · 칩 +1','green')} if(t.id==='recolor'){const s=battle.slots[battle.slots.length-1];if(s){s.card.showdownSuit=battle.trump;floatText(arena,'쇼다운 무늬 변경','violet')}else floatText(arena,'슬롯 없음','red')} if(t.id==='fakeid'){const s=battle.slots[battle.slots.length-1];if(s){s.card.showdownRank=Math.min(14,BattleCore.showdownValue(s.card,'Rank')+1);floatText(arena,'쇼다운 숫자 +1','gold')}else floatText(arena,'슬롯 없음','red')} if(t.id==='burn'){const ci=battle.hand.findIndex(c=>c.uid===battle.selected);if(ci>=0){battle.discard.push(battle.hand.splice(ci,1)[0]);battle.chip=Math.min(9,battle.chip+1);drawP(1);battle.selected=null;floatText(arena,'번 · 칩 +1','gold')}} battle.tacticsOpen=false; battle.tacticUsing=false; renderBattle() }
+function clearInspect(){ battle.selected=null; battle.inspectSlot=null; battle.inspectStage=null; renderBattle() }
+function selectCard(uid){ if(battle.animating)return; if(battle.selected===uid&&battle.inspectSlot===null){battle.selected=null;sfx('cardSelect');renderBattle();return} battle.selected=uid; battle.inspectSlot=null; battle.inspectStage=null; sfx('cardSelect'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function inspectPlaced(i){ const item=battle.slots[i]; if(!item)return; if(battle.inspectSlot===i&&!battle.selected){battle.inspectSlot=null;sfx('click');renderBattle();return} battle.inspectSlot=i; battle.selected=null; battle.inspectStage=null; sfx('click'); renderBattle(); document.getElementById('inspect').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function inspectCard(c,placed=false,slotIndex=null){ if(!c)return; inspect.classList.remove('collapsed'); playBtn.textContent='내기'; const def=c.named||c.definition,eff=effective(c),result=compare(c,battle.enemyCard),label=result>0?'예상 승리':result<0?'예상 패배':'예상 동점'; const slotLabel=(slotIndex!==null&&slotIndex!==undefined)?` · ${slotIndex+1}번 슬롯`:''; inspectTitle.textContent=`${def?def.name+' ':''}${suitObj(c.suit).sym}${rankLabel(c.rank)}${placed?slotLabel:''}`; inspectDesc.innerHTML=def?cardDetailHtml(def):'효과 없음. 일반 카드는 족보 구성과 쇼다운 재료로 사용된다.'; inspectApply.textContent=placed?`전장/쇼다운 카드 · 인쇄값 ${suitObj(BattleCore.printedValue(c,'Suit')).sym}${rankLabel(BattleCore.printedValue(c,'Rank'))} · 쇼다운값 ${suitObj(BattleCore.showdownValue(c,'Suit')).sym}${rankLabel(BattleCore.showdownValue(c,'Rank'))}`:`인쇄 ${suitObj(BattleCore.printedValue(c,'Suit')).sym}${rankLabel(BattleCore.printedValue(c,'Rank'))} → 트릭 ${suitObj(eff.trickSuit).sym}${rankLabel(eff.trickRank)}${BattleCore.isTrumpCard(eff,battle.trump)?' · 트럼프':''} · ${label}`; systemLegend.innerHTML=''; const terms=[...new Set([...(def?cardTerms(def):[]),'인쇄값','트릭값','쇼다운값'])]; termRow.innerHTML=terms.map(t=>`<button class="termBtn" onclick="showTerm('${t}')">${t}</button>`).join(''); playBtn.disabled=placed }
 async function animateCardFlight(card){
  const src=document.getElementById(`card-${card.uid}`),slot=document.getElementById(`showdown-slot-${battle.slots.length}`);if(!src||!slot)return;
  const appRect=app.getBoundingClientRect(),start=src.getBoundingClientRect(),center=versus.getBoundingClientRect(),end=slot.getBoundingClientRect();
@@ -945,7 +882,11 @@ function effectContext(card,extra={}){ const eff=effective(card);return {card,en
  if(action==='gain_shield'){battle.statuses.player.shield+=value;floatText(arena,`보호막 +${value}`,'cyan')}
  if(action==='apply_enemy_bleed'){battle.statuses.enemy.bleed+=value;floatText(arena,`적 출혈 +${value}`,'red')}
  if(action==='increase_enemy_forecast'){battle.enemyForecast=Math.min(3,battle.enemyForecast+value);floatText(arena,`예측 +${value}`,'violet')}
- if(action==='draw_tactic'){drawT(value);floatText(arena,`전술 +${value}`,'cyan')}
+ if(action==='set_next_trick_suit_to_trump')battle.mods.paint=true
+ if(action==='increase_next_trick_rank')battle.mods.plus+=(value||0)
+ if(action==='set_reverse_compare')battle.mods.reverse=true
+ if(action==='set_last_showdown_suit_to_trump'){const slot=battle.slots[battle.slots.length-1];if(slot)slot.card.showdownSuit=battle.trump}
+ if(action==='increase_last_showdown_rank'){const slot=battle.slots[battle.slots.length-1];if(slot)slot.card.showdownRank=Math.min(14,BattleCore.showdownValue(slot.card,'Rank')+(value||0))}
  if(action==='increase_effective_rank')card.effectiveRankBonus=(card.effectiveRankBonus||0)+value
  if(action==='showdown_power')extra.score.value+=value
  if(action==='reserve_next_win_damage')battle.reservations.push({type:'nextWinDamage',value,eligibleSet:battle.trick===5?battle.setIndex+1:battle.setIndex,eligibleTrick:battle.trick===5?1:battle.trick+1,label:`다음 승리 피해 ${value}`})
@@ -959,7 +900,7 @@ async function playSelected(){ const c=battle.hand.find(x=>x.uid===battle.select
  if(res>0)runCardEffects('on_trick_win',c,{result:res,slotIndex});else if(res<0)runCardEffects('on_trick_loss',c,{result:res,slotIndex});else runCardEffects('on_trick_draw',c,{result:res,slotIndex});
  const reservationCount=battle.reservations.length;battle.reservations=CardEffects.resolveNextWinReservations(battle.reservations,{set:battle.setIndex,trick:battle.trick},res>0,(action,value)=>{if(action==='damage_enemy')damageEnemy(value)});if(res>0&&battle.reservations.length<reservationCount)flash('예약 발동')
  BattleCore.recordTrickResult(battle,res);runCardEffects('after_card_slotted',c,{result:res,slotIndex});applyEndStatus();runCardEffects('on_trick_end',c,{result:res,inHand:false,slotIndex});[...battle.hand].forEach(held=>runCardEffects('on_trick_end',held,{result:res,inHand:true}));
- if(run.hp<=0){loseRun();return}if(battle.enemy.hp<=0){await winBattle();return}if(battle.slots.length<5){drawP(battle.maxHandSize);drawT(1);battle.trick++;battle.chip=battle.maxChip;battle.mods={paint:false,plus:0,reverse:false,double:false};battle.history=CardEffects.newHistory();battle.selected=null;battle.inspectSlot=null;battle.playerStage=null;nextEnemy();renderBattle();return}await showdown()}finally{battle.animating=false;battleScreen.classList.remove('inputLocked');battleScreen.removeAttribute('aria-busy')} }
+ if(run.hp<=0){loseRun();return}if(battle.enemy.hp<=0){await winBattle();return}if(battle.slots.length<5){drawP(battle.maxHandSize);battle.trick++;battle.chip=battle.maxChip;battle.mods={paint:false,plus:0,reverse:false,double:false};battle.history=CardEffects.newHistory();battle.selected=null;battle.inspectSlot=null;battle.playerStage=null;nextEnemy();renderBattle();return}await showdown()}finally{battle.animating=false;battleScreen.classList.remove('inputLocked');battleScreen.removeAttribute('aria-busy')} }
 function applyEndStatus(){ const e=battle.statuses.enemy,p=battle.statuses.player; if(e.bleed>0){ damageEnemy(e.bleed); e.bleed=Math.max(0,e.bleed-1) } if(p.bleed>0){ damagePlayer(p.bleed); p.bleed=Math.max(0,p.bleed-1) } }
 function poker(arr){ let rs=arr.map(x=>BattleCore.showdownValue(x.card,'Rank')).sort((a,b)=>a-b), ss=arr.map(x=>BattleCore.showdownValue(x.card,'Suit')), cnt={}; rs.forEach(r=>cnt[r]=(cnt[r]||0)+1); let v=Object.values(cnt).sort((a,b)=>b-a), u=[...new Set(rs)], fl=new Set(ss).size===1, st=(u.length===5&&u[4]-u[0]===4)||JSON.stringify(u)===JSON.stringify([2,3,4,5,14]); if(st&&fl)return{name:'스트레이트 플러시',p:70}; if(v[0]===4)return{name:'포카드',p:52}; if(v[0]===3&&v[1]===2)return{name:'풀하우스',p:40}; if(fl)return{name:'플러시',p:32}; if(st)return{name:'스트레이트',p:28}; if(v[0]===3)return{name:'트리플',p:22}; if(v[0]===2&&v[1]===2)return{name:'투페어',p:16}; if(v[0]===2)return{name:'페어',p:10}; return{name:'하이카드',p:5} }
 function showShowdownStep(label,value,className=''){
@@ -990,11 +931,11 @@ function takeReward(cardId,mode,id){const def=cardDefinition(cardId),s=def.suit,
 function skipReward(id){ run.gold+=12; closeOverlay(); completeNode(run.map.find(n=>n.id===id)) }
 function showEvent(node){ showModal(`<h2>이벤트 · 끊어진 관측소</h2><p>낡은 모니터가 미래를 조금 읽어 준다.</p><div class="choiceList"><button class="choice" onclick="eventPick('${node.id}','gold')"><b>부품 분해</b><span>골드 +30</span></button><button class="choice" onclick="eventPick('${node.id}','card')"><b>관측 데이터 보관</b><span>관측자 ♣5 추가</span></button><button class="choice" onclick="eventPick('${node.id}','heal')"><b>숨 고르기</b><span>체력 +10</span></button></div>`) }
 function eventPick(id,type){ if(type==='gold')run.gold+=30; if(type==='card')run.deck.push(makeCard('C',5,'C5')); if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+10); completeNode(run.map.find(n=>n.id===id)) }
-function showCamp(node){ showModal(`<h2>캠프</h2><div class="choiceList"><button class="choice" onclick="campPick('${node.id}','heal')"><b>휴식</b><span>체력 30% 회복</span></button><button class="choice" onclick="campPick('${node.id}','remove')"><b>정리</b><span>순수 카드 1장 제거 (최소 36장)</span></button><button class="choice" onclick="campPick('${node.id}','gold')"><b>탐색</b><span>골드 +24</span></button></div>`) }
-function campPick(id,type){ if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+Math.ceil(run.maxHp*.3)); if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(c=>!c.named); if(i>=0)run.deck.splice(i,1) } if(type==='gold')run.gold+=24; completeNode(run.map.find(n=>n.id===id)) }
-function showShop(node){ showModal(`<h2>상점</h2><p>골드 ${run.gold}</p><div class="choiceList"><button class="choice" onclick="shopPick('${node.id}','remove',45)"><b>카드 제거 · 45G</b><span>순수 카드 1장 제거</span></button><button class="choice" onclick="shopPick('${node.id}','scout',35)"><b>정찰 구매 · 35G</b><span>전술 카드 정찰 추가</span></button><button class="choice" onclick="shopPick('${node.id}','heal',28)"><b>응급 수리 · 28G</b><span>체력 +14</span></button><button class="choice" onclick="completeNode(run.map.find(n=>n.id==='${node.id}'))"><b>나가기</b></button></div>`) }
-function shopPick(id,type,cost){ if(run.gold<cost){ sfx('lose'); return } run.gold-=cost; if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(c=>!c.named); if(i>=0)run.deck.splice(i,1) } if(type==='scout'){ let t=TACTICS.find(t=>t.id==='scout'); run.tactics.push({...t,uid:Math.random().toString(36).slice(2)}) } if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+14); showShop(run.map.find(n=>n.id===id)) }
-function finishRun(){ showModal(`<h2 class="cyan">액트 1 클리어</h2><p>이번 리워크 프로토타입의 끝이다.<br>덱 ${run.deck.length}장 / 네임드 ${run.deck.filter(c=>c.named).length}장 / 전술 ${run.tactics.length}장</p><div class="choiceList"><button class="choice" onclick="location.reload()"><b>새 런</b></button></div>`) }
+function showCamp(node){ showModal(`<h2>캠프</h2><div class="choiceList"><button class="choice" onclick="campPick('${node.id}','heal')"><b>휴식</b><span>체력 30% 회복</span></button><button class="choice" onclick="campPick('${node.id}','remove')"><b>정리</b><span>효과 없는 일반 카드 1장 제거 (최소 36장)</span></button><button class="choice" onclick="campPick('${node.id}','gold')"><b>탐색</b><span>골드 +24</span></button></div>`) }
+function campPick(id,type){ if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+Math.ceil(run.maxHp*.3)); if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(isPlainCard); if(i>=0)run.deck.splice(i,1) } if(type==='gold')run.gold+=24; completeNode(run.map.find(n=>n.id===id)) }
+function showShop(node){ showModal(`<h2>상점</h2><p>골드 ${run.gold}</p><div class="choiceList"><button class="choice" onclick="shopPick('${node.id}','remove',45)"><b>카드 제거 · 45G</b><span>효과 없는 일반 카드 1장 제거</span></button><button class="choice" onclick="shopPick('${node.id}','scout',35)"><b>정찰 카드 · 35G</b><span>일반 효과 카드 정찰 추가</span></button><button class="choice" onclick="shopPick('${node.id}','heal',28)"><b>응급 수리 · 28G</b><span>체력 +14</span></button><button class="choice" onclick="completeNode(run.map.find(n=>n.id==='${node.id}'))"><b>나가기</b></button></div>`) }
+function shopPick(id,type,cost){ if(run.gold<cost){ sfx('lose'); return } run.gold-=cost; if(type==='remove'&&run.deck.length>36){ let i=run.deck.findIndex(isPlainCard); if(i>=0)run.deck.splice(i,1) } if(type==='scout')run.deck.push(makeGeneral('core.scout')); if(type==='heal')run.hp=Math.min(run.maxHp,run.hp+14); showShop(run.map.find(n=>n.id===id)) }
+function finishRun(){ const effectCount=run.deck.filter(card=>(card.effects||card.definition?.effects||card.named?.effects||[]).length>0).length; showModal(`<h2 class="cyan">액트 1 클리어</h2><p>이번 리워크 프로토타입의 끝이다.<br>덱 ${run.deck.length}장 / 네임드 ${run.deck.filter(c=>c.named).length}장 / 효과 카드 ${effectCount}장</p><div class="choiceList"><button class="choice" onclick="location.reload()"><b>새 런</b></button></div>`) }
 let overlayCloseTimer=null;
 function showModal(html){ clearTimeout(overlayCloseTimer);modal.innerHTML=html;overlay.classList.remove('closing');overlay.classList.add('show') }
 function closeOverlay(){ if(!overlay.classList.contains('show'))return;overlay.classList.add('closing');overlayCloseTimer=setTimeout(()=>{overlay.classList.remove('show','closing')},140) }

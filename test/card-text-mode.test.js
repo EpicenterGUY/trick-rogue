@@ -32,13 +32,10 @@ test('네임드 분류가 없어도 effects와 이름이 있는 일반 카드는
   assert.match(html,/보호막 \+2/);
 });
 
-test('전술 카드도 아이콘 없이 비용/이름/설명 텍스트만 렌더한다',()=>{
-  const html=CardTextMode.tacticTextFace({id:'paint',name:'페인트',cost:1,desc:'다음 카드의 트릭 무늬를 트럼프로 바꾼다.'});
-  assert.match(html,/페인트/);
-  assert.match(html,/비용/);
-  assert.match(html,/트릭 무늬/);
-  assert.doesNotMatch(html,/<img/i);
-  assert.doesNotMatch(html,/<svg/i);
+
+test('텍스트 카드 모드는 레거시 전술 렌더러를 노출하지 않는다',()=>{
+  assert.equal('tacticTextFace' in CardTextMode,false);
+  assert.equal(CardTextMode.ACTION_LABELS.draw_tactic,undefined);
 });
 
 test('카드 문자열은 HTML을 이스케이프한다',()=>{
