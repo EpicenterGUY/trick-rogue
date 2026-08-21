@@ -14,7 +14,7 @@
 
   function migratedDefinition(card){
     const definition=card?.definition||null;
-    return definition?.category==='general'&&definition?.migrationStage==='3-1'&&definition?.legacyTacticId?definition:null;
+    return definition?.category==='general'&&definition?.legacyTacticId?definition:null;
   }
   function isMigratedCard(card){return!!migratedDefinition(card)}
   function setupDeckCard(card){
