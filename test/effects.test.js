@@ -71,10 +71,15 @@ test('활성/비활성 팩 설정에 따라 보상 후보가 달라진다',()=>{
   assert.deepEqual(rewardCardIds(inactiveRun.enabledPacks),[]);
   assert.throws(()=>validateEnabledPacks(['pack99']),/Unknown enabledPacks reference/);
 });
-test('네임드가 없는 기본 슬롯은 효과 없는 순수 카드로 생성된다',()=>{
-  const pure=createBaseCardSlots();
-  assert.equal(pure.length,52);
-  assert(pure.every(card=>card.named===null&&card.cardId===null));
+test('기본 52장 중 효과 정의가 없는 46장은 효과 없는 일반 카드로 유지된다',()=>{
+  const cards=createBaseCardSlots();
+  assert.equal(cards.length,52);
+  const plain=cards.filter(card=>!card.definition);
+  const migrated=cards.filter(card=>card.definition?.migrationStage==='3-1');
+  assert.equal(plain.length,46);
+  assert.equal(migrated.length,6);
+  assert(plain.every(card=>card.named===null&&card.cardId===null&&card.effects.length===0));
+  assert(migrated.every(card=>card.named===null&&card.cardId?.startsWith('core.')&&card.effects.length===1));
 });
 test('기본 트럼프의 52개 suit/rank 슬롯이 중복 없이 유지된다',()=>{
   assert.equal(BASE_CARD_SLOTS.length,52);

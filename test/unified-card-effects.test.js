@@ -98,11 +98,15 @@ test('효과 정의 검증은 잘못된 trigger/action/condition/duration을 조
   assert(errors.some(error=>error.includes('missing action or handler')));
 });
 
-test('52장 기본 카드 레코드는 효과 없는 일반 카드이며 인쇄값을 명시한다',()=>{
+test('52장 기본 카드 슬롯은 유지하면서 3-1 효과 카드 6장만 일반 카드 정의를 가진다',()=>{
   const cards=Cards.createBaseCardSlots();
   assert.equal(cards.length,52);
-  assert(cards.every(card=>card.named===null&&card.definition===null&&card.cardId===null));
-  assert(cards.every(card=>Array.isArray(card.effects)&&card.effects.length===0));
+  const migrated=cards.filter(card=>card.definition?.migrationStage==='3-1');
+  const plain=cards.filter(card=>!card.definition);
+  assert.equal(migrated.length,6);
+  assert.equal(plain.length,46);
+  assert(migrated.every(card=>card.named===null&&card.cardId?.startsWith('core.')&&card.effects.length>0));
+  assert(plain.every(card=>card.named===null&&card.cardId===null&&card.effects.length===0));
   assert(cards.every(card=>card.printedSuit===card.suit&&card.printedRank===card.rank));
 });
 
