@@ -20,13 +20,9 @@
     fakeid:Object.freeze({effects:Object.freeze([{action:'increase_last_showdown_rank',value:1}]),feedback:{text:'쇼다운 숫자 +1',tone:'gold'}})
   });
   const TACTIC_CARD_MIGRATION_BLOCKERS=Object.freeze({
-    startingPackages:'시작 패키지가 아직 레거시 전술 ID 목록을 직접 참조하므로 일반 카드 시작 구성으로 바꿔야 한다.',
-    namedDependencies:'황금손의 전술 드로우와 재귀 함수의 전술 드로우 복사 범위가 레거시 전술 덱에 의존한다.',
-    legacyBattleState:'전투 상태의 tdeck/thand/tdisc와 전술 드로어 UI, useTactic 호환 경로가 아직 남아 있다.'
+    legacySourceCleanup:'index.html의 TACTICS/tdeck/thand/tdisc/useTactic 코드와 전술 UI 마크업은 3-3B에서 물리적으로 제거해야 한다.'
   });
-  const REQUIREMENTS=Object.freeze({
-    selected_card:context=>!!context.selectedCard
-  });
+  const REQUIREMENTS=Object.freeze({selected_card:context=>!!context.selectedCard});
   const REQUIREMENT_MESSAGES=Object.freeze({selected_card:'먼저 카드 선택'});
 
   function definition(id){return TACTIC_EFFECTS[id]||null}
@@ -34,10 +30,13 @@
     return Object.freeze({
       ready:false,
       cardMigrationReady:true,
+      runtimeRetired:true,
+      startingPackagesMigrated:true,
+      namedDependenciesMigrated:true,
       activatedCardCount:12,
       tacticIds:Object.freeze(Object.keys(TACTIC_EFFECTS)),
       blockers:TACTIC_CARD_MIGRATION_BLOCKERS,
-      dependentCardIds:Object.freeze(['pack01.golden_hand','pack01.recursive_function'])
+      dependentCardIds:Object.freeze([])
     });
   }
   function validateDefinitions(){
@@ -93,6 +92,7 @@
     if(feedback.mode==='flash')flash(feedback.text);else floatText(arena,feedback.text,feedback.tone||'cyan');
   }
   function installBrowserAdapter(){
+    if(root.LegacyTacticRetirement)return false;
     if(typeof battle==='undefined'||typeof root.useTactic!=='function')return false;
     if(root.useTactic.__commonEffectAdapter)return true;
     const legacyUseTactic=root.useTactic;
@@ -129,7 +129,12 @@
     return true;
   }
   function installWhenReady(){
-    const install=()=>{const errors=validateDefinitions();if(errors.length){console.error('[tactic-effects] 정의 오류',errors);return}installBrowserAdapter()};
+    const install=()=>{
+      const errors=validateDefinitions();
+      if(errors.length){console.error('[tactic-effects] 정의 오류',errors);return}
+      if(root.LegacyTacticRetirement)return;
+      installBrowserAdapter();
+    };
     if(typeof document==='undefined')return false;
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else setTimeout(install,0);
     return true;
