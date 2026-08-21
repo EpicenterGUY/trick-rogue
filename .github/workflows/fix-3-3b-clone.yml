@@ -1,0 +1,31 @@
+name: Fix 3-3B clone fallback
+
+on:
+  push:
+    branches:
+      - chatgpt/remove-legacy-tactics-3-3b
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/remove-legacy-tactics-3-3b
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/fix-3-3b-clone.js
+      - run: npm test
+      - name: Commit fix
+        run: |
+          rm scripts/fix-3-3b-clone.js .github/workflows/fix-3-3b-clone.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: preserve named effects when cloning battle cards"
+          git push origin HEAD:chatgpt/remove-legacy-tactics-3-3b
