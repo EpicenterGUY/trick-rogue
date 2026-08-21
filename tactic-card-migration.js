@@ -31,7 +31,7 @@
       cardText:'이 카드를 낸 뒤 다음 트릭의 손패가 1장 많아지도록 추가 드로우한다.',
       proposedEffects:Object.freeze([]),
       requires:Object.freeze(['temporary_hand_capacity','post_refill_draw']),
-      note:'3-2A에서 다음 트릭 한정 손패 한도와 보충 후 추가 드로우 기반을 마련했다. 실제 카드 활성화는 3-2B에서 한다.'
+      note:'기존 drawP는 최대 손패 3을 강제했지만 3-2A에서 다음 트릭 한정 손패 한도와 보충 후 추가 드로우 기반을 마련했다. 실제 카드 활성화는 3-2B에서 한다.'
     }),
     Object.freeze({
       legacyId:'scout',name:'정찰',printedSuit:'D',printedRank:9,status:'redesign',
