@@ -23,8 +23,8 @@ const IMPLEMENTED_CARD_EFFECTS = {
 };
 const PLAYER_EFFECT_LABELS=Object.freeze({
   triggers:{on_play:'이 카드를 낼 때',on_set_start:'세트 시작 시',before_compare:'트릭 승패 비교 전',after_compare:'트릭 승패 비교 후',on_trick_win:'이 카드로 트릭 승리 시',on_trick_loss:'이 카드로 트릭 패배 시',on_trick_draw:'이 카드로 트릭 무승부 시',after_card_slotted:'쇼다운 슬롯에 놓인 후',on_trick_end:'트릭 종료 시',before_showdown:'쇼다운 계산 전',on_showdown_advantage:'쇼다운 우세 판정 시',on_showdown_score:'쇼다운 위력 계산 시',after_showdown_result:'쇼다운 결과 판정 후',on_set_end:'세트 종료 시',before_damage:'피해를 받기 전',after_damage:'피해를 받은 후'},
-  conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'트릭 숫자가 지정된 수 이하',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음'},
-  actions:{damage_enemy:'적에게 피해',heal_player:'체력 회복',gain_chips:'칩 획득',gain_shield:'보호막 획득',apply_enemy_bleed:'적에게 출혈 부여',increase_enemy_forecast:'적 카드 예측 단계 증가',draw_tactic:'전술 카드 드로우',increase_effective_rank:'트릭 숫자 증가',showdown_power:'쇼다운 최종 위력 증가',reserve_next_win_damage:'다음 트릭 승리 시 추가 피해 예약',set_next_trick_suit_to_trump:'트릭 무늬를 현재 트럼프로 변경',increase_next_trick_rank:'트릭 숫자 증가',set_reverse_compare:'트릭 숫자 비교 반전',set_last_showdown_suit_to_trump:'쇼다운 무늬를 현재 트럼프로 변경',increase_last_showdown_rank:'쇼다운 숫자 증가'},
+  conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'트릭 숫자가 지정된 수 이하',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음',advantage_count_at_least:'내 우세 무늬가 지정 개수 이상',printed_equals_trick:'인쇄값과 트릭값이 같음',unmodified_trick_value:'다른 트릭값 보정이 없음'},
+  actions:{damage_enemy:'적에게 피해',heal_player:'체력 회복',gain_chips:'칩 획득',gain_shield:'보호막 획득',apply_enemy_bleed:'적에게 출혈 부여',increase_enemy_forecast:'적 카드 예측 단계 증가',draw_tactic:'전술 카드 드로우',increase_effective_rank:'트릭 숫자 증가',showdown_power:'쇼다운 최종 위력 증가',reserve_next_win_damage:'다음 트릭 승리 시 추가 피해 예약',set_next_trick_suit_to_trump:'트릭 무늬를 현재 트럼프로 변경',increase_next_trick_rank:'트릭 숫자 증가',set_reverse_compare:'트릭 숫자 비교 반전',set_last_showdown_suit_to_trump:'쇼다운 무늬를 현재 트럼프로 변경',increase_last_showdown_rank:'쇼다운 숫자 증가',grant_next_trick_hand_capacity:'다음 트릭 손패 한도와 보충 드로우 증가',discard_secondary_target:'선택한 다른 손패 카드 버림',draw_cards:'일반 카드 드로우',reveal_next_enemy_card:'다음 적 카드 선공개'},
   durations:{trick:'트릭',set:'세트',battle:'전투',run:'런'}
 });
 const CARD_DETAIL_BY_ID=Object.freeze({
@@ -43,20 +43,26 @@ const {CARD_PACK_LIST,CARD_PACKS,defaultEnabledPacks,validateEnabledPacks,create
 
 function browserFallbackMigratedDefinitions(){
   const rows=[
-    ['core.paint','paint','페인트','D',4,'이 카드의 트릭 무늬를 현재 트럼프로 바꾼다. 인쇄값과 쇼다운값은 변하지 않는다.',['트릭값','트럼프','인쇄값','쇼다운값'],{trigger:'on_play',action:'set_next_trick_suit_to_trump',duration:'trick'}],
-    ['core.plus2','plus2','숫자 +2','S',3,'이 카드의 트릭 숫자 +2.',['트릭값','인쇄값'],{trigger:'on_play',action:'increase_next_trick_rank',value:2,duration:'trick'}],
-    ['core.barrier','barrier','임시 장벽','S',6,'사용 시 보호막 3을 얻는다.',['보호막'],{trigger:'on_play',action:'gain_shield',value:3,duration:'battle'}],
-    ['core.reverse','reverse','리버스','H',3,'이번 트릭은 낮은 트릭 숫자가 승리한다.',['트릭','트릭값'],{trigger:'on_play',action:'set_reverse_compare',duration:'trick'}],
-    ['core.recolor','recolor','색칠공부','C',9,'이 카드의 쇼다운 무늬를 현재 트럼프 무늬로 바꾼다.',['쇼다운값','트럼프'],{trigger:'on_play',action:'set_last_showdown_suit_to_trump',duration:'set'}],
-    ['core.fakeid','fakeid','가짜 신분증','H',10,'이 카드의 쇼다운 숫자 +1.',['쇼다운값'],{trigger:'on_play',action:'increase_last_showdown_rank',value:1,duration:'set'}]
+    {id:'core.paint',legacyTacticId:'paint',name:'페인트',suit:'D',rank:4,text:'이 카드의 트릭 무늬를 현재 트럼프로 바꾼다. 인쇄값과 쇼다운값은 변하지 않는다.',terms:['트릭값','트럼프','인쇄값','쇼다운값'],activation:'이 카드를 낼 때',migrationStage:'3-1',effects:[{trigger:'on_play',action:'set_next_trick_suit_to_trump',duration:'trick'}]},
+    {id:'core.plus2',legacyTacticId:'plus2',name:'숫자 +2',suit:'S',rank:3,text:'이 카드의 트릭 숫자 +2.',terms:['트릭값','인쇄값'],activation:'이 카드를 낼 때',migrationStage:'3-1',effects:[{trigger:'on_play',action:'increase_next_trick_rank',value:2,duration:'trick'}]},
+    {id:'core.draw',legacyTacticId:'draw',name:'드로우',suit:'C',rank:6,text:'이 카드를 낸 뒤 다음 트릭의 손패가 1장 많아지도록 추가 드로우한다.',terms:['트릭','손패','드로우'],activation:'이 카드를 낼 때',migrationStage:'3-2B',effects:[{trigger:'on_play',action:'grant_next_trick_hand_capacity',value:1,duration:'trick'}]},
+    {id:'core.scout',legacyTacticId:'scout',name:'정찰',suit:'D',rank:9,text:'다음 트릭의 적 카드를 현재 트릭 종료 전에 미리 공개한다.',terms:['트릭','예측'],activation:'이 카드를 낼 때',migrationStage:'3-2B',effects:[{trigger:'on_play',action:'reveal_next_enemy_card',duration:'trick'}]},
+    {id:'core.double',legacyTacticId:'double',name:'더블다운',suit:'H',rank:2,text:'쇼다운에서 내가 우세 무늬를 2개 이상 확보했다면 쇼다운 위력 +6.',terms:['쇼다운','우세','최종 위력'],activation:'쇼다운 위력 계산 시',migrationStage:'3-2B',effects:[{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'advantage_count_at_least',conditionValue:2,duration:'set'}]},
+    {id:'core.barrier',legacyTacticId:'barrier',name:'임시 장벽',suit:'S',rank:6,text:'사용 시 보호막 3을 얻는다.',terms:['보호막'],activation:'이 카드를 낼 때',migrationStage:'3-1',effects:[{trigger:'on_play',action:'gain_shield',value:3,duration:'battle'}]},
+    {id:'core.burn',legacyTacticId:'burn',name:'번',suit:'C',rank:2,text:'사용 시 손패에서 이 카드 외 1장을 선택해 버리고 칩 +1, 카드 1장을 뽑는다.',terms:['손패','버림','칩','드로우'],activation:'이 카드를 낼 때',migrationStage:'3-2B',targeting:{zone:'hand',count:1,excludeSelf:true},effects:[{trigger:'on_play',action:'discard_secondary_target',duration:'trick'},{trigger:'on_play',action:'gain_chips',value:1,duration:'trick'},{trigger:'on_play',action:'draw_cards',value:1,duration:'trick'}]},
+    {id:'core.reverse',legacyTacticId:'reverse',name:'리버스',suit:'H',rank:3,text:'이번 트릭은 낮은 트릭 숫자가 승리한다.',terms:['트릭','트릭값'],activation:'이 카드를 낼 때',migrationStage:'3-1',effects:[{trigger:'on_play',action:'set_reverse_compare',duration:'trick'}]},
+    {id:'core.pureboost',legacyTacticId:'pureboost',name:'기본에 충실',suit:'D',rank:5,text:'이 카드에 다른 트릭 보정이 없다면 트릭 숫자 +2.',terms:['트릭값','인쇄값'],activation:'이 카드를 낼 때',migrationStage:'3-2B',effects:[{trigger:'on_play',action:'increase_next_trick_rank',value:2,condition:'unmodified_trick_value',duration:'trick'}]},
+    {id:'core.clean',legacyTacticId:'clean',name:'무첨가',suit:'S',rank:4,text:'이 카드의 트릭값이 인쇄값과 같은 상태로 승리하면 칩 +2.',terms:['트릭','트릭값','인쇄값','칩'],activation:'이 카드로 트릭 승리 시',migrationStage:'3-2B',effects:[{trigger:'on_trick_win',action:'gain_chips',value:2,condition:'printed_equals_trick',duration:'trick'}]},
+    {id:'core.recolor',legacyTacticId:'recolor',name:'색칠공부',suit:'C',rank:9,text:'이 카드의 쇼다운 무늬를 현재 트럼프 무늬로 바꾼다.',terms:['쇼다운값','트럼프'],activation:'이 카드를 낼 때',migrationStage:'3-1',effects:[{trigger:'on_play',action:'set_last_showdown_suit_to_trump',duration:'set'}]},
+    {id:'core.fakeid',legacyTacticId:'fakeid',name:'가짜 신분증',suit:'H',rank:10,text:'이 카드의 쇼다운 숫자 +1.',terms:['쇼다운값'],activation:'이 카드를 낼 때',migrationStage:'3-1',effects:[{trigger:'on_play',action:'increase_last_showdown_rank',value:1,duration:'set'}]}
   ];
-  return rows.map(([id,legacyTacticId,name,suit,rank,text,terms,effect])=>Object.freeze({id,legacyTacticId,name,short:name,suit,rank,printedSuit:suit,printedRank:rank,description:`발동: 이 카드를 낼 때. 효과: ${text}`,terms:Object.freeze(terms),effects:Object.freeze([Object.freeze(effect)]),implemented:true,category:'general',rarity:'common',migrationStage:'3-1'}));
+  return rows.map(row=>Object.freeze({id:row.id,legacyTacticId:row.legacyTacticId,name:row.name,short:row.name,suit:row.suit,rank:row.rank,printedSuit:row.suit,printedRank:row.rank,description:`발동: ${row.activation}. 효과: ${row.text}`,terms:Object.freeze(row.terms),effects:Object.freeze(row.effects.map(effect=>Object.freeze({...effect}))),targeting:row.targeting?Object.freeze({...row.targeting}):null,implemented:true,category:'general',rarity:'common',migrationStage:row.migrationStage}));
 }
 
 // CARD_DEFINITIONS remains the named/pack registry for compatibility.
 const CARD_DEFINITIONS=Object.values(CARD_PACKS).flatMap(pack=>pack.cards);
 for(const card of CARD_DEFINITIONS){card.implemented=Object.hasOwn(IMPLEMENTED_CARD_EFFECTS,card.id);card.effects=IMPLEMENTED_CARD_EFFECTS[card.id]||[]}
-const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.DIRECT_CARD_DEFINITIONS||browserFallbackMigratedDefinitions())]);
+const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.ACTIVE_CARD_DEFINITIONS||migratedCards?.DIRECT_CARD_DEFINITIONS||browserFallbackMigratedDefinitions())]);
 const ALL_CARD_DEFINITIONS=Object.freeze([...CARD_DEFINITIONS,...GENERAL_EFFECT_CARD_DEFINITIONS]);
 const CARD_DEFINITION_BY_ID=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[card.id,card]));
 const CARD_DEFINITION_BY_BASE=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
