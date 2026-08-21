@@ -98,13 +98,17 @@ test('효과 정의 검증은 잘못된 trigger/action/condition/duration을 조
   assert(errors.some(error=>error.includes('missing action or handler')));
 });
 
-test('52장 기본 카드 슬롯은 유지하면서 3-1 효과 카드 6장만 일반 카드 정의를 가진다',()=>{
+test('52장 기본 카드 슬롯은 유지하면서 전술 출신 일반 효과 카드 12장을 가진다',()=>{
   const cards=Cards.createBaseCardSlots();
   assert.equal(cards.length,52);
-  const migrated=cards.filter(card=>card.definition?.migrationStage==='3-1');
+  const migrated=cards.filter(card=>card.definition?.legacyTacticId);
+  const stage31=migrated.filter(card=>card.definition?.migrationStage==='3-1');
+  const stage32b=migrated.filter(card=>card.definition?.migrationStage==='3-2B');
   const plain=cards.filter(card=>!card.definition);
-  assert.equal(migrated.length,6);
-  assert.equal(plain.length,46);
+  assert.equal(migrated.length,12);
+  assert.equal(stage31.length,6);
+  assert.equal(stage32b.length,6);
+  assert.equal(plain.length,40);
   assert(migrated.every(card=>card.named===null&&card.cardId?.startsWith('core.')&&card.effects.length>0));
   assert(plain.every(card=>card.named===null&&card.cardId===null&&card.effects.length===0));
   assert(cards.every(card=>card.printedSuit===card.suit&&card.printedRank===card.rank));
@@ -118,12 +122,17 @@ test('공통 history는 일반 효과 통계를 추가하면서 레거시 전술
   assert.equal(history.tacticUseCount,0);
 });
 
-test('전술 시스템 완전 제거는 카드 숫자/무늬와 의존 카드 재설계 전까지 차단 상태로 명시된다',()=>{
+test('일반 카드 이관은 완료됐고 전술 시스템 완전 제거는 시작 패키지/의존 카드/UI 정리만 남는다',()=>{
   const status=TacticEffects.migrationStatus();
   assert.equal(status.ready,false);
+  assert.equal(status.cardMigrationReady,true);
+  assert.equal(status.activatedCardCount,12);
   assert.equal(status.tacticIds.length,12);
-  assert(status.blockers.missingCardIdentity);
+  assert.equal(status.blockers.missingCardIdentity,undefined);
+  assert.equal(status.blockers.targetedBurn,undefined);
+  assert.equal(status.blockers.unresolvedDesign,undefined);
   assert(status.blockers.startingPackages);
   assert(status.blockers.namedDependencies);
+  assert(status.blockers.legacyBattleState);
   assert.deepEqual(status.dependentCardIds,['pack01.golden_hand','pack01.recursive_function']);
 });
