@@ -116,7 +116,7 @@ test('브라우저 어댑터는 실제 노드 진입 전에 분기를 잠그고 
   assert.ok(calls.includes('enter:n1'));
 });
 
-test('7-2 런타임은 잠긴 경로 표시를 제공하고 런 구조 뒤 전투 레이아웃 전에 로드된다',()=>{
+test('7-2 런타임은 잠긴 경로 표시를 제공하고 런 구조 뒤 맵 생성 단계 전에 로드된다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','run-paths.js'),'utf8');
   const bootstrap=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/routeSkipped/);
@@ -125,5 +125,6 @@ test('7-2 런타임은 잠긴 경로 표시를 제공하고 런 구조 뒤 전�
   assert.match(bootstrap,/run-paths\.js/);
   assert.match(bootstrap,/trick-run-paths-runtime/);
   assert.match(bootstrap,/function loadRunStructure\(\)[\s\S]*?loadRunPaths\(\)/);
-  assert.match(bootstrap,/function loadRunPaths\(\)[\s\S]*?loadBattleLayout\(\)/);
+  assert.match(bootstrap,/function loadRunPaths\(\)[\s\S]*?loadRunMapGeneration\(\)/);
+  assert.match(bootstrap,/function loadRunMapGeneration\(\)[\s\S]*?loadBattleLayout\(\)/);
 });
