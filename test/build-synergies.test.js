@@ -78,11 +78,11 @@ test('시너지 요약과 브라우저 UI는 활성 수를 맵과 전투에서 �
   assert.match(source,/showSynergyCollection/);
 });
 
-test('브라우저 부트스트랩은 계약·금기 뒤 빌드 시너지를 로드하고 전투 레이아웃으로 이어진다',()=>{
+test('브라우저 부트스트랩은 계약·금기 뒤 빌드 시너지를 로드하고 7-1 런 구조로 이어진다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/function loadBuildSynergies\(\)/);
   assert.match(source,/build-synergies\.js/);
   assert.match(source,/trick-build-synergy-runtime/);
   assert.match(source,/function loadContracts\(\)\{[\s\S]*?loadScript\('contracts\.js','trick-contract-system-runtime'\)[\s\S]*?loadBuildSynergies\(\)/);
-  assert.match(source,/function loadBuildSynergies\(\)\{[\s\S]*?loadScript\('build-synergies\.js','trick-build-synergy-runtime'\)[\s\S]*?loadBattleLayout\(\)/);
+  assert.match(source,/function loadBuildSynergies\(\)\{[\s\S]*?loadScript\('build-synergies\.js','trick-build-synergy-runtime'\)[\s\S]*?loadRunStructure\(\)/);
 });
