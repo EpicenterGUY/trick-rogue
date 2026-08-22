@@ -106,10 +106,11 @@ test('금기 패널티는 최종 쇼다운 위력을 0 아래로 내리지 않�
   assert.equal(score.value,0);
 });
 
-test('브라우저 부트스트랩은 상태 시스템 뒤 6-3 계약·금기를 로드하고 전투 레이아웃으로 이어진다',()=>{
+test('브라우저 부트스트랩은 상태 시스템 뒤 6-3 계약·금기를 로드하고 6-4 시너지로 넘긴다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/function loadContracts\(\)/);
   assert.match(source,/loadScript\('contracts\.js','trick-contract-system-runtime'\)/);
   assert.match(source,/if\(root\.StatusSystem\)\{loadContracts\(\);return;\}/);
-  assert.match(source,/if\(root\.ContractSystem\)\{loadBattleLayout\(\);return;\}/);
+  assert.match(source,/if\(root\.ContractSystem\)\{loadBuildSynergies\(\);return;\}/);
+  assert.match(source,/function loadContracts\(\)\{[\s\S]*?loadScript\('contracts\.js','trick-contract-system-runtime'\)[\s\S]*?loadBuildSynergies\(\)/);
 });
