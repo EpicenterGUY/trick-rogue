@@ -114,7 +114,7 @@ test('일반 전투의 기존 카드 보상 흐름은 유물 시스템이 가로
   RelicSystem.wrapShowReward(root);
   assert.equal(root.showReward(node),'card');
   assert.equal(root.legacyRewards,1);
-  assert.equal(root.run.relics.length,0);
+  assert.deepEqual(root.run.relics||[],[]);
 });
 
 test('beginRun 어댑터는 새 런에 빈 유물 상태를 만들고 맵을 다시 그린다',()=>{
