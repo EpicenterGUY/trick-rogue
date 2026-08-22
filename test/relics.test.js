@@ -10,13 +10,13 @@ const RelicSystem=require('../relics.js');
 function battleState(){
   return{
     type:'elite',setIndex:1,trick:1,phase:'trick',hand:[],slots:[],bossRules:[],field:null,chip:3,history:CardEffects.newHistory(),
-    statuses:{player:{shield:0,bleed:0,poison:0},enemy:{shield:0,bleed:0,poison:0}},reservations:[],setHistory:{wins:0,losses:0,draws:0}
+    statuses:{player:{shield:0,bleed:0,regen:0,vulnerable:0,poison:0},enemy:{shield:0,bleed:0,regen:0,vulnerable:0,poison:0}},reservations:[],setHistory:{wins:0,losses:0,draws:0}
   };
 }
 
-test('6-1 첫 유물 6종은 공통 효과 엔진에서 전부 유효한 run 지속 효과다',()=>{
+test('6-2B 유물 8종은 공통 효과 엔진에서 전부 유효한 run 지속 효과다',()=>{
   const defs=Object.values(RelicSystem.RELIC_DEFINITIONS);
-  assert.equal(defs.length,6);
+  assert.equal(defs.length,8);
   assert.deepEqual(RelicSystem.validateRelicRegistry(),[]);
   for(const relic of defs){
     assert.equal(relic.effectOwnerType,'relic');
@@ -28,7 +28,7 @@ test('6-1 첫 유물 6종은 공통 효과 엔진에서 전부 유효한 run 지
 test('런 유물 상태는 중복 ID를 정리하고 같은 유물을 두 번 획득하지 않는다',()=>{
   const run={relics:['reinforced_buckle','reinforced_buckle']};
   const state=RelicSystem.ensureRelicState(run);
-  assert.equal(state.version,'6-1');
+  assert.equal(state.version,'6-2B');
   assert.deepEqual(RelicSystem.ownedRelicIds(run),['reinforced_buckle']);
   const duplicate=RelicSystem.acquireRelic(run,'reinforced_buckle',{source:'test'});
   assert.equal(duplicate.added,false);
@@ -43,6 +43,8 @@ test('유물 보상 풀은 이미 가진 유물을 제외하고 선택지 세 �
   RelicSystem.acquireRelic(run,'reinforced_buckle');
   const pool=RelicSystem.rewardPool(run);
   assert(!pool.includes('reinforced_buckle'));
+  assert(pool.includes('sprout_brooch'));
+  assert(pool.includes('cracked_target'));
   const options=RelicSystem.rewardOptions(run,3,()=>0.42);
   assert.equal(options.length,3);
   assert.equal(new Set(options).size,3);
@@ -69,6 +71,17 @@ test('세트 시작 유물은 기존 전투 이벤트 dispatcher에서 보호막
   assert.equal(second,0);
   assert.equal(CombatEffects.getStatusValue(state.statuses,'player','shield'),4);
   assert.equal(CombatEffects.getStatusValue(state.statuses,'enemy','bleed'),1);
+});
+
+test('새싹 브로치와 금 간 표적은 세트 시작 시 재생과 취약을 적용한다',()=>{
+  const run={};
+  RelicSystem.acquireRelic(run,'sprout_brooch');
+  RelicSystem.acquireRelic(run,'cracked_target');
+  const state=battleState();
+  const executed=BattleEvents.dispatchNonCardOwnersOnce('on_set_start',{state,runState:run});
+  assert.equal(executed,2);
+  assert.equal(CombatEffects.getStatusValue(state.statuses,'player','regen'),2);
+  assert.equal(CombatEffects.getStatusValue(state.statuses,'enemy','vulnerable'),2);
 });
 
 test('금 간 주판은 기존 쇼다운 점수 단계에서 위력 +3을 적용한다',()=>{
@@ -122,11 +135,11 @@ test('beginRun 어댑터는 새 런에 빈 유물 상태를 만들고 맵을 다
   RelicSystem.wrapBeginRun(root);
   root.beginRun();
   assert.deepEqual(root.run.relics,[]);
-  assert.equal(root.run.relicState.version,'6-1');
+  assert.equal(root.run.relicState.version,'6-2B');
   assert.equal(root.mapRenders,1);
 });
 
-test('브라우저 부트스트랩은 run-fields 로드 완료 뒤 6-1 유물 런타임을 연결한다',()=>{
+test('브라우저 부트스트랩은 run-fields 로드 완료 뒤 유물 런타임을 연결한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/loadScript\('run-fields\.js','trick-run-fields-runtime'\)/);
   assert.match(source,/addEventListener\?\.\('load',loadRelics,\{once:true\}\)/);

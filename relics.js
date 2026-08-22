@@ -5,7 +5,7 @@
   root.RelicSystem=api;
   if(typeof document!=='undefined')api.installWhenReady(root);
 })(typeof globalThis!=='undefined'?globalThis:this,function(CardEffects,root){
-  const STAGE='6-1';
+  const STAGE='6-2B';
   const RELIC_REWARD_TYPES=Object.freeze(['elite','boss']);
   const RELIC_DEFINITIONS=Object.freeze({
     reinforced_buckle:Object.freeze({
@@ -31,6 +31,14 @@
     rusty_needle:Object.freeze({
       id:'rusty_needle',name:'녹슨 바늘',rarity:'uncommon',description:'세트 시작 시 적에게 출혈 1.',effectOwnerType:'relic',
       effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_enemy_bleed',value:1,duration:'run'})])
+    }),
+    sprout_brooch:Object.freeze({
+      id:'sprout_brooch',name:'새싹 브로치',rarity:'uncommon',description:'세트 시작 시 재생 2를 얻는다.',effectOwnerType:'relic',
+      effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'player',statusId:'regen',amount:2}),duration:'run'})])
+    }),
+    cracked_target:Object.freeze({
+      id:'cracked_target',name:'금 간 표적',rarity:'uncommon',description:'세트 시작 시 적에게 취약 2를 부여한다.',effectOwnerType:'relic',
+      effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'vulnerable',amount:2}),duration:'run'})])
     })
   });
   let originalShowReward=null;
