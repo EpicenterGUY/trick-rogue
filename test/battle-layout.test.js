@@ -86,12 +86,13 @@ test('전장 카드 확대 보정은 모바일 범위에만 적용한다', () =>
   assert.match(BattleLayout.STYLE_TEXT, /#versus\{min-height:140px\}/);
 });
 
-test('브라우저 부트스트랩은 상태→계약·금기→빌드 시너지→전투 레이아웃 순서를 유지한다', () => {
+test('브라우저 부트스트랩은 상태→계약·금기→빌드 시너지→런 구조→전투 레이아웃 순서를 유지한다', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'enemy-behavior.js'), 'utf8');
   assert.match(source, /function loadBattleLayout\(\)/);
   assert.match(source, /battle-layout\.js/);
   assert.match(source, /trick-battle-layout-runtime/);
   assert.match(source, /function loadStatusSystem\(\)\{[\s\S]*?loadScript\('status-system\.js','trick-status-system-runtime'\)[\s\S]*?loadContracts\(\)/);
   assert.match(source, /function loadContracts\(\)\{[\s\S]*?loadScript\('contracts\.js','trick-contract-system-runtime'\)[\s\S]*?loadBuildSynergies\(\)/);
-  assert.match(source, /function loadBuildSynergies\(\)\{[\s\S]*?loadScript\('build-synergies\.js','trick-build-synergy-runtime'\)[\s\S]*?loadBattleLayout\(\)/);
+  assert.match(source, /function loadBuildSynergies\(\)\{[\s\S]*?loadScript\('build-synergies\.js','trick-build-synergy-runtime'\)[\s\S]*?loadRunStructure\(\)/);
+  assert.match(source, /function loadRunStructure\(\)\{[\s\S]*?loadScript\('run-structure\.js','trick-run-structure-runtime'\)[\s\S]*?loadBattleLayout\(\)/);
 });
