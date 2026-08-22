@@ -18,9 +18,14 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
-  function loadBattleLayout(){
+  function loadBattleLayoutRuntime(){
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
+  }
+  function loadBattleLayout(){
+    if(root.ShowdownAdvantage){loadBattleLayoutRuntime();return;}
+    const script=loadScript('showdown-advantage.js','trick-showdown-advantage-runtime');
+    if(script?.dataset?.loaded==='true')loadBattleLayoutRuntime();else script?.addEventListener?.('load',loadBattleLayoutRuntime,{once:true});
   }
   function loadRunResults(){
     if(root.RunResults){loadBattleLayout();return;}
