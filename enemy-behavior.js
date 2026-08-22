@@ -22,10 +22,15 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function loadRunPaths(){
-    if(root.RunPaths){loadBattleLayout();return;}
-    const script=loadScript('run-paths.js','trick-run-paths-runtime');
+  function loadRunMapGeneration(){
+    if(root.RunMapGeneration){loadBattleLayout();return;}
+    const script=loadScript('run-map-generation.js','trick-run-map-generation-runtime');
     if(script?.dataset?.loaded==='true')loadBattleLayout();else script?.addEventListener?.('load',loadBattleLayout,{once:true});
+  }
+  function loadRunPaths(){
+    if(root.RunPaths){loadRunMapGeneration();return;}
+    const script=loadScript('run-paths.js','trick-run-paths-runtime');
+    if(script?.dataset?.loaded==='true')loadRunMapGeneration();else script?.addEventListener?.('load',loadRunMapGeneration,{once:true});
   }
   function loadRunStructure(){
     if(root.RunStructure){loadRunPaths();return;}
