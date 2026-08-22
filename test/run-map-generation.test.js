@@ -113,11 +113,11 @@ test('브라우저 어댑터는 새 런에 실제 생성 맵을 적용하고 렌
   assert.equal(grid.dataset.runSeed,String(root.run.runSeed));
 });
 
-test('7-3 런타임은 경로 규칙 뒤, 전투 레이아웃 전에 로드된다',()=>{
+test('7-3 런타임은 경로 규칙 뒤, 7-4 런 결과 단계 전에 로드된다',()=>{
   const bootstrap=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(bootstrap,/function loadRunMapGeneration\(\)/);
   assert.match(bootstrap,/run-map-generation\.js/);
   assert.match(bootstrap,/trick-run-map-generation-runtime/);
   assert.match(bootstrap,/function loadRunPaths\(\)\{[\s\S]*?loadRunMapGeneration\(\)/);
-  assert.match(bootstrap,/function loadRunMapGeneration\(\)\{[\s\S]*?loadBattleLayout\(\)/);
+  assert.match(bootstrap,/function loadRunMapGeneration\(\)\{[\s\S]*?loadRunResults\(\)/);
 });
