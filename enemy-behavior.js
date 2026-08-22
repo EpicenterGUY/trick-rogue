@@ -22,10 +22,15 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function loadStatusSystem(){
-    if(root.StatusSystem){loadBattleLayout();return;}
-    const script=loadScript('status-system.js','trick-status-system-runtime');
+  function loadContracts(){
+    if(root.ContractSystem){loadBattleLayout();return;}
+    const script=loadScript('contracts.js','trick-contract-system-runtime');
     if(script?.dataset?.loaded==='true')loadBattleLayout();else script?.addEventListener?.('load',loadBattleLayout,{once:true});
+  }
+  function loadStatusSystem(){
+    if(root.StatusSystem){loadContracts();return;}
+    const script=loadScript('status-system.js','trick-status-system-runtime');
+    if(script?.dataset?.loaded==='true')loadContracts();else script?.addEventListener?.('load',loadContracts,{once:true});
   }
   function loadRelics(){
     if(root.RelicSystem){loadStatusSystem();return;}
