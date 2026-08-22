@@ -22,10 +22,15 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function loadContracts(){
-    if(root.ContractSystem){loadBattleLayout();return;}
-    const script=loadScript('contracts.js','trick-contract-system-runtime');
+  function loadBuildSynergies(){
+    if(root.BuildSynergySystem){loadBattleLayout();return;}
+    const script=loadScript('build-synergies.js','trick-build-synergy-runtime');
     if(script?.dataset?.loaded==='true')loadBattleLayout();else script?.addEventListener?.('load',loadBattleLayout,{once:true});
+  }
+  function loadContracts(){
+    if(root.ContractSystem){loadBuildSynergies();return;}
+    const script=loadScript('contracts.js','trick-contract-system-runtime');
+    if(script?.dataset?.loaded==='true')loadBuildSynergies();else script?.addEventListener?.('load',loadBuildSynergies,{once:true});
   }
   function loadStatusSystem(){
     if(root.StatusSystem){loadContracts();return;}
