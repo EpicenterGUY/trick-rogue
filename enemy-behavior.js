@@ -18,9 +18,14 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
+  function loadBattleLayout(){
+    if(root.BattleLayout)return;
+    loadScript('battle-layout.js','trick-battle-layout-runtime');
+  }
   function loadStatusSystem(){
-    if(root.StatusSystem)return;
-    loadScript('status-system.js','trick-status-system-runtime');
+    if(root.StatusSystem){loadBattleLayout();return;}
+    const script=loadScript('status-system.js','trick-status-system-runtime');
+    if(script?.dataset?.loaded==='true')loadBattleLayout();else script?.addEventListener?.('load',loadBattleLayout,{once:true});
   }
   function loadRelics(){
     if(root.RelicSystem){loadStatusSystem();return;}
