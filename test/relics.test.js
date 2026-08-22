@@ -128,6 +128,7 @@ test('beginRun 어댑터는 새 런에 빈 유물 상태를 만들고 맵을 다
 
 test('브라우저 부트스트랩은 run-fields 로드 완료 뒤 6-1 유물 런타임을 연결한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert.match(source,/loadScript\('run-fields\.js','trick-run-fields-runtime',loadRelics\)/);
+  assert.match(source,/loadScript\('run-fields\.js','trick-run-fields-runtime'\)/);
+  assert.match(source,/addEventListener\?\.\('load',loadRelics,\{once:true\}\)/);
   assert.match(source,/loadScript\('relics\.js','trick-relic-system-runtime'\)/);
 });
