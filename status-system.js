@@ -5,10 +5,12 @@
   root.StatusSystem=api;
   if(typeof document!=='undefined')api.installWhenReady(root);
 })(typeof globalThis!=='undefined'?globalThis:this,function(CombatEffects,root){
-  const STATUS_UI_VERSION='6-2A';
+  const STATUS_UI_VERSION='6-2B';
   const STATUS_PRESENTATION=Object.freeze({
     shield:Object.freeze({id:'shield',label:'보호막',kind:'buff',chipClass:'cyan',description:'받는 피해를 현재 수치만큼 먼저 흡수한다.',timing:'피해를 받을 때'}),
     bleed:Object.freeze({id:'bleed',label:'출혈',kind:'debuff',chipClass:'red',description:'트릭 종료 시 현재 수치만큼 피해를 받고, 발동 후 1 감소한다.',timing:'트릭 종료'}),
+    regen:Object.freeze({id:'regen',label:'재생',kind:'buff',chipClass:'green',description:'트릭 종료 시 현재 수치만큼 체력을 회복하고, 발동 후 1 감소한다.',timing:'트릭 종료'}),
+    vulnerable:Object.freeze({id:'vulnerable',label:'취약',kind:'debuff',chipClass:'violet',description:'다음 피해를 받을 때 보호막 계산 전에 피해량이 현재 수치만큼 증가하고, 발동 후 모두 사라진다.',timing:'다음 피해를 받을 때'}),
     poison:Object.freeze({id:'poison',label:'중독',kind:'reserved',chipClass:'gold',description:'규칙이 아직 확정되지 않아 현재 전투에서는 자동 발동하지 않는다.',timing:'미정'})
   });
   let installed=false;
