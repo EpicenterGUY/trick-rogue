@@ -137,6 +137,8 @@ test('우세 HUD는 평소 숨고 명시적 우세가 있을 때만 나타난다
 test('적 행동 부트스트랩은 런 결과 뒤, 전투 레이아웃 전에 7.5-A 우세 런타임을 로드한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert(source.includes("loadScript('showdown-advantage.js','trick-showdown-advantage-runtime')"));
-  assert(source.indexOf("loadScript('showdown-advantage.js','trick-showdown-advantage-runtime')")<source.indexOf("loadScript('battle-layout.js','trick-battle-layout-runtime')"));
+  assert(source.includes("if(root.ShowdownAdvantage){loadBattleLayoutRuntime();return;}"));
+  assert(source.includes("if(script?.dataset?.loaded==='true')loadBattleLayoutRuntime();else script?.addEventListener?.('load',loadBattleLayoutRuntime,{once:true});"));
+  assert(source.includes("loadScript('battle-layout.js','trick-battle-layout-runtime')"));
   assert(source.includes('if(root.RunResults){loadBattleLayout();return;}'));
 });
