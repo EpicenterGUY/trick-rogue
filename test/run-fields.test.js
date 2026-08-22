@@ -132,9 +132,10 @@ test('전투 규칙 설명 모델은 현재 필드·보스 페이즈·고유 규
   assert(entries.some(entry=>entry.kind==='phase'&&entry.label.includes('2페이즈')&&entry.description.includes('낮은 트릭 숫자')));
 });
 
-test('적 행동 부트스트랩은 전투 규칙 이후 5-3 런 필드 런타임을 로드한다',()=>{
+test('적 행동 부트스트랩은 전투 규칙 로드 완료 뒤 5-3 런 필드 런타임을 연결한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert.match(source,/encounter-rules\.js/);
-  assert.match(source,/run-fields\.js/);
-  assert(source.indexOf('encounter-rules.js')<source.indexOf('run-fields.js'));
+  assert.match(source,/function loadRunFields\(\)/);
+  assert.match(source,/loadScript\('run-fields\.js','trick-run-fields-runtime'\)/);
+  assert.match(source,/loadScript\('encounter-rules\.js','trick-encounter-rules-runtime',loadRunFields\)/);
+  assert.match(source,/if\(root\.EncounterRules\)\{loadRunFields\(\);return;\}/);
 });
