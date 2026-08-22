@@ -9,6 +9,8 @@
   const STATUS_DEFINITIONS=Object.freeze({
     shield:Object.freeze({id:'shield',maxStacks:null,trigger:'before_damage',decay:null,duration:'battle',stacking:'add',dispellable:false,implemented:true,role:'absorb'}),
     bleed:Object.freeze({id:'bleed',maxStacks:null,trigger:'on_trick_end',decay:Object.freeze({type:'subtract',amount:1,when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:false,implemented:true,role:'damage'}),
+    regen:Object.freeze({id:'regen',maxStacks:null,trigger:'on_trick_end',decay:Object.freeze({type:'subtract',amount:1,when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:true,implemented:true,role:'heal'}),
+    vulnerable:Object.freeze({id:'vulnerable',maxStacks:null,trigger:'before_damage',decay:Object.freeze({type:'reset',when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:true,implemented:true,role:'amplify_damage'}),
     poison:Object.freeze({id:'poison',maxStacks:null,trigger:null,decay:null,duration:'battle',stacking:'add',dispellable:false,implemented:false,role:'reserved'})
   });
   let installed=false;
@@ -80,14 +82,23 @@
     for(const actor of actors)for(const definition of Object.values(STATUS_DEFINITIONS))if(definition.duration===duration)setStatusValue(statuses,actor,definition.id,0);
     return statuses;
   }
-  function resolveStatusTrigger({statuses,actor,trigger,damage=()=>0,onStatus=()=>{}}={}){
+  function resolveStatusTrigger({statuses,actor,trigger,damage=()=>0,heal=()=>0,damageEvent=null,onStatus=()=>{}}={}){
     const events=[];
     for(const definition of Object.values(STATUS_DEFINITIONS)){
       if(!definition.implemented||definition.trigger!==trigger)continue;
       const value=getStatusValue(statuses,actor,definition.id);if(value<=0)continue;
+      let handled=true;
+      if(definition.role==='amplify_damage'&&(!damageEvent||damageEvent.cancelled||!(Number(damageEvent.amount)>0)))handled=false;
+      if(!['damage','heal','amplify_damage'].includes(definition.role))handled=false;
+      if(!handled)continue;
       if(definition.decay?.when==='before_trigger')applyDecay(statuses,actor,definition.id,definition);
       let result=null;
       if(definition.role==='damage')result=damage(actor,value,{source:'status',statusId:definition.id});
+      if(definition.role==='heal')result=heal(actor,value,{source:'status',statusId:definition.id});
+      if(definition.role==='amplify_damage'){
+        const before=Math.max(0,Number(damageEvent.amount)||0);damageEvent.amount=before+value;
+        result={before,after:damageEvent.amount,added:value};
+      }
       const event={actor,statusId:definition.id,value,result};events.push(event);onStatus(event);
       if(definition.decay?.when==='after_trigger')applyDecay(statuses,actor,definition.id,definition);
     }
@@ -225,7 +236,9 @@
         const damage=createDamageEvent({target,amount,feedback,source:metadata?.source});
         if(target==='player')dispatchDamageHooks('before_damage',activeEffectOwners(state,runtimeRun()),damage,{chain,runEffect:runRuntimeEffectOwner});
         damage.amount=Math.max(0,Number(damage.amount)||0);
-        if(damage.cancelled||damage.amount<=0){state.lastDamageEvent={...damage,blocked:0,dealt:0,hpBefore:runtimeRun()?.hp??0,hpAfter:runtimeRun()?.hp??0};return 0}
+        if(damage.cancelled||damage.amount<=0){state.lastDamageEvent={...damage,blocked:0,dealt:0,hpBefore:target==='enemy'?state.enemy?.hp??0:runtimeRun()?.hp??0,hpAfter:target==='enemy'?state.enemy?.hp??0:runtimeRun()?.hp??0};return 0}
+        resolveStatusTrigger({statuses:state.statuses,actor:target,trigger:'before_damage',damageEvent:damage});
+        damage.amount=Math.max(0,Number(damage.amount)||0);
         const dealt=original.call(this,damage.amount,feedback);
         const resolved=state.lastDamageEvent||{target,requestedAmount:damage.requestedAmount,amount:damage.amount,blocked:0,dealt};
         const event={...damage,...resolved,requestedAmount:damage.requestedAmount,amount:damage.amount};
@@ -242,9 +255,14 @@
     if(typeof root.applyEndStatus!=='function')return false;if(root.applyEndStatus.__combatEffectsAdapter)return true;
     originalApplyEndStatus=root.applyEndStatus;
     const adapted=function(){
-      const state=runtimeBattle();if(!state)return originalApplyEndStatus();
-      resolveStatusTrigger({statuses:state.statuses,actor:'enemy',trigger:'on_trick_end',damage:(_actor,value,meta)=>root.damageEnemy(value,undefined,meta)});
-      resolveStatusTrigger({statuses:state.statuses,actor:'player',trigger:'on_trick_end',damage:(_actor,value,meta)=>root.damagePlayer(value,undefined,meta)});
+      const state=runtimeBattle(),runState=runtimeRun();if(!state)return originalApplyEndStatus();
+      const heal=(actor,value)=>{
+        const target=actor==='enemy'?state.enemy:runState;if(!target)return 0;
+        const before=Math.max(0,Number(target.hp)||0),max=Math.max(before,Number(target.maxHp)||before),after=Math.min(max,before+Math.max(0,Number(value)||0));
+        target.hp=after;return after-before;
+      };
+      resolveStatusTrigger({statuses:state.statuses,actor:'enemy',trigger:'on_trick_end',damage:(_actor,value,meta)=>root.damageEnemy(value,undefined,meta),heal});
+      resolveStatusTrigger({statuses:state.statuses,actor:'player',trigger:'on_trick_end',damage:(_actor,value,meta)=>root.damagePlayer(value,undefined,meta),heal});
     };
     adapted.__combatEffectsAdapter=true;adapted.__legacyApplyEndStatus=originalApplyEndStatus;root.applyEndStatus=adapted;return true;
   }
