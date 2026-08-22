@@ -18,9 +18,13 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
+  function loadRunFields(){
+    if(root.RunFields)return;
+    loadScript('run-fields.js','trick-run-fields-runtime');
+  }
   function loadEncounterRules(){
-    if(root.EncounterRules)return;
-    loadScript('encounter-rules.js','trick-encounter-rules-runtime');
+    if(root.EncounterRules){loadRunFields();return;}
+    loadScript('encounter-rules.js','trick-encounter-rules-runtime',loadRunFields);
   }
   if(root.EnemyBehavior)loadEncounterRules();
   else loadScript('enemy-behavior-core.js','trick-enemy-behavior-core',loadEncounterRules);
