@@ -24,7 +24,8 @@
   }
   function loadRunFields(){
     if(root.RunFields){loadRelics();return;}
-    loadScript('run-fields.js','trick-run-fields-runtime',loadRelics);
+    const script=loadScript('run-fields.js','trick-run-fields-runtime');
+    if(script?.dataset?.loaded==='true')loadRelics();else script?.addEventListener?.('load',loadRelics,{once:true});
   }
   function loadEncounterRules(){
     if(root.EncounterRules){loadRunFields();return;}
