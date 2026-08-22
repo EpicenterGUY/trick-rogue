@@ -56,12 +56,18 @@ test('레거시 전술 실행 코드와 전술 전투 상태가 index에서 제�
   assert.doesNotMatch(html, /grid-area:tactic/);
 });
 
-test('모바일에서 낸 카드와 적 카드는 손패 최대 폭과 같은 92px로 표시한다', () => {
+test('모바일에서 현재 대결 중인 내 카드와 적 카드는 손패 최대 폭과 같은 92px로 표시한다', () => {
   assert.equal(BattleLayout.MOBILE_STAGE_WIDTH, 92);
   assert.equal(BattleLayout.MOBILE_STAGE_HEIGHT, 140);
   assert.match(BattleLayout.STYLE_TEXT, /@media \(max-width:899px\)/);
   assert.match(BattleLayout.STYLE_TEXT, /\.stageInner\{width:min\(92px,100%\)\}/);
   assert.match(BattleLayout.STYLE_TEXT, /\.stageCard\{height:140px;min-height:140px\}/);
+});
+
+test('모바일 쇼다운 슬롯에 쌓인 카드는 기존 36px 제한 대신 슬롯 폭을 최대한 사용한다', () => {
+  assert.equal(BattleLayout.MOBILE_SHOWDOWN_CARD_WIDTH, 56);
+  assert.match(BattleLayout.STYLE_TEXT, /#slotRow \.slot\.fill\{padding:1px\}/);
+  assert.match(BattleLayout.STYLE_TEXT, /#slotRow \.slotArt\{width:min\(56px,calc\(100% - 2px\)\);height:auto;aspect-ratio:100\/148;margin:0 auto\}/);
 });
 
 test('전장 카드 확대 보정은 모바일 범위에만 적용한다', () => {
