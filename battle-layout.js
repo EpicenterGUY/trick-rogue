@@ -7,11 +7,14 @@
   const STYLE_ID='trick-battle-layout-fixes';
   const MOBILE_STAGE_WIDTH=92;
   const MOBILE_STAGE_HEIGHT=140;
+  const MOBILE_SHOWDOWN_CARD_WIDTH=56;
   const STYLE_TEXT=`
 @media (max-width:899px){
   #versus{min-height:${MOBILE_STAGE_HEIGHT}px}
   .stageCard{height:${MOBILE_STAGE_HEIGHT}px;min-height:${MOBILE_STAGE_HEIGHT}px}
   .stageInner{width:min(${MOBILE_STAGE_WIDTH}px,100%)}
+  #slotRow .slot.fill{padding:1px}
+  #slotRow .slotArt{width:min(${MOBILE_SHOWDOWN_CARD_WIDTH}px,calc(100% - 2px));height:auto;aspect-ratio:100/148;margin:0 auto}
 }
 `;
 
@@ -25,5 +28,5 @@
     return true;
   }
 
-  return{STYLE_ID,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,STYLE_TEXT,install};
+  return{STYLE_ID,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,STYLE_TEXT,install};
 });
