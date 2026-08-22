@@ -126,5 +126,6 @@ test('7-2 런타임은 잠긴 경로 표시를 제공하고 런 구조 뒤 맵 �
   assert.match(bootstrap,/trick-run-paths-runtime/);
   assert.match(bootstrap,/function loadRunStructure\(\)[\s\S]*?loadRunPaths\(\)/);
   assert.match(bootstrap,/function loadRunPaths\(\)[\s\S]*?loadRunMapGeneration\(\)/);
-  assert.match(bootstrap,/function loadRunMapGeneration\(\)[\s\S]*?loadBattleLayout\(\)/);
+  assert.match(bootstrap,/function loadRunMapGeneration\(\)[\s\S]*?loadRunResults\(\)/);
+  assert.match(bootstrap,/function loadRunResults\(\)[\s\S]*?loadBattleLayout\(\)/);
 });
