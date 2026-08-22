@@ -18,9 +18,14 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
-  function loadBattleLayoutRuntime(){
+  function loadBattleLayoutFile(){
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
+  }
+  function loadBattleLayoutRuntime(){
+    if(root.ChipEconomy){loadBattleLayoutFile();return;}
+    const script=loadScript('chip-economy.js','trick-chip-economy-runtime');
+    if(script?.dataset?.loaded==='true')loadBattleLayoutFile();else script?.addEventListener?.('load',loadBattleLayoutFile,{once:true});
   }
   function loadBattleLayout(){
     if(root.ShowdownAdvantage){loadBattleLayoutRuntime();return;}
