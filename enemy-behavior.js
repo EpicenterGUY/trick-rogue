@@ -18,9 +18,14 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
+  function loadStatusSystem(){
+    if(root.StatusSystem)return;
+    loadScript('status-system.js','trick-status-system-runtime');
+  }
   function loadRelics(){
-    if(root.RelicSystem)return;
-    loadScript('relics.js','trick-relic-system-runtime');
+    if(root.RelicSystem){loadStatusSystem();return;}
+    const script=loadScript('relics.js','trick-relic-system-runtime');
+    if(script?.dataset?.loaded==='true')loadStatusSystem();else script?.addEventListener?.('load',loadStatusSystem,{once:true});
   }
   function loadRunFields(){
     if(root.RunFields){loadRelics();return;}
