@@ -43,6 +43,17 @@ test('텍스트 카드 모드는 네임드 카드에만 safe-area 이름을 덮�
   assert.match(html, /\.textCardName>span\{[^}]*-webkit-line-clamp:2/);
 });
 
+test('상세 효과 라벨은 본문과 달리 금색 강조를 유지한다',()=>{
+  assert.match(html, /#inspectDesc \.effectLabel\{[^}]*color:var\(--gold\)[^}]*font-weight:800/);
+  assert.match(html, /#inspectDesc \.effectCopy\{color:#d5dcea\}/);
+  assert.match(html, /function formatEffectText[\s\S]*class="effectLabel"/);
+});
+
+test('전장과 쇼다운 슬롯은 카드 텍스트 렌더 크기 변형을 전달한다',()=>{
+  assert.match(html,/artHtml\(c,'stage'\)/);
+  assert.match(html,/artHtml\(s\.card,'mini'\)/);
+});
+
 
 test('모바일 손패는 전술 드로어 없이 document flow 3열을 유지한다', () => {
   assert.match(html, /#handPanel\{position:static/);

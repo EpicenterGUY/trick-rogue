@@ -44,6 +44,27 @@ test('카드 문자열은 HTML을 이스케이프한다',()=>{
   assert.match(html,/&lt;script&gt;/);
 });
 
+test('카드 면은 원문 대신 별도의 compact 발동/효과 요약을 렌더한다',()=>{
+  const card={cardId:'pack01.recursive_function',suit:'C',rank:8,named:{id:'pack01.recursive_function',name:'재귀 함수',description:'아주 긴 전체 규칙 원문'}};
+  assert.deepEqual(CardTextMode.buildCardCompactText(card),{title:'재귀 함수',trigger:'승리 시',summary:'직전 네임드의 복사 가능한 수치 효과 1회 복사'});
+  const html=CardTextMode.textCardFace(card,'hand');
+  assert.match(html,/cardTextTrigger/);
+  assert.match(html,/cardTextEffect/);
+  assert.doesNotMatch(html,/아주 긴 전체 규칙 원문/);
+});
+
+test('쇼다운 미니 카드는 이름만 렌더하고 긴 효과 본문을 출력하지 않는다',()=>{
+  const html=CardTextMode.textCardFace({cardId:'core.double',suit:'H',rank:2,name:'더블다운',effects:[{trigger:'on_showdown_score'}]},'mini');
+  assert.match(html,/더블다운/);
+  assert.doesNotMatch(html,/cardTextEffect|우세 무늬/);
+});
+
+test('손패 효과 요약은 두 줄 clamp와 한글 단어 보호를 사용한다',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','card-text-mode.js'),'utf8');
+  assert.match(source,/\.cardTextEffect\{[^}]*-webkit-line-clamp:2/);
+  assert.match(source,/\.cardTextEffect\{[^}]*word-break:keep-all/);
+});
+
 test('텍스트 전용 모드는 런타임 토글 API를 유지한다',()=>{
   assert.equal(CardTextMode.setEnabled(false),false);
   assert.equal(CardTextMode.isEnabled(),false);
