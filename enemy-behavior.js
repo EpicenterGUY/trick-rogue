@@ -18,9 +18,13 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
+  function loadRelics(){
+    if(root.RelicSystem)return;
+    loadScript('relics.js','trick-relic-system-runtime');
+  }
   function loadRunFields(){
-    if(root.RunFields)return;
-    loadScript('run-fields.js','trick-run-fields-runtime');
+    if(root.RunFields){loadRelics();return;}
+    loadScript('run-fields.js','trick-run-fields-runtime',loadRelics);
   }
   function loadEncounterRules(){
     if(root.EncounterRules){loadRunFields();return;}
