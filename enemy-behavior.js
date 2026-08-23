@@ -18,9 +18,14 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
-  function loadBattleLayoutFile(){
+  function loadBattleLayoutFinal(){
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
+  }
+  function loadBattleLayoutFile(){
+    if(root.ShowdownResolution){loadBattleLayoutFinal();return;}
+    const script=loadScript('showdown-resolution.js','trick-showdown-resolution-runtime');
+    if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});
   }
   function loadBattleLayoutRuntime(){
     if(root.ChipEconomy){loadBattleLayoutFile();return;}
