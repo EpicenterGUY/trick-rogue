@@ -25,15 +25,19 @@ function makeDeck(count=12){return Array.from({length:count},(_,index)=>card(`c$
 function pokerCards(ranks,suits=['S','H','D','C','S']){return ranks.map((rank,index)=>({rank,suit:suits[index]}))}
 function hand(power,name='테스트 족보'){return{id:'test',name,power,ranks:[2,3,4,5,6],suits:['S','H','D','C','S']}}
 
-test('7.5-R 카드 규격은 표준 52장 슬롯만 허용하고 순수 카드를 실제로 남긴다',()=>{
+test('7.5-R 카드 규격은 표준 순수 52장을 항상 보존하고 공용 효과 카드는 별도 정의로 둔다',()=>{
   assert.deepEqual(BattleCore.SUITS,SUITS);
   assert.equal(Cards.BASE_CARD_SLOTS.length,52);
   assert.equal(new Set(Cards.BASE_CARD_SLOTS.map(slot=>`${slot.suit}:${slot.rank}`)).size,52);
   assert(Cards.BASE_CARD_SLOTS.every(slot=>SUITS.includes(slot.suit)&&RANKS.includes(slot.rank)));
   const base=Cards.createBaseCardSlots();
   assert.equal(base.length,52);
-  assert.equal(base.filter(Cards.isPureCard).length,40);
-  assert.equal(base.filter(card=>card.definition?.category==='general').length,12);
+  assert.equal(base.filter(Cards.isPureCard).length,52);
+  assert.equal(base.filter(card=>card.definition?.category==='general').length,0);
+  assert.equal(Cards.GENERAL_EFFECT_CARD_DEFINITIONS.length,12);
+  assert.ok(base.some(card=>card.suit==='S'&&card.rank===3&&Cards.isPureCard(card)));
+  assert.equal(Cards.CARD_DEFINITION_BY_ID['core.plus2'].suit,'S');
+  assert.equal(Cards.CARD_DEFINITION_BY_ID['core.plus2'].rank,3);
   assert.throws(()=>Cards.createCardRecord({suit:'X',rank:2}),/Unknown card suit/);
   assert.throws(()=>Cards.createCardRecord({suit:'S',rank:0}),/Invalid card rank/);
   assert.throws(()=>Cards.createCardRecord({suit:'S',rank:15}),/Invalid card rank/);
