@@ -11,12 +11,12 @@
     plus2:Object.freeze({id:'core.plus2',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','인쇄값'])}),
     draw:Object.freeze({id:'core.draw',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','손패','드로우'])}),
     scout:Object.freeze({id:'core.scout',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','예측'])}),
-    double:Object.freeze({id:'core.double',activation:'쇼다운 위력 계산 시',terms:Object.freeze(['쇼다운','우세','최종 위력'])}),
+    double:Object.freeze({id:'core.double',activation:'쇼다운 위력 계산 시',terms:Object.freeze(['쇼다운','트릭','최종 위력'])}),
     barrier:Object.freeze({id:'core.barrier',activation:'이 카드를 낼 때',terms:Object.freeze(['보호막'])}),
     burn:Object.freeze({id:'core.burn',activation:'이 카드를 낼 때',terms:Object.freeze(['손패','버림','칩','드로우']),targeting:Object.freeze({zone:'hand',count:1,excludeSelf:true})}),
     reverse:Object.freeze({id:'core.reverse',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','트릭값'])}),
-    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','인쇄값'])}),
-    clean:Object.freeze({id:'core.clean',activation:'이 카드로 트릭 승리 시',terms:Object.freeze(['트릭','트릭값','인쇄값','칩'])}),
+    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['순수 카드','손패','트릭값'])}),
+    clean:Object.freeze({id:'core.clean',activation:'이 카드로 트릭 승리 시',terms:Object.freeze(['순수 카드','쇼다운','트릭','칩'])}),
     recolor:Object.freeze({id:'core.recolor',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값','트럼프'])}),
     fakeid:Object.freeze({id:'core.fakeid',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값'])})
   });
@@ -43,7 +43,7 @@
       category:'general',
       rarity:'common',
       legacyTacticId:legacyId,
-      migrationStage:plan.activationStage||'3-2B'
+      migrationStage:plan.activationStage||'7.5-P'
     });
   }
 
