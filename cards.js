@@ -20,7 +20,7 @@ const IMPLEMENTED_CARD_EFFECTS = {
 };
 const PLAYER_EFFECT_LABELS=Object.freeze({
   triggers:{on_play:'이 카드를 낼 때',on_set_start:'세트 시작 시',before_compare:'트릭 승패 비교 전',after_compare:'트릭 승패 비교 후',on_trick_win:'이 카드로 트릭 승리 시',on_trick_loss:'이 카드로 트릭 패배 시',on_trick_draw:'이 카드로 트릭 무승부 시',after_card_slotted:'쇼다운 슬롯에 놓인 후',on_trick_end:'트릭 종료 시',before_showdown:'쇼다운 계산 전',on_showdown_score:'쇼다운 위력 계산 시',after_showdown_result:'쇼다운 결과 판정 후',on_set_end:'세트 종료 시',before_damage:'피해를 받기 전',after_damage:'피해를 받은 후'},
-  conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'트릭 숫자가 지정된 수 이하',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음',player_has_advantage:'이번 쇼다운에 명시적 우세가 있음',enemy_has_advantage:'이번 쇼다운에 적의 명시적 우세가 있음',set_wins_at_least:'이번 세트의 트릭 승리가 지정 횟수 이상',pure_card_in_hand:'손패에 순수 카드가 1장 이상 있음',pure_card_in_showdown:'쇼다운 슬롯에 순수 카드가 1장 이상 있음',printed_equals_trick:'인쇄값과 트릭값이 같음',unmodified_trick_value:'다른 트릭값 보정이 없음'},
+  conditions:{chips_spent:'이번 트릭에 칩을 1 이상 소비',effective_rank_at_most:'트릭 숫자가 지정된 수 이하',effective_suit_is_trump:'최종 트릭 무늬가 현재 트럼프',river_hit:'4번째 트릭에 고정한 리버 후보를 5번째 카드로 적중',slot_is:'지정된 쇼다운 슬롯에 위치',slot_at_least:'지정된 쇼다운 슬롯 이후에 위치',in_hand:'손패에 있음',player_has_advantage:'이번 쇼다운에 명시적 우세가 있음',enemy_has_advantage:'이번 쇼다운에 적의 명시적 우세가 있음',set_wins_at_least:'이번 세트의 트릭 승리가 지정 횟수 이상',pure_card_in_hand:'손패에 순수 카드가 1장 이상 있음',pure_card_in_showdown:'쇼다운 슬롯에 순수 카드가 1장 이상 있음',printed_equals_trick:'인쇄값과 트릭값이 같음',unmodified_trick_value:'다른 트릭값 보정이 없음'},
   actions:{damage_enemy:'적에게 피해',heal_player:'체력 회복',gain_chips:'칩 획득',gain_shield:'보호막 획득',apply_enemy_bleed:'적에게 출혈 부여',increase_enemy_forecast:'적 카드 예측 단계 증가',increase_effective_rank:'트릭 숫자 증가',showdown_power:'쇼다운 최종 위력 증가',reserve_next_win_damage:'다음 트릭 승리 시 추가 피해 예약',set_next_trick_suit_to_trump:'트릭 무늬를 현재 트럼프로 변경',increase_next_trick_rank:'트릭 숫자 증가',set_reverse_compare:'트릭 숫자 비교 반전',set_last_showdown_suit_to_trump:'쇼다운 무늬를 현재 트럼프로 변경',increase_last_showdown_rank:'쇼다운 숫자 증가',grant_next_trick_hand_capacity:'다음 트릭 손패 한도와 보충 드로우 증가',discard_secondary_target:'선택한 다른 손패 카드 버림',draw_cards:'일반 카드 드로우',reveal_next_enemy_card:'다음 적 카드 선공개'},
   durations:{trick:'트릭',set:'세트',battle:'전투',run:'런'}
 });
@@ -58,7 +58,12 @@ function browserFallbackMigratedDefinitions(){
 
 // CARD_DEFINITIONS remains the named/pack registry for compatibility.
 const CARD_DEFINITIONS=Object.values(CARD_PACKS).flatMap(pack=>pack.cards);
-for(const card of CARD_DEFINITIONS){card.implemented=Object.hasOwn(IMPLEMENTED_CARD_EFFECTS,card.id);card.effects=IMPLEMENTED_CARD_EFFECTS[card.id]||[]}
+for(const card of CARD_DEFINITIONS){
+  const mapped=IMPLEMENTED_CARD_EFFECTS[card.id];
+  const embedded=Array.isArray(card.effects)?card.effects:null;
+  card.effects=(mapped||embedded||[]).map(effect=>({...effect}));
+  card.implemented=card.effects.length>0;
+}
 const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.ACTIVE_CARD_DEFINITIONS||migratedCards?.DIRECT_CARD_DEFINITIONS||browserFallbackMigratedDefinitions())]);
 const ALL_CARD_DEFINITIONS=Object.freeze([...CARD_DEFINITIONS,...GENERAL_EFFECT_CARD_DEFINITIONS]);
 const CARD_DEFINITION_BY_ID=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[card.id,card]));
