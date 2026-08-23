@@ -7,27 +7,56 @@ const RunStart=require('../run-start-v2.js');
 
 function constantRng(value){return()=>value}
 
-test('8-A 시작 카드군은 무소속을 포함하고 모두 12장 · 순수 7~8 · 핵심 4~5 구성을 지킨다',()=>{
-  assert.ok(RunStart.STARTERS.some(starter=>starter.id==='free'));
+test('8-A 새 런은 특정 카드군 대신 공용 스타터 1종만 노출하고 12장 · 순수 6~8 · 공용 효과 4~6 규칙을 지킨다',()=>{
+  assert.equal(RunStart.STARTERS.length,1);
+  assert.equal(RunStart.STARTERS[0].id,'common');
   assert.equal(RunStart.validateStarterRegistry(Cards).length,0);
-  for(const starter of RunStart.STARTERS){
-    assert.equal(RunStart.starterCardCount(starter),12);
-    assert.ok(starter.pureSlots.length>=7&&starter.pureSlots.length<=8);
-    assert.ok(starter.effectCardIds.length>=4&&starter.effectCardIds.length<=5);
+  const starter=RunStart.STARTERS[0];
+  assert.equal(RunStart.starterCardCount(starter),12);
+  assert.ok(starter.pureSlots.length>=6&&starter.pureSlots.length<=8);
+  assert.ok(starter.effectCardIds.length>=4&&starter.effectCardIds.length<=6);
+  const commonPool=new Set(RunStart.commonCardPoolIds(Cards));
+  assert.ok(starter.effectCardIds.every(id=>commonPool.has(id)));
+});
+
+test('구버전 무소속/저격수/사진가 스타터는 삭제하지 않고 숨김 보관하며 새 런에서는 공용 스타터로 치환한다',()=>{
+  assert.deepEqual(RunStart.ARCHIVED_STARTERS.map(starter=>starter.id),['free','sniper','photographer']);
+  assert.ok(RunStart.ARCHIVED_STARTERS.every(starter=>starter.hidden===true&&starter.archived===true));
+  assert.equal(RunStart.STARTERS.some(starter=>['free','sniper','photographer'].includes(starter.id)),false);
+  for(const legacyId of ['free','sniper','photographer']){
+    assert.equal(RunStart.normalizeStarterId(legacyId),'common');
+    assert.equal(RunStart.starterDefinition(legacyId).id,'common');
+    assert.equal(RunStart.archivedStarterDefinition(legacyId).id,legacyId);
   }
 });
 
-test('8-A 스타터 덱은 실제 52장 규격 카드만 만들고 순수 카드를 충분히 남긴다',()=>{
-  for(const starter of RunStart.STARTERS){
-    const deck=RunStart.buildStarterDeck(starter.id,Cards,{});
-    assert.equal(deck.length,12);
-    assert.equal(deck.filter(Cards.isPureCard).length,starter.pureSlots.length);
-    for(const card of deck){
-      assert.ok(['S','H','D','C'].includes(card.suit));
-      assert.ok(Number.isInteger(card.rank));
-      assert.ok(card.rank>=2&&card.rank<=14);
-    }
+test('공용 스타터 덱은 실제 52장 규격 12장이고 순수 7장 + 공용 효과 5장으로 손패 순환과 칩 활용을 포함한다',()=>{
+  const deck=RunStart.buildStarterDeck('common',Cards,{});
+  assert.equal(deck.length,12);
+  assert.equal(deck.filter(Cards.isPureCard).length,7);
+  const effectIds=deck.filter(card=>card.definition).map(card=>card.definition.id);
+  assert.deepEqual(effectIds,RunStart.COMMON_STARTER_EFFECT_CARD_IDS);
+  assert.ok(effectIds.includes('core.draw'));
+  assert.ok(effectIds.includes('core.burn'));
+  assert.ok(effectIds.includes('core.clean'));
+  for(const card of deck){
+    assert.ok(['S','H','D','C'].includes(card.suit));
+    assert.ok(Number.isInteger(card.rank));
+    assert.ok(card.rank>=2&&card.rank<=14);
   }
+});
+
+test('초반 공통지역 카드풀은 general/common 공용 효과 카드만 쓰고 네임드·지역 카드 보상은 노출하지 않는다',()=>{
+  const named=Cards.rewardCardIds(Cards.defaultEnabledPacks());
+  const opening=RunStart.rewardPoolForRun({actId:'common',runFlow:{phase:'common'}},{cardsApi:Cards,namedRewardIds:named});
+  assert.deepEqual(opening,RunStart.commonCardPoolIds(Cards));
+  assert.ok(opening.length>=RunStart.COMMON_STARTER_EFFECT_CARD_IDS.length);
+  assert.ok(opening.every(id=>Cards.CARD_DEFINITION_BY_ID[id]?.category==='general'));
+  assert.ok(opening.every(id=>Cards.CARD_DEFINITION_BY_ID[id]?.rarity==='common'));
+  assert.equal(opening.some(id=>named.includes(id)),false);
+
+  const later=RunStart.rewardPoolForRun({actId:'region_frontier',runFlow:{phase:'region'}},{cardsApi:Cards,namedRewardIds:named});
+  assert.deepEqual(later,named,'지역 진입 뒤 기존 네임드/지역 카드 정의는 그대로 보관한다');
 });
 
 test('시작 특성은 무작위 후보 3개를 중복 없이 제시하고 그중 하나를 선택하는 구조다',()=>{
@@ -35,26 +64,28 @@ test('시작 특성은 무작위 후보 3개를 중복 없이 제시하고 그�
   assert.equal(offers.length,3);
   assert.equal(new Set(offers.map(trait=>trait.id)).size,3);
   const selection=RunStart.createSelection(constantRng(0));
+  assert.equal(selection.starterId,'common');
   assert.equal(selection.traitOfferIds.length,3);
   assert.ok(selection.traitOfferIds.includes(selection.traitId));
 });
 
-test('런 정체성은 고정 캐릭터 대신 시작 카드군 + 시작 특성을 저장한다',()=>{
+test('런 정체성은 공용 시작 덱 + 시작 특성을 저장하고 구버전 스타터 요청도 공용으로 정규화한다',()=>{
   const run={hp:1,maxHp:1,gold:1,deck:[]};
-  RunStart.applyIdentityToRun(run,{starterId:'free',traitId:'extra_gold'},Cards,{});
-  assert.equal(run.starterId,'free');
+  RunStart.applyIdentityToRun(run,{starterId:'sniper',traitId:'extra_gold'},Cards,{});
+  assert.equal(run.starterId,'common');
   assert.equal(run.traitId,'extra_gold');
-  assert.deepEqual(run.identity,{starterId:'free',traitId:'extra_gold'});
+  assert.deepEqual(run.identity,{starterId:'common',traitId:'extra_gold'});
   assert.equal(run.deck.length,12);
   assert.equal(run.hp,60);
   assert.equal(run.maxHp,60);
   assert.equal(run.gold,80);
   assert.equal(run.char.id,'starter_identity');
   assert.equal(run.char.compatibilityOnly,true);
+  assert.equal(run.pack.name,'공용 시작 덱');
   assert.equal(run.pack.compatibilityOnly,true);
 });
 
-test('튼튼한 몸 특성은 특정 카드군을 강제하지 않고 시작 체력만 단순 보정한다',()=>{
+test('튼튼한 몸 특성은 카드풀을 강제하지 않고 시작 체력만 단순 보정한다',()=>{
   const run={hp:60,maxHp:60,gold:60};
   RunStart.applyTraitToRun(run,'durable');
   assert.equal(run.hp,66);
@@ -81,12 +112,53 @@ test('비상용 칩 특성은 칩 경제 공식 경로를 사용해 전투 시�
   assert.equal(battle.chip,1);
 });
 
-test('카드군은 클래스가 아니므로 다른 카드군/무소속 카드 획득을 차단하지 않는다',()=>{
-  assert.equal(RunStart.canAcquireCard({starterId:'sniper'},{cardId:'anything'}),true);
-  assert.equal(RunStart.canAcquireCard({starterId:'photographer'},{cardId:'neutral'}),true);
+test('공용 스타터는 클래스가 아니므로 이후 어떤 카드도 획득 차단하지 않는다',()=>{
+  assert.equal(RunStart.canAcquireCard({starterId:'common'},{cardId:'anything'}),true);
+  assert.equal(RunStart.canAcquireCard({starterId:'common'},{cardId:'pack01.black_bullet'}),true);
 });
 
-test('브라우저 beginRun 어댑터는 기존 런 초기화 뒤 새 시작 정체성과 12장 스타터를 덮어쓴다',()=>{
+test('공통지역 showReward 래퍼는 기존 네임드 보상 화면 대신 공용 효과 카드 3장 화면을 사용하고 지역에서는 원본으로 돌아간다',()=>{
+  RunStart.resetForTests();
+  const node={id:'c0'},calls={legacy:0,html:''};
+  const root={
+    ...Cards,
+    run:{actId:'common',runFlow:{phase:'common'},deck:RunStart.buildStarterDeck('common',Cards,{}),map:[node]},
+    Math:{random:constantRng(0)},
+    makeGeneral(id){return Cards.createDefinitionCard(id,{uid:`reward-${id}`})},
+    artHtml(){return'<span>card</span>'},
+    showModal(html){calls.html=html},
+    showReward(){calls.legacy++}
+  };
+  assert.equal(RunStart.wrapShowReward(root),true);
+  root.showReward(node);
+  assert.equal(calls.legacy,0);
+  assert.match(calls.html,/공통지역 카드 보상/);
+  assert.match(calls.html,/공용 효과 카드/);
+  assert.match(calls.html,/RunStartV2\.takeOpeningReward/);
+
+  root.run.actId='region_frontier';root.run.runFlow.phase='region';root.showReward(node);
+  assert.equal(calls.legacy,1);
+});
+
+test('공통지역 보상 선택은 공용 효과 카드를 실제 일반 효과 카드 형태로 덱에 추가한다',()=>{
+  const node={id:'c0'},calls={close:0,complete:0};
+  const run={actId:'common',runFlow:{phase:'common'},deck:RunStart.buildStarterDeck('common',Cards,{}),map:[node]};
+  const root={
+    ...Cards,run,
+    makeGeneral(id){return Cards.createDefinitionCard(id,{uid:`picked-${id}`})},
+    closeOverlay(){calls.close++},
+    completeNode(picked){assert.equal(picked,node);calls.complete++}
+  };
+  const before=run.deck.length,result=RunStart.takeOpeningReward('core.scout','add','c0',root);
+  assert.equal(result.ok,true);
+  assert.equal(run.deck.length,before+1);
+  assert.equal(run.deck.at(-1).definition.id,'core.scout');
+  assert.equal(run.deck.at(-1).named,null);
+  assert.equal(calls.close,1);
+  assert.equal(calls.complete,1);
+});
+
+test('브라우저 beginRun 어댑터는 기존 런 초기화 뒤 공용 시작 정체성과 12장 스타터를 덮어쓴다',()=>{
   RunStart.resetForTests();
   RunStart.resetSelection(constantRng(0));
   const root={
@@ -98,7 +170,7 @@ test('브라우저 beginRun 어댑터는 기존 런 초기화 뒤 새 시작 정
   assert.equal(RunStart.wrapBeginRun(root),true);
   root.beginRun();
   assert.equal(root.run.deck.length,12);
-  assert.equal(root.run.starterId,'free');
+  assert.equal(root.run.starterId,'common');
   assert.ok(root.run.traitId);
   assert.equal(root.run.char.id,'starter_identity');
   assert.equal(root.rendered,1);
