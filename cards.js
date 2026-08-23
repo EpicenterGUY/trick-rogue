@@ -67,8 +67,20 @@ for(const card of CARD_DEFINITIONS){
 const GENERAL_EFFECT_CARD_DEFINITIONS=Object.freeze([...(migratedCards?.ACTIVE_CARD_DEFINITIONS||migratedCards?.DIRECT_CARD_DEFINITIONS||browserFallbackMigratedDefinitions())]);
 const ALL_CARD_DEFINITIONS=Object.freeze([...CARD_DEFINITIONS,...GENERAL_EFFECT_CARD_DEFINITIONS]);
 const CARD_DEFINITION_BY_ID=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[card.id,card]));
-const CARD_DEFINITION_BY_BASE=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
-const GENERAL_EFFECT_CARD_BY_BASE=Object.fromEntries(GENERAL_EFFECT_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
+function definitionsByBase(definitions){
+  const grouped={};
+  for(const card of definitions||[]){
+    const key=`${card.suit}${card.rank}`;
+    if(!grouped[key])grouped[key]=[];
+    grouped[key].push(card);
+  }
+  return Object.freeze(Object.fromEntries(Object.entries(grouped).map(([key,cards])=>[key,Object.freeze([...cards])])));
+}
+const CARD_DEFINITIONS_BY_BASE=definitionsByBase(ALL_CARD_DEFINITIONS);
+const GENERAL_EFFECT_CARDS_BY_BASE=definitionsByBase(GENERAL_EFFECT_CARD_DEFINITIONS);
+// Singular base lookups are compatibility helpers only. Card identity is always definition ID / instance UID.
+const CARD_DEFINITION_BY_BASE=Object.fromEntries(Object.entries(CARD_DEFINITIONS_BY_BASE).map(([key,cards])=>[key,cards[0]]));
+const GENERAL_EFFECT_CARD_BY_BASE=Object.fromEntries(Object.entries(GENERAL_EFFECT_CARDS_BY_BASE).map(([key,cards])=>[key,cards[0]]));
 function rewardCardIds(enabledPacks=defaultEnabledPacks()){
   const enabled=new Set(validateEnabledPacks(enabledPacks));
   return CARD_PACK_LIST.filter(pack=>enabled.has(pack.id)).flatMap(pack=>pack.cards.flatMap(card=>Array(pack.rewardWeight).fill(card.id)));
@@ -102,10 +114,7 @@ function createDefinitionCard(definitionId,metadata={}){
 }
 const BASE_CARD_SLOTS=Object.freeze(['S','H','D','C'].flatMap(suit=>Array.from({length:13},(_,index)=>Object.freeze({suit,rank:index+2}))));
 function createBaseCardSlots(){
-  return BASE_CARD_SLOTS.map(slot=>{
-    const migrated=GENERAL_EFFECT_CARD_BY_BASE[`${slot.suit}${slot.rank}`];
-    return migrated?createCardRecord({suit:slot.suit,rank:slot.rank,definitionId:migrated.id}):createCardRecord({suit:slot.suit,rank:slot.rank});
-  });
+  return BASE_CARD_SLOTS.map(slot=>createCardRecord({suit:slot.suit,rank:slot.rank}));
 }
-return{CARD_PACK_LIST,CARD_DEFINITIONS,GENERAL_EFFECT_CARD_DEFINITIONS,ALL_CARD_DEFINITIONS,CARD_DEFINITION_BY_ID,CARD_DEFINITION_BY_BASE,CARD_PACKS,BASE_CARD_SLOTS,PLAYER_EFFECT_LABELS,CARD_DETAIL_BY_ID,createCardRecord,isPureCard,createDefinitionCard,createBaseCardSlots,defaultEnabledPacks,validateEnabledPacks,createRunPackState,rewardCardIds};
+return{CARD_PACK_LIST,CARD_DEFINITIONS,GENERAL_EFFECT_CARD_DEFINITIONS,ALL_CARD_DEFINITIONS,CARD_DEFINITION_BY_ID,CARD_DEFINITION_BY_BASE,CARD_DEFINITIONS_BY_BASE,GENERAL_EFFECT_CARD_BY_BASE,GENERAL_EFFECT_CARDS_BY_BASE,CARD_PACKS,BASE_CARD_SLOTS,PLAYER_EFFECT_LABELS,CARD_DETAIL_BY_ID,createCardRecord,isPureCard,createDefinitionCard,createBaseCardSlots,defaultEnabledPacks,validateEnabledPacks,createRunPackState,rewardCardIds};
 });
