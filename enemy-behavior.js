@@ -22,10 +22,19 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
+  function finishRunEconomyV2(){
+    root.RelicSystem?.wrapShowReward?.(root);
+    loadBattleLayoutFinal();
+  }
+  function loadRunEconomyV2(){
+    if(root.RunEconomyV2){finishRunEconomyV2();return;}
+    const script=loadScript('run-economy-v2.js','trick-run-economy-v2-runtime');
+    if(script?.dataset?.loaded==='true')finishRunEconomyV2();else script?.addEventListener?.('load',finishRunEconomyV2,{once:true});
+  }
   function loadRunFlowV2(){
-    if(root.RunFlowV2){loadBattleLayoutFinal();return;}
+    if(root.RunFlowV2){loadRunEconomyV2();return;}
     const script=loadScript('run-flow-v2.js','trick-run-flow-v2-runtime');
-    if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});
+    if(script?.dataset?.loaded==='true')loadRunEconomyV2();else script?.addEventListener?.('load',loadRunEconomyV2,{once:true});
   }
   function loadRunStartV2(){
     if(root.RunStartV2){loadRunFlowV2();return;}

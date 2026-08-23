@@ -133,15 +133,19 @@ test('지역 선택 중에는 맵 노드 진입을 막고 선택 완료 후 다�
   root.run.runFlow.phase='common';assert.equal(root.enterNode({id:'c0'}),true);assert.deepEqual(root.calls,['c0']);
 });
 
-test('8-B 브라우저 로더는 시작 정체성 뒤 최신 런 흐름을 붙이고 마지막에 전투 레이아웃으로 간다',()=>{
+test('8-B 런 흐름 뒤 8-C 경제 계층을 붙이고 마지막에 전투 레이아웃으로 간다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
+  const economyStart=source.indexOf('function loadRunEconomyV2()');
   const flowStart=source.indexOf('function loadRunFlowV2()');
   const startStart=source.indexOf('function loadRunStartV2()');
   const intelStart=source.indexOf('function loadEnemyInformation()');
-  assert.ok(flowStart>=0&&startStart>flowStart&&intelStart>startStart);
-  const flowBlock=source.slice(flowStart,startStart),startBlock=source.slice(startStart,intelStart);
+  assert.ok(economyStart>=0&&flowStart>economyStart&&startStart>flowStart&&intelStart>startStart);
+  const economyBlock=source.slice(economyStart,flowStart),flowBlock=source.slice(flowStart,startStart),startBlock=source.slice(startStart,intelStart);
+  assert.match(economyBlock,/run-economy-v2\.js/);
+  assert.match(economyBlock,/if\(root\.RunEconomyV2\)\{finishRunEconomyV2\(\);return;\}/);
   assert.match(flowBlock,/run-flow-v2\.js/);
-  assert.match(flowBlock,/if\(root\.RunFlowV2\)\{loadBattleLayoutFinal\(\);return;\}/);
+  assert.match(flowBlock,/if\(root\.RunFlowV2\)\{loadRunEconomyV2\(\);return;\}/);
+  assert.match(flowBlock,/addEventListener\?\.\('load',loadRunEconomyV2/);
   assert.match(startBlock,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
   assert.match(startBlock,/addEventListener\?\.\('load',loadRunFlowV2/);
 });
