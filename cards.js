@@ -78,9 +78,10 @@ function definitionsByBase(definitions){
 }
 const CARD_DEFINITIONS_BY_BASE=definitionsByBase(ALL_CARD_DEFINITIONS);
 const GENERAL_EFFECT_CARDS_BY_BASE=definitionsByBase(GENERAL_EFFECT_CARD_DEFINITIONS);
-// Singular base lookups are compatibility helpers only. Card identity is always definition ID / instance UID.
-const CARD_DEFINITION_BY_BASE=Object.fromEntries(Object.entries(CARD_DEFINITIONS_BY_BASE).map(([key,cards])=>[key,cards[0]]));
-const GENERAL_EFFECT_CARD_BY_BASE=Object.fromEntries(Object.entries(GENERAL_EFFECT_CARDS_BY_BASE).map(([key,cards])=>[key,cards[0]]));
+// Singular base lookups keep their previous last-definition-wins compatibility semantics only.
+// Pure-card creation never reads either lookup.
+const CARD_DEFINITION_BY_BASE=Object.fromEntries(ALL_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
+const GENERAL_EFFECT_CARD_BY_BASE=Object.fromEntries(GENERAL_EFFECT_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card]));
 function rewardCardIds(enabledPacks=defaultEnabledPacks()){
   const enabled=new Set(validateEnabledPacks(enabledPacks));
   return CARD_PACK_LIST.filter(pack=>enabled.has(pack.id)).flatMap(pack=>pack.cards.flatMap(card=>Array(pack.rewardWeight).fill(card.id)));
