@@ -65,22 +65,24 @@ test('지역별 태그 프로필은 카드군 소속이 아니라 실제 플레�
   assert.ok(Economy.candidateAffinity(guard,'region_frontier')>0);
 });
 
-test('공통지역 보상 풀은 순수 52장 + 공용 효과 12장의 64종을 사용하고 네임드/지역 카드를 숨긴다',()=>{
+test('공통지역 보상 풀은 순수 52장 + 초반 공용 효과 9장의 61종을 사용하고 고급 규칙 변형/네임드를 숨긴다',()=>{
   const run=runState({actId:'common',runFlow:{phase:'common'}}),node={id:'c0',type:'battle'},root=runtime(run);
   const pools=Economy.rewardPools(run,node,root);
   assert.equal(pools.openingCommon,true);
   assert.equal(pools.regionId,null);
   assert.deepEqual(pools.weights,{neutral:1,theme:0});
   assert.equal(pools.theme.length,0);
-  assert.equal(pools.catalog.length,64);
+  assert.equal(pools.catalog.length,61);
   assert.equal(pools.catalog.filter(candidate=>candidate.kind==='pure').length,52);
-  assert.equal(pools.catalog.filter(candidate=>candidate.kind==='definition').length,12);
+  assert.equal(pools.catalog.filter(candidate=>candidate.kind==='definition').length,9);
   const commonIds=new Set(RunStart.COMMON_CARD_POOL_IDS);
+  assert.equal(commonIds.size,9);
   assert.ok(pools.catalog.filter(candidate=>candidate.kind==='definition').every(candidate=>commonIds.has(candidate.definitionId)));
+  for(const id of ['core.reverse','core.recolor','core.fakeid'])assert.equal(pools.catalog.some(candidate=>candidate.definitionId===id),false,id);
   assert.equal(pools.catalog.some(candidate=>candidate.definitionId==='pack01.black_bullet'),false);
 });
 
-test('공통지역 전투 보상과 상점은 모두 같은 64종 공용 풀에서만 3장을 제시한다',()=>{
+test('공통지역 전투 보상과 상점은 모두 같은 61종 초반 풀에서만 3장을 제시한다',()=>{
   const run=runState({actId:'common',runFlow:{phase:'common'}}),root=runtime(run),battle={id:'c1',type:'battle'},shopNode={id:'cshop',type:'shop'};
   const reward=Economy.generateCardOffer(run,battle,{count:3,rng:seq([.2,.4,.6,.8]),runtimeRoot:root});
   const shop=Economy.createShopState(run,shopNode,{runtimeRoot:root});
@@ -89,6 +91,18 @@ test('공통지역 전투 보상과 상점은 모두 같은 64종 공용 풀에�
   assert.ok(reward.every(allowed));assert.ok(shop.cardOffers.every(allowed));
   assert.equal(reward.some(candidate=>candidate.definitionId?.startsWith('pack01.')),false);
   assert.equal(shop.cardOffers.some(candidate=>candidate.definitionId?.startsWith('pack01.')),false);
+});
+
+test('리버스·색칠공부·가짜 신분증은 공통지역에서 숨고 지역 진입 후 전체 카탈로그에 다시 등장한다',()=>{
+  const delayed=['core.reverse','core.recolor','core.fakeid'];
+  assert.deepEqual(RunStart.COMMON_CARD_POOL_IDS.filter(id=>delayed.includes(id)),[]);
+  const commonRun=runState({actId:'common',runFlow:{phase:'common'}}),commonRoot=runtime(commonRun);
+  const common=Economy.rewardPools(commonRun,{id:'c-delayed',type:'battle'},commonRoot).catalog;
+  const regionRun=runState(),regionRoot=runtime(regionRun),region=Economy.rewardPools(regionRun,regionNode('r-delayed'),regionRoot).catalog;
+  for(const id of delayed){
+    assert.equal(common.some(candidate=>candidate.definitionId===id),false,id);
+    assert.equal(region.some(candidate=>candidate.definitionId===id),true,id);
+  }
 });
 
 test('같은 인쇄값의 순수 카드와 효과 카드는 보상 카탈로그에서 서로 다른 후보로 공존한다',()=>{
@@ -168,7 +182,7 @@ test('1단계 강화는 인쇄값/쇼다운값을 보존하고 트릭 적용 숫
   assert.equal(Economy.upgradeCard(card).ok,true);
   assert.equal(card.upgradeLevel,1);assert.equal(card.effectiveRankBonus,1);assert.equal(card.trickRankModifier,1);
   assert.deepEqual({suit:card.printedSuit,rank:card.printedRank},printed);
-  assert.equal(BattleCore.showdownValue(card,'Rank'),8);
+  assert.equal(BattleCore.showdownValue(card,'H'),8);
   assert.equal(BattleCore.resolveTrickValue(card,'H').finalValue,9);
   assert.equal(Cards.isPureCard(card),true);
   assert.equal(Economy.upgradeCard(card).reason,'max_upgrade');
