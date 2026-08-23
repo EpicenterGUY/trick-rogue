@@ -182,7 +182,7 @@ test('1단계 강화는 인쇄값/쇼다운값을 보존하고 트릭 적용 숫
   assert.equal(Economy.upgradeCard(card).ok,true);
   assert.equal(card.upgradeLevel,1);assert.equal(card.effectiveRankBonus,1);assert.equal(card.trickRankModifier,1);
   assert.deepEqual({suit:card.printedSuit,rank:card.printedRank},printed);
-  assert.equal(BattleCore.showdownValue(card,'H'),8);
+  assert.equal(BattleCore.showdownValue(card,'Rank'),8);
   assert.equal(BattleCore.resolveTrickValue(card,'H').finalValue,9);
   assert.equal(Cards.isPureCard(card),true);
   assert.equal(Economy.upgradeCard(card).reason,'max_upgrade');
