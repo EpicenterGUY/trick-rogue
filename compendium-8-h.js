@@ -22,13 +22,13 @@
     '적용 숫자':Object.freeze({term:'적용 숫자',description:'현재 트릭 승패 비교에 실제로 쓰는 최종 숫자. 인쇄 숫자와 카드·트럼프·상태·필드 보정을 순서대로 적용한다.'}),
     '트릭값':Object.freeze({term:'트릭값',description:'현재 트릭에서 사용하는 카드의 숫자와 무늬. 기본 인쇄값과 달라질 수 있으며 쇼다운 원래값을 자동으로 바꾸지 않는다.'}),
     '인쇄값':Object.freeze({term:'인쇄값',description:'카드에 원래 적힌 숫자와 무늬. 쇼다운은 기본적으로 이 값을 사용한다.'}),
-    '쇼다운 위력':Object.freeze({term:'쇼다운 위력',description:'5장의 족보 기본 위력에 카드 효과·계약·상태·추가 배율 등을 반영해 쇼다운 피해를 만드는 수치.'}),
-    '쇼다운':Object.freeze({term:'쇼다운',description:'5트릭이 끝난 뒤 슬롯 5장의 족보와 효과를 계산하는 단계. 양측은 독립적으로 위력을 계산하며 플레이어 공격으로 적이 죽으면 적의 반격은 취소된다.'}),
+    '쇼다운 위력':Object.freeze({term:'쇼다운 위력',description:'5장의 족보 기본 위력에 카드 효과·계약·상태·추가 배율 등을 반영한 최종 비교 수치.'}),
+    '쇼다운':Object.freeze({term:'쇼다운',description:'5트릭이 끝난 뒤 양쪽 5장의 최종 위력을 비교하는 단계. 높은 쪽만 승리하며 최종 위력 차이만큼 패자에게 피해를 준다. 동점은 피해가 없다.'}),
     '우세':Object.freeze({term:'우세',description:'카드·유물·규칙이 명시적으로 부여하는 조건부 쇼다운 상태. 활성화되면 추가 배율 +25%를 주며 쇼다운 뒤 해제된다. 무늬 수 비교로 자동 발생하지 않는다.'}),
     '리버 적중':Object.freeze({term:'리버 적중',description:'4번째 트릭 뒤 고정해 둔 합법적인 5번째 카드 후보 중 하나와 실제 5번째 카드의 인쇄 숫자·무늬가 정확히 일치한 상태. 추가 배율 +25%.'}),
     '리버':Object.freeze({term:'리버',description:'4번째 트릭 뒤 현재 쇼다운 4장을 기준으로 합법적인 5번째 카드 후보를 한 번 고정하는 규칙. 5번째 카드 이후 다시 계산하지 않는다.'}),
     '칩':Object.freeze({term:'칩',description:'전투 전용 자원. 기본 최대 5, 트릭 승리 시 +1. 손패 교체는 칩 2를 쓰고 선택한 카드를 드로우 덱 맨 아래로 보낸 뒤 1장을 뽑는다.'}),
-    '순수 카드':Object.freeze({term:'순수 카드',description:'고유 효과가 없는 표준 카드. 별도 카드 타입은 아니며 강화로 고유 효과가 생기지 않는 한 순수 판정을 유지한다.'}),
+    '순수 카드':Object.freeze({term:'순수 카드',description:'고유 효과가 없는 표준 52장 카드. 효과 카드와 같은 인쇄 숫자·무늬를 가질 수 있으며, 강화로 고유 효과가 생기지 않는 한 순수 판정을 유지한다.'}),
     '예약':Object.freeze({term:'예약',description:'현재 즉시 처리하지 않고 지정된 다음 트릭·쇼다운 등 특정 시점에 한 번 실행하도록 저장한 효과.'}),
     '기억':Object.freeze({term:'기억',description:'이전 트릭·세트의 결과나 사용 기록을 참조하는 효과 계열.'}),
     '표식':Object.freeze({term:'표식',description:'다음 양수 피해를 받을 때 보호막 계산 전에 피해가 현재 수치만큼 증가하고 모두 사라지는 상태. 최대 5.'}),
@@ -44,12 +44,13 @@
     '손패':Object.freeze({term:'손패',description:'현재 사용할 수 있는 카드. 기본 최대 3장이며 매 트릭 카드를 낸 직후 다시 보충한다. 5번째 트릭도 쇼다운 전에 보충한다.'}),
     '드로우':Object.freeze({term:'드로우',description:'드로우 덱에서 카드를 손패로 가져오는 행동. 덱이 비었을 때만 버림 더미를 다시 섞어 사용한다.'}),
     '골드':Object.freeze({term:'골드',description:'런 동안 유지되는 상점 자원. 전투용 칩과 별개다.'}),
-    '폴드':Object.freeze({term:'폴드',description:'쇼다운 슬롯이 3~4장일 때 세트를 접는 선택. 양측 일반 쇼다운 공격을 생략하고 슬롯을 버린 뒤 고정 체력 8을 잃고 다음 세트로 간다.'})
+    '폴드':Object.freeze({term:'폴드',description:'쇼다운 슬롯이 3~4장일 때 세트를 접는 선택. 양측 일반 쇼다운 정산을 생략하고 슬롯을 버린 뒤 고정 체력 8을 잃고 다음 세트로 간다.'})
   });
   const SECTION_ORDER=Object.freeze(['cards','relics','clauses','traits','fields','statuses','synergies']);
   const SECTION_LABELS=Object.freeze({cards:'카드',relics:'유물',clauses:'계약·금기',traits:'특성',fields:'필드',statuses:'상태',synergies:'빌드 시너지'});
   const CARD_FILTERS=Object.freeze(['all','pure','general','pack01','pack02']);
-  const CARD_FILTER_LABELS=Object.freeze({all:'전체',pure:'순수',general:'일반 효과',pack01:'pack01',pack02:'pack02'});
+  const CARD_FILTER_LABELS=Object.freeze({all:'전체',pure:'순수',general:'공용 효과',pack01:'pack01',pack02:'pack02'});
+  const SUIT_ORDER=Object.freeze(['S','H','D','C']);
   let installed=false;
   let originalShowModal=null;
   let viewState={section:'cards',cardFilter:'all',query:'',selected:null};
@@ -75,18 +76,34 @@
     if(typeof RunEconomyV2?.candidateCatalog!=='function')return new Set();
     return new Set(RunEconomyV2.candidateCatalog(Cards).map(entry=>entry.key));
   }
+  function cardCatalogOrder(item){
+    if(item.category==='pure')return 0;
+    if(item.category==='general')return 1;
+    if(item.packId==='pack01')return 2;
+    if(item.packId==='pack02')return 3;
+    return 4;
+  }
+  function compareCardCatalogItems(a,b){
+    const category=cardCatalogOrder(a)-cardCatalogOrder(b);if(category)return category;
+    const suit=SUIT_ORDER.indexOf(a.suit)-SUIT_ORDER.indexOf(b.suit);if(suit)return suit;
+    const rank=Number(b.rank)-Number(a.rank);if(rank)return rank;
+    return String(a.name||a.id).localeCompare(String(b.name||b.id),'ko');
+  }
   function cardCatalog(){
     const rewardKeys=rewardEligibleKeys(),items=[];
     const slots=typeof Cards?.createBaseCardSlots==='function'?Cards.createBaseCardSlots():[];
     for(const card of slots){
-      const definition=cardDefinition(card),pure=isPureCard(card),id=definition?.id||`pure.${card.suit}${card.rank}`;
-      items.push({kind:'card',id,name:definition?.name||(pure?'순수 카드':'일반 효과 카드'),suit:card.suit,rank:Number(card.rank),category:pure?'pure':'general',packId:null,description:definition?.description||definition?.text||(pure?'고유 효과가 없는 표준 카드. 족보 구성과 순수 카드 시너지에 사용한다.':'일반 효과 카드.'),implemented:pure||definition?.implemented!==false,rewardEligible:rewardKeys.has(rewardKeyForCard(card)),source:card});
+      items.push({kind:'card',id:`pure.${card.suit}${card.rank}`,name:'순수 카드',suit:card.suit,rank:Number(card.rank),category:'pure',packId:null,description:'고유 효과가 없는 표준 카드. 효과 카드와 같은 인쇄 숫자·무늬를 가져도 별도 카드로 존재한다.',implemented:true,rewardEligible:rewardKeys.has(rewardKeyForCard(card)),source:card});
+    }
+    for(const definition of Cards?.GENERAL_EFFECT_CARD_DEFINITIONS||[]){
+      const card=typeof Cards?.createDefinitionCard==='function'?Cards.createDefinitionCard(definition.id,{uid:`compendium-${definition.id}`}):{suit:definition.suit,rank:definition.rank,definition};
+      items.push({kind:'card',id:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),category:'general',packId:null,description:definition.description||definition.text||'',implemented:definition.implemented!==false,rewardEligible:rewardKeys.has(`def:${definition.id}`),source:card});
     }
     for(const definition of Cards?.CARD_DEFINITIONS||[]){
       const card=typeof Cards?.createDefinitionCard==='function'?Cards.createDefinitionCard(definition.id,{uid:`compendium-${definition.id}`}):{suit:definition.suit,rank:definition.rank,definition};
       items.push({kind:'card',id:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),category:definition.packId||'named',packId:definition.packId||null,description:definition.description||definition.text||'',implemented:definition.implemented!==false,rewardEligible:rewardKeys.has(`def:${definition.id}`),source:card});
     }
-    return items;
+    return items.sort(compareCardCatalogItems);
   }
   function relicCatalog(runState=activeRun()){
     const owned=new Set((runState?.relics||[]).map(value=>typeof value==='string'?value:value?.id).filter(Boolean));
@@ -121,7 +138,7 @@
   function cardFilterMatch(item,filter){
     if(filter==='all')return true;if(filter==='pure')return item.category==='pure';if(filter==='general')return item.category==='general';return item.packId===filter;
   }
-  function searchableText(item){return`${item.name||''} ${item.description||''} ${item.meta||''} ${item.id||''} ${item.packId||''} ${item.suit||''}${item.rank||''}`.toLocaleLowerCase('ko')}
+  function searchableText(item){return`${item.name||''} ${item.description||''} ${item.meta||''} ${item.id||''} ${item.packId||''} ${item.suit||''}${item.rank||''} ${suitSymbol(item.suit)}${rankLabel(item.rank)}`.toLocaleLowerCase('ko')}
   function filteredCatalog(section=viewState.section,{cardFilter=viewState.cardFilter,query=viewState.query,runState=activeRun()}={}){
     const needle=String(query||'').trim().toLocaleLowerCase('ko');return sectionCatalog(section,runState).filter(item=>(section!=='cards'||cardFilterMatch(item,cardFilter))&&(!needle||searchableText(item).includes(needle)));
   }
@@ -140,7 +157,7 @@
   function itemBadges(item){
     const badges=[];
     if(item.kind==='card'){
-      if(item.packId)badges.push(item.packId);else badges.push(item.category==='pure'?'순수':'일반 효과');
+      if(item.packId)badges.push(item.packId);else badges.push(item.category==='pure'?'순수':'공용 효과');
       badges.push(item.rewardEligible?'보상 후보':'보상 제외');
     }else if(item.meta)badges.push(item.meta);
     if(item.owned)badges.push(item.kind==='synergy'?'활성':'보유');
@@ -224,5 +241,5 @@
     if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;if(attempts++<100)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[8-H] 도감 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true;
   }
   function resetForTests(){installed=false;originalShowModal=null;viewState={section:'cards',cardFilter:'all',query:'',selected:null}}
-  return{STAGE,KEYWORD_DEFINITIONS,SECTION_ORDER,SECTION_LABELS,CARD_FILTERS,CARD_FILTER_LABELS,keywordDefinition,keywordTerms,keywordPattern,highlightKeywordsText,keywordCatalog,activeRun,isPureCard,cardDefinition,rewardKeyForCard,rewardEligibleKeys,cardCatalog,relicCatalog,clauseCatalog,traitCatalog,fieldCatalog,statusCatalog,synergyCatalog,sectionCatalog,cardFilterMatch,searchableText,filteredCatalog,catalogCounts,setView,itemBadges,decorateKeywords,keywordPopover,renderCompendium,showCompendium,wrapShowModal,wrapInspectCard,installEntryButtons,installBrowserRuntime,installWhenReady,resetForTests};
+  return{STAGE,KEYWORD_DEFINITIONS,SECTION_ORDER,SECTION_LABELS,CARD_FILTERS,CARD_FILTER_LABELS,SUIT_ORDER,keywordDefinition,keywordTerms,keywordPattern,highlightKeywordsText,keywordCatalog,activeRun,isPureCard,cardDefinition,rewardKeyForCard,rewardEligibleKeys,cardCatalogOrder,compareCardCatalogItems,cardCatalog,relicCatalog,clauseCatalog,traitCatalog,fieldCatalog,statusCatalog,synergyCatalog,sectionCatalog,cardFilterMatch,searchableText,filteredCatalog,catalogCounts,setView,itemBadges,decorateKeywords,keywordPopover,renderCompendium,showCompendium,wrapShowModal,wrapInspectCard,installEntryButtons,installBrowserRuntime,installWhenReady,resetForTests};
 });
