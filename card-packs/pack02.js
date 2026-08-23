@@ -1,8 +1,31 @@
 (function(root,factory){
-  const value=factory();
+  const effectApi=typeof module!=='undefined'?require('../effects.js'):root.CardEffects;
+  const value=factory(root,effectApi);
   if(typeof module!=='undefined')module.exports=value;
   root.PACK02_CARDS=value;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+})(typeof globalThis!=='undefined'?globalThis:this,function(root,effectApi){
+  function installConditions(api){
+    if(!api?.conditions)return false;
+    api.conditions.effective_suit_is_trump=context=>{
+      const suit=context?.trickSuit
+        ??context?.effectiveSuit
+        ??context?.card?.trickSuit
+        ??context?.card?.effectiveSuit
+        ??context?.card?.suit
+        ??null;
+      const trump=context?.trump??context?.battle?.trump??null;
+      return !!trump&&suit===trump;
+    };
+    api.conditions.river_hit=context=>context?.riverHit?.active===true
+      ||context?.battle?.riverHit?.active===true
+      ||context?.showdown?.riverHit?.active===true;
+    return true;
+  }
+
+  if(!installConditions(effectApi)&&typeof document!=='undefined'){
+    document.addEventListener('DOMContentLoaded',()=>installConditions(root.CardEffects),{once:true});
+  }
+
   return [
     {
       id:'pack02.trump_signal',
