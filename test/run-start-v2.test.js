@@ -30,15 +30,18 @@ test('구버전 무소속/저격수/사진가 스타터는 삭제하지 않고 �
   }
 });
 
-test('공용 스타터 덱은 실제 52장 규격 12장이고 순수 7장 + 공용 효과 5장으로 손패 순환과 칩 활용을 포함한다',()=>{
+test('공용 스타터 덱은 순수 8장 + 기본 효과 4장으로 시작하고 순수 전용 보상은 런에서 발견한다',()=>{
   const deck=RunStart.buildStarterDeck('common',Cards,{});
   assert.equal(deck.length,12);
-  assert.equal(deck.filter(Cards.isPureCard).length,7);
+  assert.equal(deck.filter(Cards.isPureCard).length,8);
   const effectIds=deck.filter(card=>card.definition).map(card=>card.definition.id);
+  assert.deepEqual(effectIds,['core.plus2','core.draw','core.burn','core.scout']);
   assert.deepEqual(effectIds,RunStart.COMMON_STARTER_EFFECT_CARD_IDS);
-  assert.ok(effectIds.includes('core.draw'));
-  assert.ok(effectIds.includes('core.burn'));
-  assert.ok(effectIds.includes('core.clean'));
+  assert.equal(effectIds.includes('core.pureboost'),false);
+  assert.equal(effectIds.includes('core.clean'),false);
+  assert.equal(RunStart.COMMON_CARD_POOL_IDS.includes('core.pureboost'),true);
+  assert.equal(RunStart.COMMON_CARD_POOL_IDS.includes('core.clean'),true);
+  assert.ok(deck.some(card=>Cards.isPureCard(card)&&card.suit==='C'&&card.rank===10));
   for(const card of deck){
     assert.ok(['S','H','D','C'].includes(card.suit));
     assert.ok(Number.isInteger(card.rank));
