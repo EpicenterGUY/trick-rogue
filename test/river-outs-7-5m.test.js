@@ -21,12 +21,21 @@ test('7.5-M은 4번째 트릭 종료 시점의 4장으로 리버 후보를 미�
   assert.equal(straight.count,8);
 });
 
-test('하트 4장은 4번째 트릭 종료 시 남은 하트가 플러시 후보로 표시된다',()=>{
+test('하트 4장은 중복 인쇄값도 가능한 규칙에 따라 하트 13종 전체가 플러시 후보가 된다',()=>{
   const snapshot=Resolution.createRiverSnapshot(cards([2,5,8,11],['H','H','H','H']),{setIndex:1});
   const flush=snapshot.groups.find(group=>group.id==='flush');
   assert(flush);
-  assert.equal(flush.count,9);
+  assert.equal(flush.count,13);
   assert(snapshot.lines.includes('♥가 들어오면 플러시'));
+});
+
+test('첫 4장에 이미 나온 동일 인쇄값도 다른 물리 카드가 있으면 리버 후보로 인정한다',()=>{
+  const firstFour=[{rank:7,suit:'S'},{rank:7,suit:'H'},{rank:4,suit:'D'},{rank:4,suit:'C'}];
+  const snapshot=Resolution.createRiverSnapshot(firstFour,{setIndex:1});
+  assert(snapshot.candidateKeys.includes('S:7'));
+  const hit=Resolution.resolveRiverHit(snapshot,{rank:7,suit:'S',uid:'another-s7'},{setIndex:1});
+  assert.equal(hit.active,true);
+  assert.equal(hit.target.id,'full_house');
 });
 
 test('리버 적중은 스냅샷 후보의 정확한 5번째 카드만 인정한다',()=>{
