@@ -72,7 +72,7 @@ test('전투 시작 어댑터는 기존 적 정의를 유지하면서 현재 노
   assert.equal(root.rendered,1);
 });
 
-test('강한 일반 적이 첫 쇼다운을 버티면 리버 적중 공격 뒤 적 반격을 받고 다음 세트로 자연스럽게 이어진다',async()=>{
+test('강한 일반 적이 첫 쇼다운 차이 피해를 버티면 반격 없이 다음 세트로 자연스럽게 이어진다',async()=>{
   const state={
     node:{id:'n2',type:'battle',row:1},type:'battle',enemy:{name:'폐허 약탈자',hp:58,maxHp:58},
     slots:cards([2,3,4,5,6]).map((card,index)=>({card:{...card,uid:`p${index}`}})),
@@ -99,10 +99,15 @@ test('강한 일반 적이 첫 쇼다운을 버티면 리버 적중 공격 뒤 �
   assert.equal(result.riverHit.active,true,'4장 시점에 고정한 6 후보를 5번째 카드로 실제 적중한다');
   assert.equal(result.riverHit.target.id,'straight');
   assert.equal(result.player.finalPower,30);
-  assert.equal(result.attacks.player.dealt,30);
-  assert.equal(result.attacks.enemy.dealt,5);
-  assert.equal(state.enemy.hp,6);
-  assert.equal(root.run.hp,45);
+  assert.equal(result.enemy.finalPower,5);
+  assert.equal(result.comparison.winner,'player');
+  assert.equal(result.comparison.difference,25);
+  assert.equal(result.attacks.player.dealt,25);
+  assert.equal(result.attacks.enemy.dealt,0);
+  assert.equal(result.attackSequence.enemyAttackCancelled,true);
+  assert.equal(state.enemy.hp,11);
+  assert.equal(root.run.hp,50);
+  assert.equal(root.playerDamage,undefined);
   assert.equal(state.setIndex,2);
   assert.equal(state.trick,1);
   assert.equal(state.phase,'trick');
