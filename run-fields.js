@@ -25,17 +25,17 @@
     const current=runState.fieldLoadout&&typeof runState.fieldLoadout==='object'?runState.fieldLoadout:{};
     const known=new Set(Object.keys(fieldRegistry()));
     const owned=[...new Set((Array.isArray(current.owned)?current.owned:[]).filter(id=>known.has(id)))];
-    const legacyActive=owned.includes(current.activeFieldId)?current.activeFieldId:null;
+    const migrating=current.version!==RUN_FIELD_STATE_VERSION;
+    const legacyActive=migrating&&owned.includes(current.activeFieldId)?current.activeFieldId:null;
     const queuedFieldId=owned.includes(current.queuedFieldId)?current.queuedFieldId:legacyActive;
-    runState.fieldLoadout={
-      version:RUN_FIELD_STATE_VERSION,
-      owned,
-      queuedFieldId:queuedFieldId||null,
-      queuedSource:queuedFieldId?(current.queuedSource||sourceMeta('scripted:legacy-field-loadout')):null,
-      activeFieldId:null,
-      history:Array.isArray(current.history)?current.history:[]
-    };
-    return runState.fieldLoadout;
+    current.version=RUN_FIELD_STATE_VERSION;
+    current.owned=owned;
+    current.queuedFieldId=queuedFieldId||null;
+    current.queuedSource=current.queuedFieldId?(current.queuedSource||sourceMeta('scripted:legacy-field-loadout')):null;
+    current.activeFieldId=null;
+    current.history=Array.isArray(current.history)?current.history:[];
+    runState.fieldLoadout=current;
+    return current;
   }
   function fieldHistoryEntry(state,{action,source,from,to}){
     const entry={step:state.history.length+1,action,source:source||'unknown',from:from||null,to:to||null};state.history.push(entry);return entry;
@@ -75,7 +75,7 @@
   function consumeQueuedFieldForBattle(runState,battleState){
     if(!runState||!battleState)return{applied:false,reason:'missing_state'};
     if(battleState.runFieldApplied)return{applied:true,unchanged:true,current:battleState.field,definition:fieldDefinition(battleState.runFieldApplied.id)};
-    const state=ensureRunFieldState(runState),definition=queuedField(runState);
+    const state=ensureRunFieldState(runState),definition=state.queuedFieldId?fieldDefinition(state.queuedFieldId):null;
     if(!definition)return{applied:false,reason:'no_queued_field'};
     if(EncounterRules?.initializeBattle&&!battleState.encounterRulesInitialized)EncounterRules.initializeBattle(battleState);
     const previous=battleState.field||null,source=state.queuedSource||sourceMeta('scripted:run-field');
@@ -92,8 +92,8 @@
   function applyActiveRunField(runtimeRoot=root){return consumeQueuedFieldForBattle(activeRun(runtimeRoot),activeBattle(runtimeRoot))}
   function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
   function runFieldSummary(runState){
-    if(!runState)return null;const definition=queuedField(runState);if(!definition)return null;
-    const state=ensureRunFieldState(runState);return{id:definition.id,label:definition.label||definition.name,description:definition.description||'',ownedCount:state.owned.length,queued:true,source:state.queuedSource};
+    if(!runState)return null;const state=ensureRunFieldState(runState),definition=state.queuedFieldId?fieldDefinition(state.queuedFieldId):null;if(!definition)return null;
+    return{id:definition.id,label:definition.label||definition.name,description:definition.description||'',ownedCount:state.owned.length,queued:true,source:state.queuedSource};
   }
   function eventFieldPick(runtimeRoot=root,nodeId,fieldId=EVENT_FIELD_ID){
     const runState=activeRun(runtimeRoot);if(!runState)return null;
