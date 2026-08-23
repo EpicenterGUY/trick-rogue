@@ -22,9 +22,17 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function finishRunEconomyV2(){
+  function finishShowdownSlotManipulation(){
     root.RelicSystem?.wrapShowReward?.(root);
     loadBattleLayoutFinal();
+  }
+  function loadShowdownSlotManipulation(){
+    if(root.ShowdownSlotManipulation){finishShowdownSlotManipulation();return;}
+    const script=loadScript('showdown-slot-manipulation.js','trick-showdown-slot-manipulation-runtime');
+    if(script?.dataset?.loaded==='true')finishShowdownSlotManipulation();else script?.addEventListener?.('load',finishShowdownSlotManipulation,{once:true});
+  }
+  function finishRunEconomyV2(){
+    loadShowdownSlotManipulation();
   }
   function loadRunEconomyV2(){
     if(root.RunEconomyV2){finishRunEconomyV2();return;}
