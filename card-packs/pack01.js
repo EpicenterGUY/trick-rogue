@@ -7,7 +7,7 @@
     "suit": "S",
     "rank": 7,
     "description": "발동: 이 카드로 트릭 승리 시 즉시 적에게 피해 3. 추가: 이 카드가 쇼다운 5장 중 하나면 최종 쇼다운 위력 +4.",
-    "terms": ["트릭","쇼다운","우세"],
+    "terms": ["트릭","피해","쇼다운","최종 위력"],
     "image": "assets/cards/pack01/black_bullet.png",
     "packId": "pack01",
     "art": "bullet"
@@ -19,7 +19,7 @@
     "suit": "H",
     "rank": 4,
     "description": "발동: 이 카드로 트릭 승리 시 체력 4 회복. 회복은 최대 체력을 넘지 않는다.",
-    "terms": ["트릭"],
+    "terms": ["트릭","회복"],
     "image": "assets/cards/pack01/phoenix.png",
     "packId": "pack01",
     "art": "phoenix"
@@ -43,7 +43,7 @@
     "suit": "C",
     "rank": 3,
     "description": "조건: 이 카드의 적용 숫자가 5 이하인 상태로 트릭 승리. 효과: 칩 +2.",
-    "terms": ["적용 숫자","트릭"],
+    "terms": ["적용 숫자","트릭","칩"],
     "image": "assets/cards/pack01/dirty_gambler.png",
     "packId": "pack01",
     "art": "cheat"
@@ -67,7 +67,7 @@
     "suit": "D",
     "rank": 6,
     "description": "발동: 이 카드를 사용하면 예약 생성. 현재 트릭에는 발동하지 않고, 바로 다음 트릭에서 승리하면 적에게 추가 피해 6. 패배하거나 무승부면 예약은 사라진다.",
-    "terms": ["예약","트릭"],
+    "terms": ["예약","트릭","피해"],
     "image": "assets/cards/pack01/scheduled_delivery.png",
     "packId": "pack01",
     "art": "mail"
@@ -91,7 +91,7 @@
     "suit": "S",
     "rank": 5,
     "description": "발동: 이 카드로 트릭 승리 시 적에게 출혈 2 부여. 출혈은 트릭 종료 시 피해를 주고 1 감소한다.",
-    "terms": ["출혈","트릭"],
+    "terms": ["출혈","트릭","피해"],
     "image": "assets/cards/pack01/sharp_glass.png",
     "packId": "pack01",
     "art": "glass"
