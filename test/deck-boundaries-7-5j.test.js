@@ -22,12 +22,12 @@ test('7.5-J 기본 시작 덱 목표는 12장이고 캐릭터 압축도 10~14장
   assert.equal(Boundaries.startingDeckSizeForCharacter({remove:99}),10);
 });
 
-test('7.5-J 시작 덱 축소는 캐릭터 네임드를 우선 보존하고 최소 2장 순수 카드를 남긴다',()=>{
+test('7.5-P 시작 덱 축소는 캐릭터 네임드를 우선 보존하고 최소 2장 순수 카드를 남긴다',()=>{
   const result=Boundaries.selectStartingDeck(taggedDeck(),{targetSize:10,minPlain:2});
   assert.equal(result.length,10);
   assert.equal(result.filter(Boundaries.isNamedCard).length,5);
   assert.equal(result.filter(Boundaries.isEffectCard).length,3);
-  assert.equal(result.filter(Boundaries.isPlainCard).length,2);
+  assert.equal(result.filter(Boundaries.isPureCard).length,2);
 });
 
 test('7.5-J BattleCore 어댑터는 전투 시작 3장 손패와 별도 쇼다운 적재 공간을 만든다',()=>{
@@ -88,7 +88,7 @@ test('7.5-J 현재 세트의 쇼다운 카드는 덱이 비어도 쇼다운 전 
   assert.equal(state.discard.length,0);
 });
 
-test('7.5-J 브라우저 beginRun 어댑터는 거대한 52장 규격 풀과 실제 시작 런 덱을 분리한다',()=>{
+test('7.5-P 브라우저 beginRun 어댑터는 52장 규격 풀과 실제 시작 런 덱을 분리하고 순수 카드 보존 규칙을 기록한다',()=>{
   Boundaries.resetBrowserAdapterForTests();
   const root={
     BattleCore:Core,
@@ -103,8 +103,9 @@ test('7.5-J 브라우저 beginRun 어댑터는 거대한 52장 규격 풀과 실
   root.beginRun();
   assert.equal(root.run.deck.length,10);
   assert.equal(root.run.startingDeckSize,10);
-  assert.equal(root.run.startingDeckRule,'7.5-J');
-  assert.equal(root.run.deck.filter(Boundaries.isPlainCard).length,2);
+  assert.equal(root.run.startingDeckRule,'7.5-P');
+  assert.equal(root.run.startingPureCardCount,2);
+  assert.equal(root.run.deck.filter(Boundaries.isPureCard).length,2);
   assert.equal(root.renderMapCalls,1);
 });
 
