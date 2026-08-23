@@ -11,6 +11,8 @@
     bleed:Object.freeze({id:'bleed',maxStacks:null,trigger:'on_trick_end',decay:Object.freeze({type:'subtract',amount:1,when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:false,implemented:true,role:'damage'}),
     regen:Object.freeze({id:'regen',maxStacks:null,trigger:'on_trick_end',decay:Object.freeze({type:'subtract',amount:1,when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:true,implemented:true,role:'heal'}),
     vulnerable:Object.freeze({id:'vulnerable',maxStacks:null,trigger:'before_damage',decay:Object.freeze({type:'reset',when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:true,implemented:true,role:'amplify_damage'}),
+    scar:Object.freeze({id:'scar',maxStacks:2,trigger:'on_trick_end',decay:null,duration:'battle',stacking:'add',dispellable:false,implemented:true,role:'damage'}),
+    mark:Object.freeze({id:'mark',maxStacks:5,trigger:'before_damage',decay:Object.freeze({type:'reset',when:'after_trigger'}),duration:'battle',stacking:'add',dispellable:true,implemented:true,role:'amplify_damage'}),
     poison:Object.freeze({id:'poison',maxStacks:null,trigger:null,decay:null,duration:'battle',stacking:'add',dispellable:false,implemented:false,role:'reserved'})
   });
   let installed=false;
