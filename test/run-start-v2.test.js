@@ -104,13 +104,17 @@ test('브라우저 beginRun 어댑터는 기존 런 초기화 뒤 새 시작 정
   assert.equal(root.rendered,1);
 });
 
-test('8-A 런타임은 적 부분정보·덱 경계 등 기존 전투 어댑터 뒤, 최종 전투 레이아웃 전에 로드된다',()=>{
+test('8-A 시작 정체성 뒤 8-B 최신 런 흐름을 거쳐 최종 전투 레이아웃을 로드한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/enemy-information\.js/);
   assert.match(source,/run-start-v2\.js/);
+  assert.match(source,/run-flow-v2\.js/);
   assert.match(source,/battle-layout\.js/);
   assert.match(source,/function loadRunStartV2\(\)/);
+  assert.match(source,/function loadRunFlowV2\(\)/);
   assert.match(source,/if\(root\.EnemyInformation\)\{loadRunStartV2\(\);return;\}/);
   assert.match(source,/loadScript\('run-start-v2\.js','trick-run-start-v2-runtime'/);
-  assert.match(source,/if\(root\.RunStartV2\)\{loadBattleLayoutFinal\(\);return;\}/);
+  assert.match(source,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
+  assert.match(source,/loadScript\('run-flow-v2\.js','trick-run-flow-v2-runtime'/);
+  assert.match(source,/if\(root\.RunFlowV2\)\{loadBattleLayoutFinal\(\);return;\}/);
 });

@@ -88,7 +88,7 @@
   }
   function generatedDefinition(actId,map,{registry}={}){
     const structure=runStructure(),base=structure?.actDefinition?.(actId,registry);if(!base)return null;
-    return{id:base.id,index:base.index,name:base.name,entryNodeIds:[...base.entryNodeIds],nextActId:base.nextActId,nodes:(map||[]).map(node=>({id:node.id,type:node.type,lane:node.lane,row:node.row,next:[...(node.next||[])]}))};
+    return{id:base.id,index:base.index,name:base.name,entryNodeIds:[...base.entryNodeIds],nextActId:base.nextActId,requiresBoss:base.requiresBoss,nodes:(map||[]).map(node=>({id:node.id,type:node.type,lane:node.lane,row:node.row,next:[...(node.next||[])]}))};
   }
   function validateGeneratedMap(actId,map,{registry,profiles=ACT_MAP_PROFILES}={}){
     const errors=[],structure=runStructure(),profile=profileForAct(actId,profiles),definition=generatedDefinition(actId,map,{registry});
