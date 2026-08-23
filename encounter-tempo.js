@@ -1,8 +1,9 @@
 (function(root,factory){
-  const api=factory();
+  const api=factory(root);
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.EncounterTempo=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+  if(typeof document!=='undefined')api.installWhenReady(root);
+})(typeof globalThis!=='undefined'?globalThis:this,function(defaultRoot){
   const STAGE='7.5-E';
 
   const SHOWDOWN_DAMAGE_BANDS=Object.freeze({
@@ -11,6 +12,7 @@
     synergy:Object.freeze({id:'synergy',label:'강한 시너지',min:50,max:80}),
     burst:Object.freeze({id:'burst',label:'고점',min:100,max:null})
   });
+  const LOW_DAMAGE_BAND=Object.freeze({id:'low',label:'저점 쇼다운',min:0,max:10});
 
   const TEMPO_PROFILES=Object.freeze({
     battle_early:Object.freeze({
@@ -35,7 +37,11 @@
     })
   });
 
+  let installed=false;
+  let originalStartBattle=null;
+
   function numeric(value,fallback=0){const number=Number(value);return Number.isFinite(number)?number:fallback}
+  function clamp(value,min,max){return Math.max(min,Math.min(max,value))}
   function resolveTempoId(nodeOrType){
     if(typeof nodeOrType==='string'){
       if(TEMPO_PROFILES[nodeOrType])return nodeOrType;
@@ -51,14 +57,23 @@
   }
   function profileFor(nodeOrType){return TEMPO_PROFILES[resolveTempoId(nodeOrType)]}
   function cloneTargetSets(targetSets){return{min:targetSets.min,max:targetSets.max,preferred:targetSets.preferred}}
+  function tempoSnapshot(profile){return{stage:STAGE,id:profile.id,label:profile.label,hp:profile.hp,targetSets:cloneTargetSets(profile.targetSets),note:profile.note}}
   function applyEnemyTempo(enemy,nodeOrType){
     if(!enemy||typeof enemy!=='object')throw new TypeError('Enemy definition is required');
     const profile=profileFor(nodeOrType);
-    return{
-      ...enemy,
-      hp:profile.hp,
-      tempo:{stage:STAGE,id:profile.id,label:profile.label,targetSets:cloneTargetSets(profile.targetSets),note:profile.note}
-    };
+    return{...enemy,hp:profile.hp,tempo:tempoSnapshot(profile)};
+  }
+  function applyTempoToBattle(state,nodeOrType=state?.node||state?.type){
+    if(!state?.enemy)throw new TypeError('Active battle enemy is required');
+    const profile=profileFor(nodeOrType);
+    const oldMax=Math.max(1,numeric(state.enemy.maxHp,numeric(state.enemy.hp,profile.hp)));
+    const oldHp=clamp(numeric(state.enemy.hp,oldMax),0,oldMax);
+    const ratio=oldHp/oldMax;
+    state.enemy.maxHp=profile.hp;
+    state.enemy.hp=clamp(Math.round(profile.hp*ratio),0,profile.hp);
+    state.tempo=tempoSnapshot(profile);
+    state.encounter={...(state.encounter||{}),tempo:tempoSnapshot(profile)};
+    return state.tempo;
   }
   function expectedSets(hp,damage){
     const health=Math.max(0,numeric(hp)),amount=numeric(damage);
@@ -72,7 +87,7 @@
     if(damage>=SHOWDOWN_DAMAGE_BANDS.synergy.min)return SHOWDOWN_DAMAGE_BANDS.synergy;
     if(damage>=SHOWDOWN_DAMAGE_BANDS.good.min)return SHOWDOWN_DAMAGE_BANDS.good;
     if(damage>=SHOWDOWN_DAMAGE_BANDS.ordinary.min)return SHOWDOWN_DAMAGE_BANDS.ordinary;
-    return Object.freeze({id:'low',label:'저점 쇼다운',min:0,max:10});
+    return LOW_DAMAGE_BAND;
   }
   function withinTargetSets(profileOrNode,setCount){
     const profile=profileOrNode?.targetSets?profileOrNode:profileFor(profileOrNode),sets=numeric(setCount,Infinity),target=profile.targetSets;
@@ -99,6 +114,46 @@
     }
     return errors;
   }
+  function activeBattle(runtimeRoot=defaultRoot){
+    try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}
+    return runtimeRoot?.battle||null;
+  }
+  function wrapStartBattle(runtimeRoot=defaultRoot){
+    const original=runtimeRoot?.startBattle;
+    if(typeof original!=='function')return false;
+    if(original.__tricklogTempo75E)return true;
+    originalStartBattle=original;
+    const wrapped=function(node,...args){
+      const finalize=result=>{
+        const state=activeBattle(runtimeRoot);
+        if(state){applyTempoToBattle(state,node||state.node||state.type);runtimeRoot.renderBattle?.()}
+        return result;
+      };
+      const result=original.call(this,node,...args);
+      return result&&typeof result.then==='function'?result.then(finalize):finalize(result);
+    };
+    wrapped.__tricklogTempo75E=true;
+    wrapped.__legacyStartBattle=original;
+    runtimeRoot.startBattle=wrapped;
+    return true;
+  }
+  function installBrowserRuntime(runtimeRoot=defaultRoot){
+    if(installed)return true;
+    const errors=validateProfiles();if(errors.length){runtimeRoot?.console?.error?.('[encounter-tempo] 프로필 오류',errors);return false}
+    if(!wrapStartBattle(runtimeRoot))return false;
+    installed=true;return true;
+  }
+  function installWhenReady(runtimeRoot=defaultRoot){
+    if(typeof document==='undefined')return false;
+    let attempts=0;
+    const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;if(attempts++<40)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[encounter-tempo] 전투 런타임을 찾지 못했습니다.')};
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();
+    return true;
+  }
 
-  return{STAGE,SHOWDOWN_DAMAGE_BANDS,TEMPO_PROFILES,numeric,resolveTempoId,profileFor,applyEnemyTempo,expectedSets,damageBand,withinTargetSets,assessDamage,validateProfiles};
+  return{
+    STAGE,SHOWDOWN_DAMAGE_BANDS,LOW_DAMAGE_BAND,TEMPO_PROFILES,numeric,resolveTempoId,profileFor,cloneTargetSets,tempoSnapshot,
+    applyEnemyTempo,applyTempoToBattle,expectedSets,damageBand,withinTargetSets,assessDamage,validateProfiles,
+    activeBattle,wrapStartBattle,installBrowserRuntime,installWhenReady
+  };
 });
