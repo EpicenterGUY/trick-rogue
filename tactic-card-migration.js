@@ -6,12 +6,12 @@
   const SUITS=Object.freeze(['S','H','D','C']);
   const RANKS=Object.freeze([2,3,4,5,6,7,8,9,10,11,12,13,14]);
   const MIGRATION_STAGE='3-0';
-  const SUPPORT_STAGE='3-2A';
-  const ACTIVATION_STAGE='3-2B';
+  const SUPPORT_STAGE='7.5-P';
+  const ACTIVATION_STAGE='7.5-P';
   const RUNTIME_ACTIVE=true;
   const SUPPORTED_REQUIREMENTS=Object.freeze([
     'temporary_hand_capacity','post_refill_draw','secondary_hand_target','next_enemy_preview_ui',
-    'advantage_count_condition','unmodified_trick_value_condition','printed_equals_trick_condition'
+    'set_wins_condition','pure_card_in_hand_condition','pure_card_in_showdown_condition'
   ]);
 
   const PLAN=Object.freeze([
@@ -28,25 +28,25 @@
       note:'낮은 인쇄 숫자에 즉시 트릭 보정을 붙이는 일반 효과 카드로 이관했다.'
     }),
     Object.freeze({
-      legacyId:'draw',name:'드로우',printedSuit:'C',printedRank:6,status:'engine_support',activationStage:ACTIVATION_STAGE,
+      legacyId:'draw',name:'드로우',printedSuit:'C',printedRank:6,status:'engine_support',activationStage:'3-2B',
       cardText:'이 카드를 낸 뒤 다음 트릭의 손패가 1장 많아지도록 추가 드로우한다.',
       proposedEffects:Object.freeze([{trigger:'on_play',action:'grant_next_trick_hand_capacity',value:1,duration:'trick'}]),
       requires:Object.freeze(['temporary_hand_capacity','post_refill_draw']),
       note:'최대 손패 3 규칙은 유지하고 다음 트릭 한정으로 손패 한도와 보충 드로우를 각각 +1 한다.'
     }),
     Object.freeze({
-      legacyId:'scout',name:'정찰',printedSuit:'D',printedRank:9,status:'redesign',activationStage:ACTIVATION_STAGE,
+      legacyId:'scout',name:'정찰',printedSuit:'D',printedRank:9,status:'redesign',activationStage:'3-2B',
       cardText:'다음 트릭의 적 카드를 현재 트릭 종료 전에 미리 공개한다.',
       proposedEffects:Object.freeze([{trigger:'on_play',action:'reveal_next_enemy_card',duration:'trick'}]),
       requires:Object.freeze(['next_enemy_preview_ui']),
-      note:'현재 적 카드는 기본 완전 공개이므로 다음 트릭의 적 카드를 정확히 선공개하는 효과로 재설계했다.'
+      note:'적 부분 정보 규칙과 연결해 다음 트릭의 적 카드를 정확히 선공개한다.'
     }),
     Object.freeze({
       legacyId:'double',name:'더블다운',printedSuit:'H',printedRank:2,status:'redesign',activationStage:ACTIVATION_STAGE,
-      cardText:'쇼다운에서 내가 우세 무늬를 2개 이상 확보했다면 쇼다운 위력 +6.',
-      proposedEffects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'advantage_count_at_least',conditionValue:2,duration:'set'}]),
-      requires:Object.freeze(['advantage_count_condition']),
-      note:'복수 우세를 추가 보상하는 저랭크 쇼다운 카드로 확정했다. 기본 우세 +3은 기존 규칙대로 한 번만 적용된다.'
+      cardText:'이번 세트에서 트릭을 3번 이상 이겼다면 쇼다운 위력 +6.',
+      proposedEffects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'set_wins_at_least',conditionValue:3,duration:'set'}]),
+      requires:Object.freeze(['set_wins_condition']),
+      note:'구식 복수 무늬 우세 조건을 제거하고 세트의 실제 트릭 성과를 보상하는 저랭크 카드로 재설계했다.'
     }),
     Object.freeze({
       legacyId:'barrier',name:'임시 장벽',printedSuit:'S',printedRank:6,status:'direct',activationStage:'3-1',
@@ -55,7 +55,7 @@
       note:'기존 공통 상태/피해 엔진에 그대로 연결해 이관했다.'
     }),
     Object.freeze({
-      legacyId:'burn',name:'번',printedSuit:'C',printedRank:2,status:'engine_support',activationStage:ACTIVATION_STAGE,
+      legacyId:'burn',name:'번',printedSuit:'C',printedRank:2,status:'engine_support',activationStage:'3-2B',
       cardText:'사용 시 손패에서 이 카드 외 1장을 선택해 버리고 칩 +1, 카드 1장을 뽑는다.',
       proposedEffects:Object.freeze([
         {trigger:'on_play',action:'discard_secondary_target',duration:'trick'},
@@ -74,17 +74,17 @@
     }),
     Object.freeze({
       legacyId:'pureboost',name:'기본에 충실',printedSuit:'D',printedRank:5,status:'redesign',activationStage:ACTIVATION_STAGE,
-      cardText:'이 카드에 다른 트릭 보정이 없다면 트릭 숫자 +2.',
-      proposedEffects:Object.freeze([{trigger:'on_play',action:'increase_next_trick_rank',value:2,condition:'unmodified_trick_value',duration:'trick'}]),
-      requires:Object.freeze(['unmodified_trick_value_condition']),
-      note:'순수 카드 타입 대신 효과 적용 직전 인쇄값과 트릭값이 같은지를 검사해 보정한다.'
+      cardText:'이 카드를 낼 때 손패에 순수 카드가 1장 이상 있으면 트릭 숫자 +2.',
+      proposedEffects:Object.freeze([{trigger:'on_play',action:'increase_next_trick_rank',value:2,condition:'pure_card_in_hand',duration:'trick'}]),
+      requires:Object.freeze(['pure_card_in_hand_condition']),
+      note:'효과 없는 일반 카드를 정식 순수 카드 자원으로 보상해 네임드/효과 카드 일변도 덱을 견제한다.'
     }),
     Object.freeze({
       legacyId:'clean',name:'무첨가',printedSuit:'S',printedRank:4,status:'redesign',activationStage:ACTIVATION_STAGE,
-      cardText:'이 카드의 트릭값이 인쇄값과 같은 상태로 승리하면 칩 +2.',
-      proposedEffects:Object.freeze([{trigger:'on_trick_win',action:'gain_chips',value:2,condition:'printed_equals_trick',duration:'trick'}]),
-      requires:Object.freeze(['printed_equals_trick_condition']),
-      note:'순수 카드 분류 없이 실제 인쇄값과 트릭값이 같은 상태로 승리했는지만 검사한다.'
+      cardText:'이 카드로 트릭 승리 시 현재 쇼다운 슬롯에 순수 카드가 1장 이상 있으면 칩 +2.',
+      proposedEffects:Object.freeze([{trigger:'on_trick_win',action:'gain_chips',value:2,condition:'pure_card_in_showdown',duration:'trick'}]),
+      requires:Object.freeze(['pure_card_in_showdown_condition']),
+      note:'순수 카드를 쇼다운 재료로 실제 사용했을 때 칩 자원으로 환급하는 연계 카드로 재설계했다.'
     }),
     Object.freeze({
       legacyId:'recolor',name:'색칠공부',printedSuit:'C',printedRank:9,status:'direct',activationStage:'3-1',
