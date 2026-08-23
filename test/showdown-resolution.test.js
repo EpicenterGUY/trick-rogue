@@ -31,7 +31,7 @@ test('에이스 로우 스트레이트도 7.5-C 족보 판정에서 유지된다
   assert.equal(result.power,24);
 });
 
-test('breakdown은 기본 위력, 덧셈, 희귀 배율을 분리하고 배율을 덧셈 뒤 순서대로 적용한다',()=>{
+test('breakdown은 기본 위력, 덧셈, 희귀 배율을 분리하고 양쪽 최종 위력을 각각 공격값으로 만든다',()=>{
   const playerHand=Resolution.evaluatePoker(cards([2,3,4,5,6]),{valueResolver:(card,key)=>BattleCore.showdownValue(card,key)});
   const enemyHand=Resolution.evaluatePoker(cards([2,5,8,11,13]),{valueResolver:(card,key)=>BattleCore.showdownValue(card,key)});
   const model=Resolution.createBreakdown({playerHand,enemyHand,setIndex:1});
@@ -46,7 +46,9 @@ test('breakdown은 기본 위력, 덧셈, 희귀 배율을 분리하고 배율�
   assert.deepEqual(model.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43],[43,65]]);
   assert.equal(model.player.finalPower,65);
   assert.equal(model.enemy.finalPower,5);
-  assert.deepEqual(model.damage,{target:'enemy',amount:60});
+  assert.equal(model.attacks.player.plannedAmount,65);
+  assert.equal(model.attacks.enemy.plannedAmount,5);
+  assert.equal('damage' in model,false,'위력 차이 단일 피해 모델을 만들지 않는다');
 });
 
 test('7.5-A 임시 score 배율은 7.5-C 전용 배율 단계 전에 원래 덧셈 값으로 되돌릴 수 있다',()=>{
@@ -55,10 +57,10 @@ test('7.5-A 임시 score 배율은 7.5-C 전용 배율 단계 전에 원래 덧�
   assert.equal(score.value,28);
 });
 
-test('브라우저 쇼다운은 쇼다운 전 효과로 값 변경을 끝낸 뒤 족보→덧셈→배율→피해 순으로 계산한다',async()=>{
+test('브라우저 쇼다운은 쇼다운 전 효과→족보→덧셈→배율 뒤 플레이어 공격과 적 반격을 각각 적용한다',async()=>{
   const playerSlots=cards([2,3,4,5,9]).map((card,index)=>({card:{...card,uid:`p${index}`}}));
   const enemySlots=cards([2,5,8,11,13]).map((card,index)=>({card:{...card,uid:`e${index}`}}));
-  const events=[];
+  const events=[],attacks=[];
   const battle={
     node:{id:'battle-1'},type:'battle',enemy:{hp:100,maxHp:100},
     slots:playerSlots,enemySlots,discard:[],hand:[],deck:[],effects:[],reservations:[],
@@ -79,8 +81,8 @@ test('브라우저 쇼다운은 쇼다운 전 효과로 값 변경을 끝낸 뒤
       if(trigger==='on_showdown_score')extra.score.value+=2;
       return 1;
     },
-    damageEnemy(amount){this.damage=amount;this.battle.enemy.hp-=amount;return amount},
-    damagePlayer(amount){this.playerDamage=amount;this.run.hp-=amount;return amount},
+    damageEnemy(amount,feedback,metadata){attacks.push(['player',amount,feedback,metadata]);this.battle.enemy.hp-=amount;return amount},
+    damagePlayer(amount,feedback,metadata){attacks.push(['enemy',amount,feedback,metadata]);this.run.hp-=amount;return amount},
     drawSetTrump(){return'S'},drawP(){},nextEnemy(){},loseRun(){this.lost=true},async winBattle(){this.won=true}
   };
   Resolution.installBrowser(root);
@@ -94,7 +96,15 @@ test('브라우저 쇼다운은 쇼다운 전 효과로 값 변경을 끝낸 뒤
   assert.deepEqual(result.player.multipliers.map(entry=>entry.id),['river_completion','advantage']);
   assert.deepEqual(result.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43],[43,54]]);
   assert.equal(result.player.finalPower,54);
-  assert.equal(root.damage,49);
+  assert.equal(result.enemy.finalPower,5);
+  assert.deepEqual(attacks.map(entry=>entry.slice(0,3)),[['player',54,'showdown'],['enemy',5,'showdown']]);
+  assert.equal(attacks[0][3].source,'showdown_player_attack');
+  assert.equal(attacks[1][3].source,'showdown_enemy_attack');
+  assert.equal(result.attacks.player.dealt,54);
+  assert.equal(result.attacks.enemy.dealt,5);
+  assert.equal(result.attackSequence.enemyAttackCancelled,false);
+  assert.equal(battle.enemy.hp,46);
+  assert.equal(root.run.hp,45);
   assert.equal(battle.chip,2,'세트가 넘어가도 칩 잔액을 리셋하지 않는다');
   assert.equal(battle.setIndex,2);
   assert.deepEqual(battle.showdownTrace,Resolution.traceLines(result));

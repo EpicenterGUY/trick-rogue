@@ -72,7 +72,7 @@ test('전투 시작 어댑터는 기존 적 정의를 유지하면서 현재 노
   assert.equal(root.rendered,1);
 });
 
-test('강한 일반 적이 첫 쇼다운을 버티면 5트릭 종료가 아니라 다음 세트로 자연스럽게 이어진다',async()=>{
+test('강한 일반 적이 첫 쇼다운을 버티면 플레이어 공격 뒤 적 반격을 받고 다음 세트로 자연스럽게 이어진다',async()=>{
   const state={
     node:{id:'n2',type:'battle',row:1},type:'battle',enemy:{name:'폐허 약탈자',hp:58,maxHp:58},
     slots:cards([2,3,4,5,6]).map((card,index)=>({card:{...card,uid:`p${index}`}})),
@@ -86,15 +86,19 @@ test('강한 일반 적이 첫 쇼다운을 버티면 5트릭 종료가 아니�
     battle:state,run:{hp:50,maxHp:50},
     BattleCore:{...BattleCore,resolveShowdownAdvantage(){return{mode:'explicit',automaticSuitComparison:false,multiplier:1.25,playerActive:false,enemyActive:false,playerAdvantageCount:0,enemyAdvantageCount:0,playerAdvantages:[],enemyAdvantages:[],playerSuitCounts:{},enemySuitCounts:{}}}},
     CardEffects:{newHistory(){return{}}},sfx(){},renderBattle(){},showShowdownStep(){},wait:async()=>{},flash(){},runCardEffects(){return 0},
-    damageEnemy(amount){this.damage=amount;this.battle.enemy.hp-=amount;return amount},damagePlayer(){},
+    damageEnemy(amount){this.damage=amount;this.battle.enemy.hp-=amount;return amount},
+    damagePlayer(amount){this.playerDamage=amount;this.run.hp-=amount;return amount},
     drawSetTrump(){return'S'},drawP(){},nextEnemy(){this.nextEnemyCalled=true},loseRun(){},async winBattle(){this.won=true}
   };
   const result=await Resolution.resolveRuntimeShowdown(root);
   assert.equal(result.player.basePower,24);
   assert.equal(result.enemy.basePower,5);
   assert.equal(result.riverCompletion.active,true,'5번째 6이 스트레이트를 완성해 리버 ×1.25가 적용된다');
-  assert.equal(result.damage.amount,25);
-  assert.equal(state.enemy.hp,11);
+  assert.equal(result.player.finalPower,30);
+  assert.equal(result.attacks.player.dealt,30);
+  assert.equal(result.attacks.enemy.dealt,5);
+  assert.equal(state.enemy.hp,6);
+  assert.equal(root.run.hp,45);
   assert.equal(state.setIndex,2);
   assert.equal(state.trick,1);
   assert.equal(state.phase,'trick');

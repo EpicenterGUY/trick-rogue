@@ -73,7 +73,7 @@ test('리버→우세→5전 전승 순으로 덧셈 뒤 희귀 배율을 적용
   assert.equal(model.perfectSet.active,true);
 });
 
-test('실제 쇼다운 런타임에서도 리버 완성 + 5전 전승이 breakdown과 피해에 반영된다',async()=>{
+test('실제 쇼다운 런타임에서도 리버 완성 + 5전 전승은 플레이어 공격 전체 위력으로 적용되고 적이 생존하면 반격한다',async()=>{
   const playerSlots=cards([2,3,4,5,6]).map((card,index)=>({card:{...card,uid:`p${index}`}}));
   const enemySlots=cards([2,5,8,11,13]).map((card,index)=>({card:{...card,uid:`e${index}`}}));
   const state={
@@ -97,8 +97,15 @@ test('실제 쇼다운 런타임에서도 리버 완성 + 5전 전승이 breakdo
   assert.deepEqual(result.player.multipliers.map(entry=>[entry.before,entry.after]),[[24,30],[30,45]]);
   assert.equal(result.player.finalPower,45);
   assert.equal(result.enemy.finalPower,5);
-  assert.deepEqual(result.damage,{target:'enemy',amount:40});
-  assert.equal(root.damage,40);
+  assert.equal(result.attacks.player.plannedAmount,45);
+  assert.equal(result.attacks.player.dealt,45);
+  assert.equal(result.attacks.enemy.plannedAmount,5);
+  assert.equal(result.attacks.enemy.dealt,5);
+  assert.equal(result.attackSequence.enemyAttackCancelled,false);
+  assert.equal(root.damage,45);
+  assert.equal(root.playerDamage,5);
+  assert.equal(state.enemy.hp,55);
+  assert.equal(root.run.hp,45);
   assert.equal(result.riverCompletion.active,true);
   assert.equal(result.perfectSet.active,true);
   assert(result.player.multipliers[0].metadata.before.id==='high_card');
