@@ -128,8 +128,15 @@ test('7.5-J 브라우저 쇼다운 어댑터는 5번째 트릭 직후 기존 쇼
 
 test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 최종 전투 레이아웃 전에 로드된다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  const tempo=source.indexOf("encounter-tempo.js");
-  const boundaries=source.indexOf("deck-boundaries.js");
-  const layout=source.indexOf("battle-layout.js");
-  assert.ok(tempo>=0&&boundaries>tempo&&layout>boundaries);
+  const finalStart=source.indexOf('function loadBattleLayoutFinal()');
+  const tempoStart=source.indexOf('function loadEncounterTempo()');
+  const nextAfterTempo=source.indexOf('function loadBattleLayoutFile()');
+  assert.ok(finalStart>=0&&tempoStart>finalStart&&nextAfterTempo>tempoStart);
+  const finalBlock=source.slice(finalStart,tempoStart);
+  const tempoBlock=source.slice(tempoStart,nextAfterTempo);
+  assert.match(finalBlock,/loadScript\('deck-boundaries\.js','trick-deck-boundaries-runtime'\)/);
+  assert.match(finalBlock,/if\(root\.DeckBoundaries\)\{loadFinal\(\);return;\}/);
+  assert.match(finalBlock,/addEventListener\?\.\('load',loadFinal/);
+  assert.match(tempoBlock,/if\(root\.EncounterTempo\)\{loadBattleLayoutFinal\(\);return;\}/);
+  assert.match(tempoBlock,/addEventListener\?\.\('load',loadBattleLayoutFinal/);
 });
