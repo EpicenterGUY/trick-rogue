@@ -11,12 +11,21 @@ test('전투 시작 손패는 정상 덱 순서에서 정확히 3장이고 네�
 });
 test('카드 1장 사용 후 최대 손패 3장까지 보충한다',()=>{const state=Core.createBattleState({deck:deck()});Core.playCard(state,1);assert.equal(state.hand.length,3);assert.equal(state.maxHandSize,3)});
 test('5번째 트릭 후 쇼다운이 발생하고 다음 세트를 시작한다',()=>{const state=Core.createBattleState();for(let i=0;i<4;i++)assert.equal(Core.endTrick(state),'trick');assert.equal(Core.endTrick(state),'showdown');assert.equal(state.phase,'showdown');Core.finishShowdown(state);assert.equal(state.setIndex,2);assert.equal(state.trickIndex,1);assert.equal(state.phase,'trick')});
-const cards=suits=>suits.map((suit,index)=>({rank:index+2,suit}));
-function advantage(playerSuits,enemySuits){return Core.resolveShowdownAdvantage({playerCards:cards(playerSuits),enemyCards:cards(enemySuits)})}
-test('3장 대 2장은 무늬 우세가 아니다',()=>assert.deepEqual(advantage(['S','S','S','H','D'],['S','S','H','D','C']).playerAdvantages,[]));
-test('3장 대 1장은 해당 무늬 우세다',()=>assert.deepEqual(advantage(['S','S','S','H','D'],['S','H','H','D','C']).playerAdvantages,['S']));
-test('복수 우세와 양측 무늬 수가 배열/맵으로 유지된다',()=>{const a=advantage(['S','S','S','D','D'],['S','H','H','C','C']);assert.deepEqual(a.playerAdvantages,['S','D']);assert.deepEqual(a.enemyAdvantages,['H','C']);assert.equal(a.playerSuitCounts.S,3);assert.equal(a.enemySuitCounts.C,2)});
-test('우세가 하나 이상이면 복수 우세여도 기본 위력 +3을 한 번만 적용한다',()=>{const a=advantage(['S','S','S','D','D'],['S','H','H','C','C']);assert.deepEqual(Core.applyShowdownAdvantage(10,20,a),{playerPower:13,enemyPower:23});assert.equal(Core.showdownAdvantageBonus(a.playerAdvantages),3);assert.equal(Core.showdownAdvantageBonus([]),0)});
+
+test('7.5-P 기본 쇼다운은 양쪽 무늬 장수를 자동 우세로 해석하지 않는다',()=>{
+  const resolved=Core.resolveShowdownAdvantage({
+    playerCards:[{suit:'S',rank:2},{suit:'S',rank:3},{suit:'S',rank:4},{suit:'D',rank:5},{suit:'D',rank:6}],
+    enemyCards:[{suit:'S',rank:7},{suit:'H',rank:8},{suit:'H',rank:9},{suit:'C',rank:10},{suit:'C',rank:11}]
+  });
+  assert.deepEqual(resolved,{mode:'explicit',automaticSuitComparison:false,multiplier:1.25,playerActive:false,enemyActive:false,playerSource:null,enemySource:null});
+  assert(!('playerAdvantages' in resolved));
+  assert(!('playerAdvantageCount' in resolved));
+});
+test('7.5-P 구식 우세 기본 위력 +3은 BattleCore에서 완전히 제거됐다',()=>{
+  assert.equal('SHOWDOWN_ADVANTAGE_POWER' in Core,false);
+  assert.equal(Core.showdownAdvantageBonus(['S']),0);
+  assert.deepEqual(Core.applyShowdownAdvantage(10,20,{playerActive:true,enemyActive:true}),{playerPower:10,enemyPower:20});
+});
 
 test('7.5-G 기본 트럼프 보너스는 적용 숫자 +3이다',()=>{
   assert.equal(Core.DEFAULT_TRUMP_BONUS,3);
