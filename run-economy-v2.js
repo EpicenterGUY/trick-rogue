@@ -22,10 +22,10 @@
   const SHOP_REMOVE_COST=45;
   const MIN_DECK_SIZE=5;
   const BATTLE_GOLD_BY_TYPE=Object.freeze({battle:20,elite:40,boss:70});
-  const REGION_THEME_CARD_IDS=Object.freeze({
-    region_theater:Object.freeze(['core.paint','core.reverse','core.recolor','core.fakeid','pack01.recursive_function']),
-    region_observatory:Object.freeze(['core.scout','core.draw','pack01.ambush_observer','pack01.scheduled_delivery','pack01.battery_1pct']),
-    region_frontier:Object.freeze(['core.double','core.barrier','core.burn','core.clean','pack01.black_bullet','pack01.golden_hand','pack01.dirty_gambler','pack01.sharp_glass','pack01.emergency_guard'])
+  const REGION_REWARD_TAGS=Object.freeze({
+    region_theater:Object.freeze(['field','variant','trick_rule','trump','showdown_value','copy','risk','advantage']),
+    region_observatory:Object.freeze(['information','hand_control','draw','reservation','slot','river']),
+    region_frontier:Object.freeze(['chip','damage','status','defense','trick_win','low_rank','sustain'])
   });
 
   let installed=false;
@@ -61,11 +61,95 @@
   }
   function record(runState,entry){const state=ensureEconomyState(runState),item={step:state.history.length+1,...entry};state.history.push(item);return item}
 
+  function addTagsForAction(tags,action){
+    switch(action){
+      case'damage_enemy':tags.add('damage');break;
+      case'heal_player':tags.add('sustain');break;
+      case'gain_chips':tags.add('chip');break;
+      case'gain_shield':tags.add('defense');tags.add('status');break;
+      case'apply_enemy_bleed':tags.add('damage');tags.add('status');break;
+      case'increase_enemy_forecast':case'reveal_next_enemy_card':tags.add('information');break;
+      case'increase_effective_rank':case'increase_next_trick_rank':tags.add('rank_control');break;
+      case'showdown_power':tags.add('showdown');break;
+      case'reserve_next_win_damage':tags.add('reservation');tags.add('damage');break;
+      case'set_next_trick_suit_to_trump':tags.add('trump');tags.add('trick_rule');tags.add('suit_control');break;
+      case'set_reverse_compare':tags.add('variant');tags.add('trick_rule');break;
+      case'set_last_showdown_suit_to_trump':tags.add('trump');tags.add('showdown_value');tags.add('suit_control');break;
+      case'increase_last_showdown_rank':tags.add('showdown_value');tags.add('rank_control');break;
+      case'grant_next_trick_hand_capacity':tags.add('hand_control');tags.add('draw');break;
+      case'discard_secondary_target':tags.add('hand_control');break;
+      case'draw_cards':tags.add('hand_control');tags.add('draw');break;
+    }
+    const text=String(action||'');
+    if(text.includes('field'))tags.add('field');
+    if(text.includes('slot'))tags.add('slot');
+    if(text.includes('forecast')||text.includes('reveal'))tags.add('information');
+  }
+  function addTagsForCondition(tags,condition){
+    switch(condition){
+      case'chips_spent':tags.add('chip');tags.add('hand_control');break;
+      case'effective_rank_at_most':tags.add('low_rank');break;
+      case'effective_suit_is_trump':tags.add('trump');break;
+      case'river_hit':tags.add('river');break;
+      case'slot_is':case'slot_at_least':tags.add('slot');break;
+      case'player_has_advantage':case'enemy_has_advantage':tags.add('advantage');break;
+      case'set_wins_at_least':tags.add('trick_win');break;
+      case'pure_card_in_hand':case'pure_card_in_showdown':tags.add('pure');break;
+      case'printed_equals_trick':case'unmodified_trick_value':tags.add('original_value');break;
+    }
+  }
+  function addTagsForTrigger(tags,trigger){
+    switch(trigger){
+      case'on_trick_win':tags.add('trick_win');break;
+      case'on_trick_loss':tags.add('trick_loss');break;
+      case'on_trick_draw':tags.add('trick_draw');break;
+      case'after_card_slotted':tags.add('slot');break;
+      case'before_showdown':case'on_showdown_score':case'after_showdown_result':tags.add('showdown');break;
+      case'before_damage':case'after_damage':tags.add('defense');break;
+    }
+  }
+  function addTagsForHandler(tags,handler){
+    if(handler==='repeat_last_named_numeric'){tags.add('copy');tags.add('variant')}
+    if(handler==='deplete_battery_in_hand')tags.add('risk');
+    const text=String(handler||'');if(text.includes('field'))tags.add('field');if(text.includes('slot'))tags.add('slot');
+  }
+  function addTagsForTerm(tags,term){
+    const text=String(term||'');
+    if(text.includes('필드'))tags.add('field');
+    if(text.includes('트럼프'))tags.add('trump');
+    if(text.includes('예측')||text.includes('정보'))tags.add('information');
+    if(text.includes('예약'))tags.add('reservation');
+    if(text.includes('손패')||text.includes('드로우')||text.includes('버림')||text.includes('교환'))tags.add('hand_control');
+    if(text.includes('드로우'))tags.add('draw');
+    if(text.includes('칩'))tags.add('chip');
+    if(text.includes('출혈')||text.includes('상태'))tags.add('status');
+    if(text.includes('보호막'))tags.add('defense');
+    if(text.includes('쇼다운 슬롯'))tags.add('slot');
+    if(text.includes('쇼다운값'))tags.add('showdown_value');
+    if(text.includes('우세'))tags.add('advantage');
+    if(text.includes('리버'))tags.add('river');
+    if(text.includes('순수'))tags.add('pure');
+    if(text.includes('피해'))tags.add('damage');
+    if(text.includes('회복'))tags.add('sustain');
+  }
+  function gameplayTagsForDefinition(definition){
+    if(!definition||typeof definition!=='object')return[];
+    const tags=new Set(),effects=Array.isArray(definition.effects)?definition.effects:[];
+    for(const effect of effects){addTagsForTrigger(tags,effect?.trigger);addTagsForAction(tags,effect?.action);addTagsForCondition(tags,effect?.condition);addTagsForHandler(tags,effect?.handler)}
+    for(const term of definition.terms||[])addTagsForTerm(tags,term);
+    if(definition.targeting?.zone==='hand')tags.add('hand_control');
+    return[...tags].sort();
+  }
+  function regionThemeTags(regionId){return new Set(REGION_REWARD_TAGS[regionId]||[])}
+  function candidateAffinity(candidate,regionId){
+    if(!candidate||!regionId)return 0;const preferred=regionThemeTags(regionId);return(candidate.gameplayTags||[]).reduce((score,tag)=>score+(preferred.has(tag)?1:0),0);
+  }
+
   function definitionList(api=Cards){return Array.isArray(api?.ALL_CARD_DEFINITIONS)?api.ALL_CARD_DEFINITIONS:[]}
   function candidateFromDefinition(definition){
-    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common'};
+    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',gameplayTags:gameplayTagsForDefinition(definition)};
   }
-  function candidateFromPure(card){return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common'}}
+  function candidateFromPure(card){return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common',gameplayTags:['pure']}}
   function candidateCatalog(api=Cards){
     const definitions=definitionList(api).map(candidateFromDefinition);
     const slots=typeof api?.createBaseCardSlots==='function'?api.createBaseCardSlots():[];
@@ -85,8 +169,7 @@
     const definitions=new Set(commonOpeningDefinitionIds(api,runtimeRoot));
     return candidateCatalog(api).filter(candidate=>candidate.kind==='pure'||(candidate.kind==='definition'&&definitions.has(candidate.definitionId)));
   }
-  function themeIds(regionId){return new Set(REGION_THEME_CARD_IDS[regionId]||[])}
-  function isThemeCandidate(candidate,regionId){return candidate.kind==='definition'&&themeIds(regionId).has(candidate.definitionId)}
+  function isThemeCandidate(candidate,regionId){return candidateAffinity(candidate,regionId)>0}
   function regionIdFor(runState,node,runtimeRoot=root){return node?.regionPlan?.regionId||flowApi(runtimeRoot)?.nodePlan?.(runState,node)?.regionId||runState?.runFlow?.currentRegionId||null}
   function rewardWeightsFor(runState,node,runtimeRoot=root){
     if(isCommonOpening(runState,runtimeRoot))return{neutral:1,theme:0};
@@ -113,7 +196,8 @@
       let candidate=chooseFromPool(wantsTheme?pools.theme:pools.neutral,used,rng);
       if(!candidate)candidate=chooseFromPool(wantsTheme?pools.neutral:pools.theme,used,rng);
       if(!candidate)break;
-      used.add(candidate.key);offer.push({...candidate,sourceCategory:isThemeCandidate(candidate,pools.regionId)?'theme':'neutral',regionId:pools.regionId});
+      const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
+      used.add(candidate.key);offer.push({...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags});
     }
     return offer;
   }
@@ -256,5 +340,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25);else console.warn('[run-economy-v2] 보상/캠프/상점 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false;originalShowReward=null;originalShowCamp=null;originalShowShop=null;uidCounter=0}
 
-  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_THEME_CARD_IDS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,themeIds,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
 });
