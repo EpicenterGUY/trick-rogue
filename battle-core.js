@@ -2,13 +2,56 @@
   const DEFAULT_MAX_HAND_SIZE=3;
   const TRICKS_PER_SET=5;
   const SUITS=Object.freeze(['S','H','D','C']);
-  const SHOWDOWN_ADVANTAGE_POWER=3;
+  const SHOWDOWN_ADVANTAGE_MULTIPLIER=1.25;
+  // Deprecated compatibility constant. Automatic suit-count advantage no longer grants flat power.
+  const SHOWDOWN_ADVANTAGE_POWER=0;
   const EFFECT_DURATIONS=Object.freeze(['trick','set','battle','run']);
   const ENCOUNTER_PROGRESSION=Object.freeze({
     battle:{setCount:null,bossPhases:[]},
     elite:{setCount:null,bossPhases:[]},
     boss:{setCount:null,bossPhases:[]}
   });
+
+  function createShowdownAdvantageState(){return{player:false,enemy:false,playerSources:[],enemySources:[]}}
+  function advantageStateOf(target,{create=false}={}){
+    if(!target||typeof target!=='object')return null;
+    if(Object.prototype.hasOwnProperty.call(target,'showdownAdvantage')){
+      if(!target.showdownAdvantage&&create)target.showdownAdvantage=createShowdownAdvantageState();
+      return target.showdownAdvantage||null;
+    }
+    if(Object.prototype.hasOwnProperty.call(target,'player')||Object.prototype.hasOwnProperty.call(target,'enemy'))return target;
+    if(create){target.showdownAdvantage=createShowdownAdvantageState();return target.showdownAdvantage}
+    return null;
+  }
+  function normalizeAdvantageSide(side){if(side!=='player'&&side!=='enemy')throw new TypeError(`Unknown advantage side: ${side}`);return side}
+  function grantShowdownAdvantage(target,side='player',source=null){
+    side=normalizeAdvantageSide(side);
+    const advantage=advantageStateOf(target,{create:true});
+    advantage[side]=true;
+    const key=`${side}Sources`;
+    if(!Array.isArray(advantage[key]))advantage[key]=[];
+    if(source!==null&&source!==undefined&&!advantage[key].includes(source))advantage[key].push(source);
+    return advantage;
+  }
+  function hasShowdownAdvantage(target,side='player'){
+    side=normalizeAdvantageSide(side);
+    const advantage=advantageStateOf(target);
+    return advantage?.[side]===true;
+  }
+  function clearShowdownAdvantage(target){
+    const advantage=advantageStateOf(target,{create:true});
+    advantage.player=false;advantage.enemy=false;advantage.playerSources=[];advantage.enemySources=[];
+    return advantage;
+  }
+  function showdownAdvantageSnapshot(target){
+    const advantage=advantageStateOf(target)||createShowdownAdvantageState();
+    return{
+      player:advantage.player===true,
+      enemy:advantage.enemy===true,
+      playerSources:[...(advantage.playerSources||[])],
+      enemySources:[...(advantage.enemySources||[])]
+    };
+  }
 
   function drawToMaxHand(state){
     while(state.hand.length<state.maxHandSize){
@@ -20,7 +63,7 @@
   }
   function createBattleState({deck=[],maxHandSize=DEFAULT_MAX_HAND_SIZE,encounterType='battle',progression}={}){
     const state={deck:[...deck],discard:[],hand:[],maxHandSize,trickIndex:1,setIndex:1,phase:'trick',setHistory:createSetHistory(),
-      encounter:{type:encounterType,...ENCOUNTER_PROGRESSION[encounterType],...progression},effects:[],
+      encounter:{type:encounterType,...ENCOUNTER_PROGRESSION[encounterType],...progression},effects:[],showdownAdvantage:createShowdownAdvantageState(),
       statuses:{player:{shield:0,bleed:0,poison:0},enemy:{shield:0,bleed:0,poison:0}}};
     drawToMaxHand(state);
     return state;
@@ -93,24 +136,39 @@
     if(playerTrump!==enemyTrump)return playerTrump?1:-1;
     return Math.sign(trickRank(playerCard)-trickRank(enemyCard));
   }
-  function resolveShowdownAdvantage({playerCards,enemyCards}){
+  function suitCounts(cards){
+    return Object.fromEntries(SUITS.map(suit=>[suit,(cards||[]).filter(entry=>showdownValue(entry.card||entry,'Suit')===suit).length]));
+  }
+  // Compatibility snapshot for older UI/event code. Suit counts are informational only;
+  // they never create advantage under the 7.5 rules.
+  function resolveShowdownAdvantage({playerCards,enemyCards,advantageState}={}){
     if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
-    const count=cards=>Object.fromEntries(SUITS.map(suit=>[suit,cards.filter(entry=>showdownValue(entry.card||entry,'Suit')===suit).length]));
-    const playerSuitCounts=count(playerCards),enemySuitCounts=count(enemyCards);
-    const playerAdvantages=[],enemyAdvantages=[];
-    for(const suit of SUITS){const difference=playerSuitCounts[suit]-enemySuitCounts[suit];if(difference>=2)playerAdvantages.push(suit);else if(difference<=-2)enemyAdvantages.push(suit)}
-    return{playerAdvantages,enemyAdvantages,playerAdvantageCount:playerAdvantages.length,enemyAdvantageCount:enemyAdvantages.length,playerSuitCounts,enemySuitCounts};
+    const explicit=showdownAdvantageSnapshot(advantageState||null);
+    return{
+      playerAdvantages:[],enemyAdvantages:[],playerAdvantageCount:0,enemyAdvantageCount:0,
+      playerSuitCounts:suitCounts(playerCards),enemySuitCounts:suitCounts(enemyCards),
+      playerHasAdvantage:explicit.player,enemyHasAdvantage:explicit.enemy,
+      playerSources:explicit.playerSources,enemySources:explicit.enemySources
+    };
   }
-  function showdownAdvantageBonus(advantages){return Array.isArray(advantages)&&advantages.length>0?SHOWDOWN_ADVANTAGE_POWER:0;}
-  function applyShowdownAdvantage(playerPower,enemyPower,advantage){
-    return{playerPower:playerPower+showdownAdvantageBonus(advantage.playerAdvantages),enemyPower:enemyPower+showdownAdvantageBonus(advantage.enemyAdvantages)};
+  function showdownAdvantageBonus(){return 0;}
+  function applyShowdownAdvantageMultiplier(playerPower,enemyPower,advantage){
+    const playerActive=advantage?.playerHasAdvantage===true||hasShowdownAdvantage(advantage,'player');
+    const enemyActive=advantage?.enemyHasAdvantage===true||hasShowdownAdvantage(advantage,'enemy');
+    return{
+      playerPower:playerActive?playerPower*SHOWDOWN_ADVANTAGE_MULTIPLIER:playerPower,
+      enemyPower:enemyActive?enemyPower*SHOWDOWN_ADVANTAGE_MULTIPLIER:enemyPower
+    };
   }
+  // Deprecated name retained so older runtime code stops receiving +3 immediately.
+  function applyShowdownAdvantage(playerPower,enemyPower,advantage){return applyShowdownAdvantageMultiplier(playerPower,enemyPower,advantage)}
   function finishShowdown(state){
     if(state.phase!=='showdown')throw new Error('No showdown to finish');
     expireEffects(state,'set');
+    clearShowdownAdvantage(state);
     state.setIndex++;state.trickIndex=1;state.phase='trick';state.setHistory=createSetHistory();
     return state;
   }
-  function endBattle(state){expireEffects(state,'battle');state.phase='ended';}
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,isTrumpCard,trickRank,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle};
+  function endBattle(state){expireEffects(state,'battle');clearShowdownAdvantage(state);state.phase='ended';}
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,SHOWDOWN_ADVANTAGE_MULTIPLIER,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createShowdownAdvantageState,grantShowdownAdvantage,hasShowdownAdvantage,clearShowdownAdvantage,showdownAdvantageSnapshot,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,isTrumpCard,trickRank,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantageMultiplier,applyShowdownAdvantage,finishShowdown,endBattle};
 });
