@@ -161,3 +161,9 @@
   }
 ];
 });
+
+(function(root){
+  if(typeof document==='undefined'||root.PACK02_CARDS||document.querySelector('script[data-trick-pack02-bootstrap]'))return;
+  if(document.readyState!=='loading')return;
+  document.write('<script src="card-packs/pack02.js" data-trick-pack02-bootstrap="true"><\\/script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
