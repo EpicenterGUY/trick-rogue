@@ -16,9 +16,9 @@
       effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'bleed',amount:1}),duration:'run'})])
     }),
     edge_accounting:Object.freeze({
-      id:'edge_accounting',name:'우세 장부',description:'금 간 주판과 우세 계약을 함께 보유하면 내 우세가 있는 쇼다운에서 위력 +2.',
+      id:'edge_accounting',name:'우세 장부',description:'금 간 주판과 우세 계약을 함께 보유하면 이번 쇼다운에 명시적 우세가 있을 때 위력 +2.',
       requires:Object.freeze({relics:Object.freeze(['cracked_abacus']),contracts:Object.freeze(['edge_clause'])}),effectOwnerType:'passive',
-      effects:Object.freeze([Object.freeze({trigger:'on_showdown_score',action:'showdown_power',value:2,condition:'advantage_count_at_least',conditionValue:1,duration:'run'})])
+      effects:Object.freeze([Object.freeze({trigger:'on_showdown_score',action:'showdown_power',value:2,condition:'player_has_advantage',duration:'run'})])
     }),
     loss_insurance:Object.freeze({
       id:'loss_insurance',name:'패배 보험',description:'패자의 토큰과 연패 금기를 함께 보유하면 트릭 패배 시 칩 +1을 추가로 얻는다.',

@@ -4,7 +4,7 @@
   root.TacticMigrationSupport=api;
   if(typeof document!=='undefined')api.installWhenReady(root);
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
-  const STAGE='3-2A';
+  const STAGE='7.5-P';
   const STATE_KEY='tacticMigrationSupport';
   const TARGET_ZONE_HAND='hand';
   const SUPPORTED_REQUIREMENTS=Object.freeze({
@@ -12,9 +12,9 @@
     post_refill_draw:'grant_next_trick_hand_capacity',
     secondary_hand_target:'targeting.hand',
     next_enemy_preview_ui:'reveal_next_enemy_card',
-    advantage_count_condition:'advantage_count_at_least',
-    unmodified_trick_value_condition:'unmodified_trick_value',
-    printed_equals_trick_condition:'printed_equals_trick'
+    set_wins_condition:'set_wins_at_least',
+    pure_card_in_hand_condition:'pure_card_in_hand',
+    pure_card_in_showdown_condition:'pure_card_in_showdown'
   });
 
   function positiveInteger(value,label='value'){
@@ -203,7 +203,7 @@
       const b=activeBattle(root),context=legacy.call(this,card,extra);
       if(!b)return context;
       const target=secondaryTargetCard(b,b.hand);
-      return{...context,battle:b,secondaryTargetCard:target,secondaryTargetUid:target?.uid||null};
+      return{...context,battle:b,hand:b.hand,slots:b.slots,setHistory:b.setHistory,secondaryTargetCard:target,secondaryTargetUid:target?.uid||null};
     };
     wrapped.__tacticMigrationSupport=true;wrapped.__legacyEffectContext=legacy;root.effectContext=wrapped;return true;
   }

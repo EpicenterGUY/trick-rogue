@@ -4,12 +4,12 @@
   root.ContractSystem=api;
   if(typeof document!=='undefined')api.installWhenReady(root);
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
-  const STAGE='6-3';
-  const SHOWDOWN_RULE_ORDER=Object.freeze(['poker','advantage','showdown_effects','contract_taboo','status_reservations','final_power','damage']);
+  const STAGE='7.5-P';
+  const SHOWDOWN_RULE_ORDER=Object.freeze(['poker','showdown_effects','contract_taboo','status_reservations','final_power','damage']);
   const CONTRACT_DEFINITIONS=Object.freeze({
     edge_clause:Object.freeze({
-      id:'edge_clause',type:'contract',name:'우세 계약',value:5,condition:'player_advantage_at_least',conditionValue:1,
-      description:'쇼다운에서 내 우세 무늬가 1개 이상이면 위력 +5.'
+      id:'edge_clause',type:'contract',name:'우세 계약',value:5,condition:'player_has_advantage',
+      description:'이번 쇼다운에 명시적 우세가 있으면 위력 +5.'
     }),
     three_wins:Object.freeze({
       id:'three_wins',type:'contract',name:'삼승 계약',value:6,condition:'player_wins_at_least',conditionValue:3,
@@ -22,8 +22,8 @@
   });
   const TABOO_DEFINITIONS=Object.freeze({
     enemy_edge:Object.freeze({
-      id:'enemy_edge',type:'taboo',name:'열세 금기',value:-3,condition:'enemy_advantage_at_least',conditionValue:1,
-      description:'쇼다운에서 적 우세 무늬가 1개 이상이면 위력 -3.'
+      id:'enemy_edge',type:'taboo',name:'열세 금기',value:-3,condition:'enemy_has_advantage',
+      description:'이번 쇼다운에 적의 명시적 우세가 있으면 위력 -3.'
     }),
     three_losses:Object.freeze({
       id:'three_losses',type:'taboo',name:'연패 금기',value:-4,condition:'player_losses_at_least',conditionValue:3,
@@ -37,7 +37,7 @@
   const OFFERINGS=Object.freeze({
     sharp_oath:Object.freeze({
       id:'sharp_oath',name:'날 선 서약',contractId:'edge_clause',tabooId:'enemy_edge',
-      description:'우세를 만들면 크게 밀어붙이지만, 적 우세도 그대로 대가가 된다.'
+      description:'명시적 우세를 잡으면 크게 밀어붙이지만, 적이 우세를 얻은 쇼다운도 그대로 대가가 된다.'
     }),
     third_signature:Object.freeze({
       id:'third_signature',name:'세 번째 서명',contractId:'three_wins',tabooId:'three_losses',
@@ -64,7 +64,7 @@
     if(!Number.isFinite(definition.value)||definition.value===0)errors.push('value must be a non-zero number');
     if(type==='contract'&&definition.value<0)errors.push('contract value must be positive');
     if(type==='taboo'&&definition.value>0)errors.push('taboo value must be negative');
-    if(!['player_advantage_at_least','enemy_advantage_at_least','player_wins_at_least','player_losses_at_least','no_draws','has_draws'].includes(definition.condition))errors.push(`unknown condition ${definition.condition}`);
+    if(!['player_has_advantage','enemy_has_advantage','player_wins_at_least','player_losses_at_least','no_draws','has_draws'].includes(definition.condition))errors.push(`unknown condition ${definition.condition}`);
     return errors;
   }
   function validateRegistry(){
@@ -108,16 +108,16 @@
     const history={step:state.history.length+1,action:'acquire_offering',source,id,contractId:offering.contractId,tabooId:offering.tabooId};state.history.push(history);
     return{added:true,alreadyOwned:false,offering,contract:contractDefinition(offering.contractId),taboo:tabooDefinition(offering.tabooId),history};
   }
-  function advantageCount(context,side){
-    const advantage=context?.advantage||context?.battle?.advantage||{};
-    const direct=advantage?.[`${side}AdvantageCount`];if(Number.isFinite(direct))return direct;
-    const list=advantage?.[`${side}Advantages`];return Array.isArray(list)?list.length:0;
-  }
   function setHistory(context){return context?.setHistory||context?.battle?.setHistory||{}}
+  function explicitAdvantage(context,side){
+    if(side!=='player'&&side!=='enemy')return false;
+    if(context?.advantage?.[`${side}Active`]===true)return true;
+    return context?.battle?.advantageState?.[side]===true;
+  }
   function conditionMet(definition,context={}){
     const history=setHistory(context),threshold=Number(definition.conditionValue)||1;
-    if(definition.condition==='player_advantage_at_least')return advantageCount(context,'player')>=threshold;
-    if(definition.condition==='enemy_advantage_at_least')return advantageCount(context,'enemy')>=threshold;
+    if(definition.condition==='player_has_advantage')return explicitAdvantage(context,'player');
+    if(definition.condition==='enemy_has_advantage')return explicitAdvantage(context,'enemy');
     if(definition.condition==='player_wins_at_least')return (Number(history.wins)||0)>=threshold;
     if(definition.condition==='player_losses_at_least')return (Number(history.losses)||0)>=threshold;
     if(definition.condition==='no_draws')return (Number(history.draws)||0)===0;
@@ -274,5 +274,5 @@
     const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;if(attempts++<40)setTimeout(attempt,25);else console.warn('[contracts] 런타임을 찾지 못했습니다.')};
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true;
   }
-  return{STAGE,SHOWDOWN_RULE_ORDER,CONTRACT_DEFINITIONS,TABOO_DEFINITIONS,OFFERINGS,contractDefinition,tabooDefinition,offeringDefinition,validateRuleDefinition,validateRegistry,ensureClauseState,ownedContractIds,ownedTabooIds,availableOfferingIds,acquireOffering,advantageCount,setHistory,conditionMet,resolveRules,resolutionSummary,resolveShowdown,clauseSummary,showClauseCollection,showEventOfferings,takeOfferingFromEvent,decorateEvent,patchShowdownTrace,wrapRunCardEffects,wrapShowShowdownStep,renderMapClauseSummary,renderBattleClauseButton,wrapBeginRun,wrapShowEvent,wrapRenderMap,wrapRenderBattle,installBrowserRuntime,installWhenReady,activeRun,activeBattle};
+  return{STAGE,SHOWDOWN_RULE_ORDER,CONTRACT_DEFINITIONS,TABOO_DEFINITIONS,OFFERINGS,contractDefinition,tabooDefinition,offeringDefinition,validateRuleDefinition,validateRegistry,ensureClauseState,ownedContractIds,ownedTabooIds,availableOfferingIds,acquireOffering,setHistory,conditionMet,resolveRules,resolutionSummary,resolveShowdown,clauseSummary,showClauseCollection,showEventOfferings,takeOfferingFromEvent,decorateEvent,patchShowdownTrace,wrapRunCardEffects,wrapShowShowdownStep,renderMapClauseSummary,renderBattleClauseButton,wrapBeginRun,wrapShowEvent,wrapRenderMap,wrapRenderBattle,installBrowserRuntime,installWhenReady,activeRun,activeBattle};
 });

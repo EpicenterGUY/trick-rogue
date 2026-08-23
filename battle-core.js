@@ -8,7 +8,6 @@
   const TRICKS_PER_SET=5;
   const SUITS=Object.freeze(['S','H','D','C']);
   const DEFAULT_TRUMP_BONUS=3;
-  const SHOWDOWN_ADVANTAGE_POWER=3;
   const EFFECT_DURATIONS=Object.freeze(['trick','set','battle','run']);
   const ENCOUNTER_PROGRESSION=Object.freeze({
     battle:{setCount:null,bossPhases:[]},
@@ -160,18 +159,11 @@
     const enemy=resolveTrickValue(enemyCard,trump,sideTrickOptions(options,'enemy'));
     return Math.sign(player.finalValue-enemy.finalValue);
   }
-  function resolveShowdownAdvantage({playerCards,enemyCards}){
-    if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
-    const count=cards=>Object.fromEntries(SUITS.map(suit=>[suit,cards.filter(entry=>showdownValue(entry.card||entry,'Suit')===suit).length]));
-    const playerSuitCounts=count(playerCards),enemySuitCounts=count(enemyCards);
-    const playerAdvantages=[],enemyAdvantages=[];
-    for(const suit of SUITS){const difference=playerSuitCounts[suit]-enemySuitCounts[suit];if(difference>=2)playerAdvantages.push(suit);else if(difference<=-2)enemyAdvantages.push(suit)}
-    return{playerAdvantages,enemyAdvantages,playerAdvantageCount:playerAdvantages.length,enemyAdvantageCount:enemyAdvantages.length,playerSuitCounts,enemySuitCounts};
+  function resolveShowdownAdvantage(){
+    return{mode:'explicit',automaticSuitComparison:false,multiplier:1.25,playerActive:false,enemyActive:false,playerSource:null,enemySource:null};
   }
-  function showdownAdvantageBonus(advantages){return Array.isArray(advantages)&&advantages.length>0?SHOWDOWN_ADVANTAGE_POWER:0;}
-  function applyShowdownAdvantage(playerPower,enemyPower,advantage){
-    return{playerPower:playerPower+showdownAdvantageBonus(advantage.playerAdvantages),enemyPower:enemyPower+showdownAdvantageBonus(advantage.enemyAdvantages)};
-  }
+  function showdownAdvantageBonus(){return 0;}
+  function applyShowdownAdvantage(playerPower,enemyPower){return{playerPower,enemyPower};}
   function finishShowdown(state){
     if(state.phase!=='showdown')throw new Error('No showdown to finish');
     expireEffects(state,'set');
@@ -300,5 +292,5 @@
   }
   function resetBrowserTrumpAdapterForTests(){browserTrumpAdapterInstalled=false;}
 
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,DEFAULT_TRUMP_BONUS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,finiteNumber,effectiveCard,isTrumpCard,trickRank,trumpRankBonus,sideTrickOptions,resolveTrickValue,trickValue,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle,browserBattle,suitFromSymbol,suitSymbol,installBrowserTrumpAdapter,installBrowserTrumpAdapterWhenReady,resetBrowserTrumpAdapterForTests};
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,DEFAULT_TRUMP_BONUS,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,finiteNumber,effectiveCard,isTrumpCard,trickRank,trumpRankBonus,sideTrickOptions,resolveTrickValue,trickValue,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle,browserBattle,suitFromSymbol,suitSymbol,installBrowserTrumpAdapter,installBrowserTrumpAdapterWhenReady,resetBrowserTrumpAdapterForTests};
 });

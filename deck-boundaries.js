@@ -7,7 +7,8 @@
   const DEFAULT_STARTING_DECK_SIZE=12;
   const MIN_STARTING_DECK_SIZE=10;
   const MAX_STARTING_DECK_SIZE=14;
-  const MIN_STARTING_PLAIN_CARDS=2;
+  const MIN_STARTING_PURE_CARDS=2;
+  const MIN_STARTING_PLAIN_CARDS=MIN_STARTING_PURE_CARDS;
   let browserAdapterInstalled=false;
 
   function clamp(value,min,max){return Math.max(min,Math.min(max,value))}
@@ -16,24 +17,26 @@
     if(!card||isNamedCard(card))return false;
     return!!card.definition||!!card.cardId||(Array.isArray(card.effects)&&card.effects.length>0);
   }
-  function isPlainCard(card){return!!card&&!isNamedCard(card)&&!isEffectCard(card)}
+  function isPureCard(card){return!!card&&!isNamedCard(card)&&!isEffectCard(card)}
+  const isPlainCard=isPureCard;
   function startingDeckSizeForCharacter(character={}){
     const removals=Number.isFinite(Number(character?.remove))?Math.max(0,Math.floor(Number(character.remove))):0;
     return clamp(DEFAULT_STARTING_DECK_SIZE-removals,MIN_STARTING_DECK_SIZE,MAX_STARTING_DECK_SIZE);
   }
-  function selectStartingDeck(cards,{targetSize=DEFAULT_STARTING_DECK_SIZE,minPlain=MIN_STARTING_PLAIN_CARDS}={}){
+  function selectStartingDeck(cards,{targetSize=DEFAULT_STARTING_DECK_SIZE,minPure=MIN_STARTING_PURE_CARDS,minPlain}={}){
     if(!Array.isArray(cards))throw new TypeError('Starting deck source must be an array');
     const target=clamp(Math.floor(Number(targetSize)||DEFAULT_STARTING_DECK_SIZE),MIN_STARTING_DECK_SIZE,MAX_STARTING_DECK_SIZE);
     if(cards.length<=target)return cards.slice();
-    const named=cards.filter(isNamedCard),effects=cards.filter(isEffectCard),plain=cards.filter(isPlainCard);
+    const named=cards.filter(isNamedCard),effects=cards.filter(isEffectCard),pure=cards.filter(isPureCard);
     const selected=[];
     selected.push(...named.slice(0,target));
     let remaining=target-selected.length;
-    const plainReserve=Math.min(Math.max(0,Math.floor(Number(minPlain)||0)),plain.length,remaining);
-    const effectCount=Math.min(effects.length,Math.max(0,remaining-plainReserve));
+    const requestedPure=minPlain===undefined?minPure:minPlain;
+    const pureReserve=Math.min(Math.max(0,Math.floor(Number(requestedPure)||0)),pure.length,remaining);
+    const effectCount=Math.min(effects.length,Math.max(0,remaining-pureReserve));
     selected.push(...effects.slice(0,effectCount));
     remaining=target-selected.length;
-    selected.push(...plain.slice(0,Math.min(plain.length,remaining)));
+    selected.push(...pure.slice(0,Math.min(pure.length,remaining)));
     remaining=target-selected.length;
     if(remaining>0)selected.push(...effects.slice(effectCount,effectCount+remaining));
     remaining=target-selected.length;
@@ -129,9 +132,10 @@
     const state=browserRun(runtimeRoot);
     if(!state||!Array.isArray(state.deck))return null;
     const target=startingDeckSizeForCharacter(state.char);
-    state.deck=selectStartingDeck(state.deck,{targetSize:target,minPlain:MIN_STARTING_PLAIN_CARDS});
+    state.deck=selectStartingDeck(state.deck,{targetSize:target,minPure:MIN_STARTING_PURE_CARDS});
     state.startingDeckSize=state.deck.length;
-    state.startingDeckRule='7.5-J';
+    state.startingDeckRule='7.5-P';
+    state.startingPureCardCount=state.deck.filter(isPureCard).length;
     return state.deck;
   }
   function refillBeforeShowdown(runtimeRoot){
@@ -176,5 +180,5 @@
   }
   function resetBrowserAdapterForTests(){browserAdapterInstalled=false;}
 
-  return{DEFAULT_STARTING_DECK_SIZE,MIN_STARTING_DECK_SIZE,MAX_STARTING_DECK_SIZE,MIN_STARTING_PLAIN_CARDS,isNamedCard,isEffectCard,isPlainCard,startingDeckSizeForCharacter,selectStartingDeck,defaultShuffle,ensureBoundaryState,recycleDiscardWhenEmpty,drawToMaxHand,playCardToShowdown,moveShowdownCardsToDiscard,installBattleCoreAdapter,browserRun,browserBattle,normalizeRunDeck,refillBeforeShowdown,installBrowserAdapter,installBrowserAdapterWhenReady,resetBrowserAdapterForTests};
+  return{DEFAULT_STARTING_DECK_SIZE,MIN_STARTING_DECK_SIZE,MAX_STARTING_DECK_SIZE,MIN_STARTING_PURE_CARDS,MIN_STARTING_PLAIN_CARDS,isNamedCard,isEffectCard,isPureCard,isPlainCard,startingDeckSizeForCharacter,selectStartingDeck,defaultShuffle,ensureBoundaryState,recycleDiscardWhenEmpty,drawToMaxHand,playCardToShowdown,moveShowdownCardsToDiscard,installBattleCoreAdapter,browserRun,browserBattle,normalizeRunDeck,refillBeforeShowdown,installBrowserAdapter,installBrowserAdapterWhenReady,resetBrowserAdapterForTests};
 });

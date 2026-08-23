@@ -97,19 +97,21 @@ test('효과 정의 검증은 잘못된 trigger/action/condition/duration을 조
   assert(errors.some(error=>error.includes('missing action or handler')));
 });
 
-test('52장 기본 카드 슬롯은 유지하면서 전술 출신 일반 효과 카드 12장을 가진다',()=>{
+test('52장 기본 카드 슬롯은 유지하면서 일반 효과 카드 12장과 순수 카드 40장을 가진다',()=>{
   const cards=Cards.createBaseCardSlots();
   assert.equal(cards.length,52);
   const migrated=cards.filter(card=>card.definition?.legacyTacticId);
   const stage31=migrated.filter(card=>card.definition?.migrationStage==='3-1');
   const stage32b=migrated.filter(card=>card.definition?.migrationStage==='3-2B');
-  const plain=cards.filter(card=>!card.definition);
+  const stage75p=migrated.filter(card=>card.definition?.migrationStage==='7.5-P');
+  const pure=cards.filter(card=>Cards.isPureCard(card));
   assert.equal(migrated.length,12);
   assert.equal(stage31.length,6);
-  assert.equal(stage32b.length,6);
-  assert.equal(plain.length,40);
+  assert.equal(stage32b.length,3);
+  assert.equal(stage75p.length,3);
+  assert.equal(pure.length,40);
   assert(migrated.every(card=>card.named===null&&card.cardId?.startsWith('core.')&&card.effects.length>0));
-  assert(plain.every(card=>card.named===null&&card.cardId===null&&card.effects.length===0));
+  assert(pure.every(card=>card.named===null&&card.cardId===null&&card.effects.length===0));
   assert(cards.every(card=>card.printedSuit===card.suit&&card.printedRank===card.rank));
 });
 
