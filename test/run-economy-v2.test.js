@@ -12,14 +12,54 @@ const Economy=require('../run-economy-v2.js');
 function seq(values){let i=0;return()=>values[i++%values.length]}
 function pure(suit='S',rank=8,id='p'){return Cards.createCardRecord({suit,rank,metadata:{uid:id}})}
 function runState(overrides={}){return{runSeed:123,actId:'region_theater',gold:200,hp:30,maxHp:60,deck:[pure('S',8,'a'),pure('H',8,'b'),pure('D',8,'c'),pure('C',8,'d'),pure('S',9,'e'),pure('H',9,'f')],relics:[],...overrides}}
-function regionNode(id='r1',type='battle'){return{id,type,regionPlan:{regionId:'region_theater',rewardWeights:{neutral:.65,theme:.35}}}}
+function regionNode(id='r1',type='battle',regionId='region_theater'){return{id,type,regionPlan:{regionId,rewardWeights:{neutral:.65,theme:.35}}}}
 function runtime(run){return{run,RunStartV2:RunStart,RunFlowV2:RunFlow,RelicSystem:Relics,...Cards,newUid:(()=>{let n=0;return()=>`u${++n}`})()}}
 
-test('8-C 전체 카드 카탈로그는 네임드/일반 효과 카드와 순수 카드를 함께 보관한다',()=>{
+test('8-C 전체 카드 카탈로그는 네임드/일반 효과 카드와 순수 카드를 함께 보관하고 효과 기반 gameplayTags를 가진다',()=>{
   const catalog=Economy.candidateCatalog(Cards);
-  assert.ok(catalog.some(item=>item.kind==='definition'&&item.definitionId==='core.paint'));
-  assert.ok(catalog.some(item=>item.kind==='definition'&&item.definitionId==='pack01.black_bullet'));
-  assert.ok(catalog.some(item=>item.kind==='pure'));
+  const paint=catalog.find(item=>item.definitionId==='core.paint');
+  const bullet=catalog.find(item=>item.definitionId==='pack01.black_bullet');
+  const pureCard=catalog.find(item=>item.kind==='pure');
+  assert.ok(paint);assert.ok(bullet);assert.ok(pureCard);
+  assert.ok(paint.gameplayTags.includes('trump'));
+  assert.ok(bullet.gameplayTags.includes('damage'));
+  assert.deepEqual(pureCard.gameplayTags,['pure']);
+});
+
+test('효과 action/condition/handler/terms에서 지역 성향 태그를 자동 추론한다',()=>{
+  const scout=Economy.gameplayTagsForDefinition(Cards.CARD_DEFINITION_BY_ID['core.scout']);
+  const burn=Economy.gameplayTagsForDefinition(Cards.CARD_DEFINITION_BY_ID['core.burn']);
+  const glass=Economy.gameplayTagsForDefinition(Cards.CARD_DEFINITION_BY_ID['pack01.sharp_glass']);
+  const recursive=Economy.gameplayTagsForDefinition(Cards.CARD_DEFINITION_BY_ID['pack01.recursive_function']);
+  const reverse=Economy.gameplayTagsForDefinition(Cards.CARD_DEFINITION_BY_ID['core.reverse']);
+  assert.ok(scout.includes('information'));
+  assert.ok(burn.includes('hand_control'));assert.ok(burn.includes('chip'));assert.ok(burn.includes('draw'));
+  assert.ok(glass.includes('status'));assert.ok(glass.includes('damage'));
+  assert.ok(recursive.includes('copy'));assert.ok(recursive.includes('variant'));
+  assert.ok(reverse.includes('variant'));assert.ok(reverse.includes('trick_rule'));
+});
+
+test('새 카드도 ID 등록 없이 실제 효과만으로 지역 경향에 자동 편입된다',()=>{
+  const info=Economy.candidateFromDefinition({id:'test.info',name:'정보 카드',suit:'S',rank:2,effects:[{trigger:'on_play',action:'reveal_next_enemy_card'}],terms:[]});
+  const chip=Economy.candidateFromDefinition({id:'test.chip',name:'칩 카드',suit:'H',rank:2,effects:[{trigger:'on_trick_win',action:'gain_chips',value:1}],terms:[]});
+  const variant=Economy.candidateFromDefinition({id:'test.variant',name:'변칙 카드',suit:'D',rank:2,effects:[{trigger:'on_play',action:'set_reverse_compare'}],terms:[]});
+  assert.equal(Economy.isThemeCandidate(info,'region_observatory'),true);
+  assert.equal(Economy.isThemeCandidate(info,'region_frontier'),false);
+  assert.equal(Economy.isThemeCandidate(chip,'region_frontier'),true);
+  assert.equal(Economy.isThemeCandidate(variant,'region_theater'),true);
+});
+
+test('지역별 태그 프로필은 카드군 소속이 아니라 실제 플레이 축을 정의한다',()=>{
+  assert.deepEqual(Economy.REGION_REWARD_TAGS.region_theater,['field','variant','trick_rule','trump','showdown_value','copy','risk','advantage']);
+  assert.deepEqual(Economy.REGION_REWARD_TAGS.region_observatory,['information','hand_control','draw','reservation','slot','river']);
+  assert.deepEqual(Economy.REGION_REWARD_TAGS.region_frontier,['chip','damage','status','defense','trick_win','low_rank','sustain']);
+  const reverse=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.reverse']);
+  const scout=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.scout']);
+  const guard=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['pack01.emergency_guard']);
+  assert.ok(Economy.candidateAffinity(reverse,'region_theater')>0);
+  assert.equal(Economy.candidateAffinity(reverse,'region_observatory'),0);
+  assert.ok(Economy.candidateAffinity(scout,'region_observatory')>0);
+  assert.ok(Economy.candidateAffinity(guard,'region_frontier')>0);
 });
 
 test('공통지역 보상 풀은 40장 순수 + 12장 공용 효과의 52장만 사용하고 네임드/지역 카드를 숨긴다',()=>{
@@ -48,16 +88,28 @@ test('공통지역 전투 보상과 상점은 모두 같은 52장 공용 풀에�
   assert.equal(shop.cardOffers.some(candidate=>candidate.definitionId?.startsWith('pack01.')),false);
 });
 
-test('지역 카드 보상은 65/35 경향을 실제 후보 선택에 사용하되 다른 카드군을 차단하지 않는다',()=>{
-  const run=runState(),node=regionNode(),root=runtime(run);
+test('지역 카드 보상은 65/35 경향을 유지하면서 태그 일치 카드만 theme 풀로 분류한다',()=>{
+  const run=runState(),node=regionNode(),root=runtime(run),pools=Economy.rewardPools(run,node,root);
+  assert.equal(pools.openingCommon,false);
+  assert.deepEqual(pools.weights,{neutral:.65,theme:.35});
+  assert.ok(pools.theme.length>0);assert.ok(pools.neutral.length>0);
+  assert.ok(pools.theme.every(item=>Economy.candidateAffinity(item,'region_theater')>0));
+  assert.ok(pools.neutral.every(item=>Economy.candidateAffinity(item,'region_theater')===0));
+
   const theme=Economy.generateCardOffer(run,node,{count:1,rng:seq([.90,.10]),runtimeRoot:root});
   const neutral=Economy.generateCardOffer(run,node,{count:1,rng:seq([.10,.10]),runtimeRoot:root});
   assert.equal(theme[0].sourceCategory,'theme');
+  assert.ok(theme[0].matchedTags.length>0);
   assert.equal(neutral[0].sourceCategory,'neutral');
-  const pools=Economy.rewardPools(run,node,root);
-  assert.equal(pools.openingCommon,false);
-  assert.ok(pools.neutral.some(item=>item.definitionId==='core.scout'));
-  assert.ok(pools.catalog.some(item=>item.definitionId==='pack01.black_bullet'),'지역 진입 뒤 네임드 카드는 다시 후보 풀에 존재한다');
+  assert.equal(neutral[0].matchedTags.length,0);
+});
+
+test('한 카드가 여러 실제 효과 축을 가지면 여러 지역의 경향 카드가 될 수 있으며 획득 자체는 제한되지 않는다',()=>{
+  const burn=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.burn']);
+  assert.equal(Economy.isThemeCandidate(burn,'region_observatory'),true,'손패 제어/드로우 때문에 관측소 경향');
+  assert.equal(Economy.isThemeCandidate(burn,'region_frontier'),true,'칩 때문에 황야 전선 경향');
+  const frontierPools=Economy.rewardPools(runState({actId:'region_frontier'}),regionNode('f','battle','region_frontier'),runtime(runState({actId:'region_frontier'})));
+  assert.ok(frontierPools.catalog.some(item=>item.definitionId==='core.scout'),'타지역 성향 카드를 카탈로그에서 차단하지 않는다');
 });
 
 test('전투 카드 보상은 노드마다 결정적으로 3장을 고정하고 중복 후보를 만들지 않는다',()=>{
@@ -74,19 +126,29 @@ test('전투 보상은 1장만 추가할 수 있고 건너뛰기는 덱과 골�
   assert.equal(claimed.ok,true);assert.equal(a.deck.length,before+1);
   assert.equal(Economy.claimCardReward(a,node,offer[1].key,{runtimeRoot:root}).reason,'claimed');
 
-  const b=runState({gold:77}),rootB=runtime(b),beforeB=b.deck.length;
+  const b=runState({gold:77}),beforeB=b.deck.length;
   assert.equal(Economy.skipCardReward(b,node).ok,true);
   assert.equal(b.deck.length,beforeB);assert.equal(b.gold,77);
 });
 
 test('공통지역에서 받은 공용 효과 카드는 네임드가 아닌 일반 효과 카드로 덱에 들어간다',()=>{
   const run=runState({actId:'common',runFlow:{phase:'common'}}),node={id:'c2',type:'battle'},root=runtime(run);
-  const offer=Economy.ensureRewardOffer(run,node,root),definition=offer.find(candidate=>candidate.kind==='definition');
-  assert.ok(definition,'결정적 3장에 효과 카드가 없을 수 있어 직접 공용 후보를 사용한다');
-  const before=run.deck.length,result=Economy.claimCardReward(run,node,definition.key,{runtimeRoot:root});
+  const candidate=Economy.commonOpeningCatalog(Cards,root).find(item=>item.kind==='definition'&&item.definitionId==='core.scout');
+  assert.ok(candidate);
+  Economy.ensureEconomyState(run).rewards[node.id]=[candidate];
+  const before=run.deck.length,result=Economy.claimCardReward(run,node,candidate.key,{runtimeRoot:root});
   assert.equal(result.ok,true);assert.equal(run.deck.length,before+1);
   assert.equal(result.card.definition.category,'general');
   assert.equal(result.card.named,null);
+});
+
+test('지역 하드코딩 카드 ID 목록은 제거되고 효과 태그가 단일 분류 기준이 된다',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','run-economy-v2.js'),'utf8');
+  assert.doesNotMatch(source,/REGION_THEME_CARD_IDS/);
+  assert.doesNotMatch(source,/region_theater:Object\.freeze\(\['core\./);
+  assert.match(source,/REGION_REWARD_TAGS/);
+  assert.match(source,/gameplayTagsForDefinition/);
+  assert.match(source,/candidateAffinity/);
 });
 
 test('1단계 강화는 인쇄값/쇼다운값을 보존하고 트릭 적용 숫자만 +1하며 순수 카드 분류를 유지한다',()=>{
