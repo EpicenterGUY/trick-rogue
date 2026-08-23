@@ -7,8 +7,8 @@ const Fold=require('../fold-experiment.js');
 function card(uid,suit='S',rank=2){return{uid,suit,rank,printedSuit:suit,printedRank:rank}}
 function entry(uid,result=0,suit='S',rank=2){return{card:card(uid,suit,rank),result}}
 function battle(slotCount=3,overrides={}){
-  const slots=[entry('a',1,'S',2),entry('b',-1,'H',3),entry('c',0,'D',4),entry('d',1,'C',5)].slice(0,slotCount);
-  const enemySlots=[entry('ea',-1),entry('eb',1),entry('ec',0),entry('ed',-1)].slice(0,slotCount);
+  const slots=[entry('a',1,'S',2),entry('b',-1,'H',3),entry('c',0,'D',4),entry('d',1,'C',5),entry('e',-1,'S',6)].slice(0,slotCount);
+  const enemySlots=[entry('ea',-1),entry('eb',1),entry('ec',0),entry('ed',-1),entry('ee',1)].slice(0,slotCount);
   return{
     setIndex:1,trick:slotCount+1,phase:'trick',slots,enemySlots,
     hand:[card('h1','C',8),card('h2','S',9),card('h3','H',10)],deck:[card('deck1')],discard:[],
