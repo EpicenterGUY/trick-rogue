@@ -7,6 +7,7 @@
   if(typeof document!=='undefined')api.installWhenReady(root);
 })(typeof globalThis!=='undefined'?globalThis:this,function(CardEffects,NodeBattleCore,root){
   const FIELD_SLOT_COUNT=1;
+  const FIELD_SOURCE_TYPES=Object.freeze(['card','boss','elite','event','shop','relic','contract','scripted']);
   const RULE_KINDS=Object.freeze(['elite_modifier','boss_phase']);
   const RULE_OVERRIDE_KEYS=Object.freeze([
     'advantageMargin','playerAdvantageMargin','enemyAdvantageMargin',
@@ -32,7 +33,7 @@
       id:'raider',type:'battle',label:'폐허 약탈자',rulesOverride:Object.freeze({}),eliteModifier:null,bossPhases:Object.freeze([]),defaultField:null
     }),
     elite:Object.freeze({
-      id:'armored_hunter',type:'elite',label:'철갑 사냥꾼',rulesOverride:Object.freeze({}),defaultField:'resonance_floor',
+      id:'armored_hunter',type:'elite',label:'철갑 사냥꾼',rulesOverride:Object.freeze({}),defaultField:null,
       eliteModifier:Object.freeze({
         id:'armored_shell',label:'철갑',description:'각 세트 시작 시 보호막 3을 얻는다.',rulesOverride:Object.freeze({}),
         effects:Object.freeze([
@@ -42,7 +43,7 @@
       bossPhases:Object.freeze([])
     }),
     boss:Object.freeze({
-      id:'tower_watcher',type:'boss',label:'탑의 감시자',rulesOverride:Object.freeze({}),eliteModifier:null,defaultField:'thin_signal',
+      id:'tower_watcher',type:'boss',label:'탑의 감시자',rulesOverride:Object.freeze({}),eliteModifier:null,defaultField:null,
       bossPhases:Object.freeze([
         Object.freeze({id:'phase_1',label:'1페이즈',minHpRatio:.70,rulesOverride:Object.freeze({}),rule:null}),
         Object.freeze({
@@ -108,7 +109,7 @@
       if(!profile?.id)errors.push(`${type}: missing id`);
       if(profile?.type!==type)errors.push(`${type}: profile type mismatch`);
       errors.push(...validateRulesOverride(profile?.rulesOverride,`${type}/rulesOverride`));
-      if(profile?.defaultField!==null&&profile?.defaultField!==undefined&&!fields?.[profile.defaultField])errors.push(`${type}: unknown defaultField ${profile.defaultField}`);
+      if(profile?.defaultField!==null&&profile?.defaultField!==undefined)errors.push(`${type}: automatic defaultField is disabled in 7.5-F`);
       if(profile?.eliteModifier)errors.push(...validateRule(profile.eliteModifier,`${type}/eliteModifier`));
       const phases=profile?.bossPhases||[];
       if(!Array.isArray(phases))errors.push(`${type}: bossPhases must be an array`);
@@ -187,16 +188,33 @@
       rulesOverride:{...(definition.rulesOverride||{})},effects:cloneEffects(definition.effects||[])
     };
   }
+  function normalizeFieldSource(source={}){
+    const input=typeof source==='string'?{type:source}:source||{};
+    const type=FIELD_SOURCE_TYPES.includes(input.type)?input.type:'scripted';
+    return{type,id:input.id||null,label:input.label||null,consume:input.consume||'battle'};
+  }
   function setField(state,ref,registry=FIELD_DEFINITIONS){
     if(!state||typeof state!=='object')throw new TypeError('setField requires battle state');
     const previous=state.field||null,next=ref===null||ref===undefined?null:createField(ref,registry);
     state.field=next;
     if(!Array.isArray(state.fieldHistory))state.fieldHistory=[];
-    if((previous?.id||null)!==(next?.id||null))state.fieldHistory.push({setIndex:state.setIndex??1,trick:state.trick??1,from:previous?.id||null,to:next?.id||null});
+    if((previous?.id||null)!==(next?.id||null)){
+      state.fieldSource=null;
+      state.fieldHistory.push({setIndex:state.setIndex??1,trick:state.trick??1,from:previous?.id||null,to:next?.id||null,sourceType:null,sourceId:null});
+    }
     state.rulesOverride=resolveRulesOverride(state);
     return{previous,current:next,replaced:!!previous&&!!next&&previous.id!==next.id,cleared:!!previous&&!next};
   }
-  function clearField(state){return setField(state,null)}
+  function setFieldFromSource(state,ref,source={type:'scripted'},registry=FIELD_DEFINITIONS){
+    const transition=setField(state,ref,registry);
+    if(!state.field)return transition;
+    const normalized=normalizeFieldSource(source);
+    state.fieldSource=normalized;
+    const last=state.fieldHistory?.at?.(-1);
+    if(last&&last.to===state.field.id&&last.sourceType===null){last.sourceType=normalized.type;last.sourceId=normalized.id}
+    return{...transition,source:normalized};
+  }
+  function clearField(state){const transition=setField(state,null);state.fieldSource=null;return transition}
   function resolveRulesOverride(state){
     const profile=profileFor(state?.encounterProfileId||state?.type),phase=resolveBossPhase(profile,state);
     const merged={...(profile.rulesOverride||{})};
@@ -255,10 +273,10 @@
     if(!state||typeof state!=='object')throw new TypeError('initializeBattle requires battle state');
     const profile=profileFor(state.type),errors=[...validateFieldRegistry(),...validateEncounterProfiles()];if(errors.length)throw new TypeError(errors.join('; '));
     state.encounterProfileId=profile.id;
-    state.encounter={...(state.encounter||{}),profileId:profile.id,fieldSlotCount:FIELD_SLOT_COUNT,bossPhases:(profile.bossPhases||[]).map(phase=>({id:phase.id,label:phase.label,minHpRatio:phase.minHpRatio}))};
+    state.encounter={...(state.encounter||{}),profileId:profile.id,fieldSlotCount:FIELD_SLOT_COUNT,fieldPolicy:'special_only',bossPhases:(profile.bossPhases||[]).map(phase=>({id:phase.id,label:phase.label,minHpRatio:phase.minHpRatio}))};
     if(state.field===undefined)state.field=null;
+    if(state.fieldSource===undefined)state.fieldSource=null;
     if(!Array.isArray(state.fieldHistory))state.fieldHistory=[];
-    if(profile.defaultField&&state.field===null)setField(state,profile.defaultField);
     const transition=syncEncounterRules(state);
     state.encounterRulesInitialized=true;
     return{state,profile,transition};
@@ -361,8 +379,8 @@
     return true;
   }
   return{
-    FIELD_SLOT_COUNT,RULE_KINDS,RULE_OVERRIDE_KEYS,FIELD_DEFINITIONS,ENCOUNTER_PROFILES,battleCore,profileFor,validateRulesOverride,validateRule,validateEncounterProfiles,validateFieldDefinition,validateFieldRegistry,
-    hpRatio,resolveBossPhase,makeRuleOwner,managedRulesFor,preserveExternalBossRules,fieldDefinition,createField,setField,clearField,resolveRulesOverride,activeRulesOverride,
+    FIELD_SLOT_COUNT,FIELD_SOURCE_TYPES,RULE_KINDS,RULE_OVERRIDE_KEYS,FIELD_DEFINITIONS,ENCOUNTER_PROFILES,battleCore,profileFor,validateRulesOverride,validateRule,validateEncounterProfiles,validateFieldDefinition,validateFieldRegistry,
+    hpRatio,resolveBossPhase,makeRuleOwner,managedRulesFor,preserveExternalBossRules,fieldDefinition,createField,normalizeFieldSource,setField,setFieldFromSource,clearField,resolveRulesOverride,activeRulesOverride,
     advantageMargins,advantagePowers,compareTrickWithRules,resolveShowdownAdvantageWithRules,applyShowdownAdvantageWithRules,syncEncounterRules,initializeBattle,encounterRuleLabels,renderEncounterHud,
     activeBattle,ensureInitialized,wrapStartBattle,wrapDamageEnemy,wrapBattleCore,wrapRenderBattle,installBrowserRuntime,installWhenReady
   };
