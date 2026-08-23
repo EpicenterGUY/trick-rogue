@@ -16,24 +16,24 @@
 
   const TEMPO_PROFILES=Object.freeze({
     battle_early:Object.freeze({
-      id:'battle_early',encounterType:'battle',label:'초반 일반전',hp:24,
+      id:'battle_early',encounterType:'battle',label:'초반 일반전',hp:12,
       targetSets:Object.freeze({min:1,max:2,preferred:1}),
-      note:'잘 풀린 첫 쇼다운으로 끝내는 것이 기본이며 약한 쇼다운은 2세트까지 허용한다.'
+      note:'차이 피해 기준으로 잘 풀린 첫 쇼다운에 끝내는 것이 기본이며 접전은 2세트까지 허용한다.'
     }),
     battle_strong:Object.freeze({
-      id:'battle_strong',encounterType:'battle',label:'강한 일반전',hp:36,
+      id:'battle_strong',encounterType:'battle',label:'강한 일반전',hp:18,
       targetSets:Object.freeze({min:1,max:2,preferred:2}),
-      note:'좋은 쇼다운은 1세트 처치가 가능하지만 평범한 전개는 2세트를 허용한다.'
+      note:'차이 피해 10 안팎이면 2세트, 20 안팎의 좋은 쇼다운이면 1세트 처치도 가능하게 둔다.'
     }),
     elite:Object.freeze({
-      id:'elite',encounterType:'elite',label:'엘리트',hp:64,
+      id:'elite',encounterType:'elite',label:'엘리트',hp:32,
       targetSets:Object.freeze({min:2,max:3,preferred:2}),
-      note:'일반전보다 확실히 오래 버티되 장기전 빌드가 작동할 2~3세트를 목표로 한다.'
+      note:'차이 피해 기준에서도 일반전보다 확실히 오래 버티되 장기전 빌드가 작동할 2~3세트를 목표로 한다.'
     }),
     boss:Object.freeze({
-      id:'boss',encounterType:'boss',label:'보스',hp:120,
+      id:'boss',encounterType:'boss',label:'보스',hp:60,
       targetSets:Object.freeze({min:3,max:null,preferred:4}),
-      note:'보스 페이즈와 장기전 효과가 실제로 작동하도록 보통 3세트 이상을 목표로 한다.'
+      note:'보스 페이즈와 장기전 효과가 작동하도록 보통 3세트 이상을 목표로 하되 큰 차이 피해에는 더 빨리 끝날 수 있다.'
     })
   });
 
