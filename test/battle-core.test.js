@@ -17,9 +17,46 @@ test('3장 대 2장은 무늬 우세가 아니다',()=>assert.deepEqual(advantag
 test('3장 대 1장은 해당 무늬 우세다',()=>assert.deepEqual(advantage(['S','S','S','H','D'],['S','H','H','D','C']).playerAdvantages,['S']));
 test('복수 우세와 양측 무늬 수가 배열/맵으로 유지된다',()=>{const a=advantage(['S','S','S','D','D'],['S','H','H','C','C']);assert.deepEqual(a.playerAdvantages,['S','D']);assert.deepEqual(a.enemyAdvantages,['H','C']);assert.equal(a.playerSuitCounts.S,3);assert.equal(a.enemySuitCounts.C,2)});
 test('우세가 하나 이상이면 복수 우세여도 기본 위력 +3을 한 번만 적용한다',()=>{const a=advantage(['S','S','S','D','D'],['S','H','H','C','C']);assert.deepEqual(Core.applyShowdownAdvantage(10,20,a),{playerPower:13,enemyPower:23});assert.equal(Core.showdownAdvantageBonus(a.playerAdvantages),3);assert.equal(Core.showdownAdvantageBonus([]),0)});
-test('트릭은 한쪽 트럼프를 우선하고 같은 트럼프 상태에서는 적용 숫자만 비교한다',()=>{assert.equal(Core.compareTrick({effectiveSuit:'H',effectiveRank:2},{effectiveSuit:'S',effectiveRank:14},'H'),1);assert.equal(Core.compareTrick({effectiveSuit:'S',effectiveRank:9},{effectiveSuit:'D',effectiveRank:7},'H'),1);assert.equal(Core.compareTrick({effectiveSuit:'S',effectiveRank:9},{effectiveSuit:'D',effectiveRank:9},'H'),0)});
-test('트럼프로 취급과 트릭 무늬 변경은 서로 독립적이다',()=>{const treated=Core.effectiveCard({rank:3,suit:'H'},{treatedAsTrump:true});const changed=Core.effectiveCard({rank:3,suit:'H'},{suit:'S'});assert.equal(treated.trickSuit,'H');assert.equal(treated.treatedAsTrump,true);assert.equal(changed.trickSuit,'S');assert.equal(changed.treatedAsTrump,false);assert.equal(Core.compareTrick(treated,{rank:14,suit:'D'},'S'),1);assert.equal(Core.compareTrick(changed,{rank:14,suit:'D'},'S'),1)});
-test('적용값은 인쇄값을 mutate하지 않고 쇼다운은 기본 인쇄값을 사용한다',()=>{const card={rank:4,suit:'C'},effective=Core.effectiveCard(card,{rank:9,suit:'H'});assert.deepEqual(card,{rank:4,suit:'C'});assert.equal(effective.printedRank,4);assert.equal(effective.printedSuit,'C');assert.equal(effective.rank,9);assert.equal(effective.suit,'H');assert.equal(effective.trickRank,9);assert.equal(effective.trickSuit,'H');assert.equal(Core.showdownValue(effective,'Rank'),4);assert.equal(Core.showdownValue(effective,'Suit'),'C');effective.showdownRank=6;assert.equal(Core.showdownValue(effective,'Rank'),6)});
+
+test('7.5-G 기본 트럼프 보너스는 적용 숫자 +3이다',()=>{
+  assert.equal(Core.DEFAULT_TRUMP_BONUS,3);
+  assert.equal(Core.trickValue({suit:'S',rank:3},'S'),6);
+  assert.equal(Core.trickValue({suit:'H',rank:13},'S'),13);
+});
+test('7.5-G 낮은 트럼프는 높은 비트럼프를 자동으로 이기지 않는다',()=>{
+  assert.equal(Core.compareTrick({suit:'S',rank:3},{suit:'H',rank:13},'S'),-1);
+  assert.equal(Core.compareTrick({suit:'S',rank:10},{suit:'H',rank:12},'S'),1);
+});
+test('7.5-G 카드 숫자 보정과 트럼프 보정은 같은 적용 숫자 선에서 합산된다',()=>{
+  const trumpJack=Core.effectiveCard({rank:11,suit:'S'},{rank:14});
+  const nonTrumpQueen=Core.effectiveCard({rank:12,suit:'H'},{rank:15});
+  assert.equal(Core.trickValue(trumpJack,'S'),17);
+  assert.equal(Core.trickValue(nonTrumpQueen,'S'),15);
+  assert.equal(Core.compareTrick(trumpJack,nonTrumpQueen,'S'),1);
+});
+test('7.5-G 양쪽 최종 적용 숫자가 같으면 무승부다',()=>{
+  assert.equal(Core.compareTrick({suit:'S',rank:9},{suit:'H',rank:12},'S'),0);
+});
+test('트럼프로 취급과 트릭 무늬 변경은 +3 보정을 받을 뿐 자동 승리하지 않는다',()=>{
+  const treated=Core.effectiveCard({rank:3,suit:'H'},{treatedAsTrump:true});
+  const changed=Core.effectiveCard({rank:3,suit:'H'},{suit:'S'});
+  assert.equal(treated.trickSuit,'H');assert.equal(treated.treatedAsTrump,true);
+  assert.equal(changed.trickSuit,'S');assert.equal(changed.treatedAsTrump,false);
+  assert.equal(Core.trickValue(treated,'S'),6);
+  assert.equal(Core.trickValue(changed,'S'),6);
+  assert.equal(Core.compareTrick(treated,{rank:14,suit:'D'},'S'),-1);
+  assert.equal(Core.compareTrick(changed,{rank:14,suit:'D'},'S'),-1);
+});
+test('트럼프 +3은 인쇄값과 쇼다운값을 바꾸지 않는다',()=>{
+  const card={rank:4,suit:'C'},effective=Core.effectiveCard(card,{rank:9,suit:'H'});
+  assert.deepEqual(card,{rank:4,suit:'C'});
+  assert.equal(effective.printedRank,4);assert.equal(effective.printedSuit,'C');
+  assert.equal(effective.rank,9);assert.equal(effective.suit,'H');
+  assert.equal(effective.trickRank,9);assert.equal(effective.trickSuit,'H');
+  assert.equal(Core.trickValue(effective,'H'),12);
+  assert.equal(Core.showdownValue(effective,'Rank'),4);assert.equal(Core.showdownValue(effective,'Suit'),'C');
+  effective.showdownRank=6;assert.equal(Core.showdownValue(effective,'Rank'),6);
+});
 test('무승부는 승패 수를 올리지 않고 연승/연패를 끊는다',()=>{const h=Core.createSetHistory();Core.recordTrickResult(h,'player');Core.recordTrickResult(h,'player');assert.equal(h.winStreak,2);Core.recordTrickResult(h,'draw');assert.equal(h.wins,2);assert.equal(h.losses,0);assert.equal(h.draws,1);assert.equal(h.winStreak,0);assert.equal(h.lossStreak,0);assert.equal(h.lastResult,'draw')});
 test('트릭 승리 직후에는 우세 위력 보너스를 적용하지 않는다',()=>{const state=Core.createBattleState();Core.endTrick(state,'player');assert.equal(state.phase,'trick');assert.equal(state.setHistory.trickResults.length,1);assert.equal(state.effects.length,0)});
 test('다음 세트는 승패 기록만 초기화하고 battle 범위 상태를 유지한다',()=>{const state=Core.createBattleState();Core.addEffect(state,{id:'battle-state',duration:'battle'});for(const result of ['player','enemy','draw','player','enemy'])Core.endTrick(state,result);Core.finishShowdown(state);assert.deepEqual(state.setHistory.trickResults,[]);assert.equal(state.setHistory.wins,0);assert.equal(state.setHistory.draws,0);assert(state.effects.some(effect=>effect.id==='battle-state'))});
