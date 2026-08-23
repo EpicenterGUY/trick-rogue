@@ -8,6 +8,7 @@
   const ENEMY_CONTENT_DATASET='trick-enemy-content-9-b';
   const CONTENT_EXPANSION_DATASET='trick-content-expansion-9-c';
   const PURE_SYNERGY_DATASET='trick-pure-synergy-9-d';
+  const COMPENDIUM_DATASET='trick-compendium-8-h';
   const MOBILE_STAGE_WIDTH=92;
   const MOBILE_STAGE_HEIGHT=140;
   const MOBILE_SHOWDOWN_CARD_WIDTH=56;
@@ -21,33 +22,22 @@
 }
 `;
 
-  function loadEnemyContent(doc=root.document){
-    if(root.EnemyContent9B)return true;
+  function appendScript(doc,src,dataset,ready){
+    if(ready?.())return true;
     if(!doc||typeof doc.createElement!=='function')return false;
-    const existing=doc.querySelector?.(`script[data-${ENEMY_CONTENT_DATASET}]`);
-    if(existing)return true;
-    const script=doc.createElement('script');script.src='enemy-content-9-b.js';script.async=false;script.setAttribute(`data-${ENEMY_CONTENT_DATASET}`,'true');(doc.head||doc.documentElement)?.appendChild(script);return true;
+    const existing=doc.querySelector?.(`script[data-${dataset}]`);if(existing)return true;
+    const script=doc.createElement('script');script.src=src;script.async=false;script.setAttribute(`data-${dataset}`,'true');(doc.head||doc.documentElement)?.appendChild(script);return true;
   }
-  function loadContentExpansion(doc=root.document){
-    if(root.ContentExpansion9C)return true;
-    if(!doc||typeof doc.createElement!=='function')return false;
-    const existing=doc.querySelector?.(`script[data-${CONTENT_EXPANSION_DATASET}]`);
-    if(existing)return true;
-    const script=doc.createElement('script');script.src='content-expansion-9-c.js';script.async=false;script.setAttribute(`data-${CONTENT_EXPANSION_DATASET}`,'true');(doc.head||doc.documentElement)?.appendChild(script);return true;
-  }
-  function loadPureSynergies(doc=root.document){
-    if(root.PureSynergy9D)return true;
-    if(!doc||typeof doc.createElement!=='function')return false;
-    const existing=doc.querySelector?.(`script[data-${PURE_SYNERGY_DATASET}]`);
-    if(existing)return true;
-    const script=doc.createElement('script');script.src='pure-synergies-9-d.js';script.async=false;script.setAttribute(`data-${PURE_SYNERGY_DATASET}`,'true');(doc.head||doc.documentElement)?.appendChild(script);return true;
-  }
+  function loadEnemyContent(doc=root.document){return appendScript(doc,'enemy-content-9-b.js',ENEMY_CONTENT_DATASET,()=>!!root.EnemyContent9B)}
+  function loadContentExpansion(doc=root.document){return appendScript(doc,'content-expansion-9-c.js',CONTENT_EXPANSION_DATASET,()=>!!root.ContentExpansion9C)}
+  function loadPureSynergies(doc=root.document){return appendScript(doc,'pure-synergies-9-d.js',PURE_SYNERGY_DATASET,()=>!!root.PureSynergy9D)}
+  function loadCompendium(doc=root.document){return appendScript(doc,'compendium-8-h.js',COMPENDIUM_DATASET,()=>!!root.Compendium8H)}
   function install(doc=root.document){
     if(!doc||typeof doc.createElement!=='function')return false;
-    loadEnemyContent(doc);loadContentExpansion(doc);loadPureSynergies(doc);
+    loadEnemyContent(doc);loadContentExpansion(doc);loadPureSynergies(doc);loadCompendium(doc);
     if(doc.getElementById?.(STYLE_ID))return true;
     const style=doc.createElement('style');style.id=STYLE_ID;style.textContent=STYLE_TEXT;(doc.head||doc.documentElement)?.appendChild(style);return true;
   }
 
-  return{STYLE_ID,ENEMY_CONTENT_DATASET,CONTENT_EXPANSION_DATASET,PURE_SYNERGY_DATASET,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,STYLE_TEXT,loadEnemyContent,loadContentExpansion,loadPureSynergies,install};
+  return{STYLE_ID,ENEMY_CONTENT_DATASET,CONTENT_EXPANSION_DATASET,PURE_SYNERGY_DATASET,COMPENDIUM_DATASET,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,STYLE_TEXT,appendScript,loadEnemyContent,loadContentExpansion,loadPureSynergies,loadCompendium,install};
 });
