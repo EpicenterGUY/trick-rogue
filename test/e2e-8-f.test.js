@@ -15,16 +15,17 @@ test('E2E 8-F 같은 런 시드는 저장 전후에도 같은 맵 변형을 재�
   assert.equal(a.variantId,b.variantId);assert.deepEqual(a.map.map(n=>[n.id,n.type,n.next]),b.map.map(n=>[n.id,n.type,n.next]));assert.equal(Persistence.runFingerprint(original),Persistence.runFingerprint(restored));
 });
 
-test('E2E 8-F 최신 쇼다운은 플레이어 선공 처치→적 반격 취소까지 실행하고 전투 종료 뒤 런 체크포인트를 저장할 수 있다',()=>{
+test('E2E 8-F 최신 쇼다운은 최종 위력 차이 피해로 적을 처치하고 전투 종료 뒤 런 체크포인트를 저장할 수 있다',()=>{
   const playerEntries=[showdownEntry('S',6),showdownEntry('H',7),showdownEntry('D',8),showdownEntry('C',9),showdownEntry('S',10)];
   const enemyEntries=[showdownEntry('S',2),showdownEntry('H',4),showdownEntry('D',6),showdownEntry('C',8),showdownEntry('S',11)];
   const model=Showdown.createBreakdown({playerHand:Showdown.evaluatePoker(playerEntries),enemyHand:Showdown.evaluatePoker(enemyEntries),setIndex:1});Showdown.finalizeBreakdown(model);
-  const battle={ended:false,enemy:{hp:20,maxHp:20}},run=runCheckpoint(555),root={
+  const battle={ended:false,enemy:{hp:18,maxHp:18}},run=runCheckpoint(555),root={
     damageEnemy(amount){const before=battle.enemy.hp;battle.enemy.hp=Math.max(0,before-amount);return before-battle.enemy.hp},
     damagePlayer(amount){const before=run.hp;run.hp=Math.max(0,before-amount);return before-run.hp},flash(){},document:null
   };
   const sequence=Showdown.resolveShowdownAttacks(root,battle,run,model);
-  assert.equal(model.player.finalPower,24);assert.equal(sequence.enemyDefeated,true);assert.equal(sequence.enemyAttackCancelled,true);assert.equal(run.hp,60);
+  assert.equal(model.player.finalPower,24);assert.equal(model.enemy.finalPower,5);assert.equal(model.comparison.difference,19);
+  assert.equal(sequence.winner,'player');assert.equal(sequence.enemyDefeated,true);assert.equal(sequence.enemyAttackCancelled,true);assert.equal(run.hp,60);
   assert.equal(Persistence.saveAvailability(run,battle).reason,'battle_active');battle.ended=true;assert.equal(Persistence.saveAvailability(run,battle).allowed,true);
   const restored=Persistence.parseSave(Persistence.stringifySave(run,{now:0,reason:'post_battle'})).runState;assert.equal(restored.hp,60);assert.equal(restored.runSeed,555);assert.ok(restored.available instanceof Set);
 });

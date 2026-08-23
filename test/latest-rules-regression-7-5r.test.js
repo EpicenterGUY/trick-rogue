@@ -154,21 +154,25 @@ test('7.5-R 우세·리버·계약 배율은 +25%/+25%/+50%를 합산해 최종 
   assert.equal(model.player.finalPower,20);
 });
 
-test('7.5-R 양측 쇼다운은 독립 공격이며 플레이어 선공 처치 시 적 반격을 취소한다',()=>{
+test('7.5-R 쇼다운은 양쪽 최종 위력을 비교하고 높은 쪽만 차이 피해를 준다',()=>{
   const model=Resolution.createBreakdown({playerHand:hand(24,'내 족보'),enemyHand:hand(42,'적 족보')});
   Resolution.finalizeBreakdown(model);
-  const battle={enemy:{hp:20,maxHp:20}},run={hp:50,maxHp:50},calls=[];
+  const battle={enemy:{hp:20,maxHp:20}},run={hp:50,maxHp:50};
   const root={
-    damageEnemy(amount,feedback,metadata){this.calls.push(['player',amount,metadata.source]);battle.enemy.hp=Math.max(0,battle.enemy.hp-amount);return Math.min(20,amount)},
-    damagePlayer(amount,feedback,metadata){this.calls.push(['enemy',amount,metadata.source]);run.hp=Math.max(0,run.hp-amount);return amount},
+    damageEnemy(amount,feedback,metadata){this.calls.push(['player',amount,metadata.source,metadata.resolution]);battle.enemy.hp=Math.max(0,battle.enemy.hp-amount);return Math.min(20,amount)},
+    damagePlayer(amount,feedback,metadata){this.calls.push(['enemy',amount,metadata.source,metadata.resolution]);run.hp=Math.max(0,run.hp-amount);return amount},
     flash(){},calls:[]
   };
   Resolution.resolveShowdownAttacks(root,battle,run,model);
-  assert.equal(model.attacks.player.plannedAmount,24);
-  assert.equal(model.attacks.enemy.plannedAmount,42);
-  assert.deepEqual(root.calls,[['player',24,'showdown_player_attack']]);
-  assert.equal(model.attackSequence.enemyAttackCancelled,true);
-  assert.equal(run.hp,50);
+  assert.equal(model.comparison.winner,'enemy');
+  assert.equal(model.comparison.difference,18);
+  assert.equal(model.attacks.player.plannedAmount,0);
+  assert.equal(model.attacks.enemy.plannedAmount,18);
+  assert.deepEqual(root.calls,[['enemy',18,'showdown_enemy_attack','power_difference']]);
+  assert.equal(model.attackSequence.playerAttackCancelled,true);
+  assert.equal(model.attackSequence.enemyAttackCancelled,false);
+  assert.equal(battle.enemy.hp,20);
+  assert.equal(run.hp,32);
   assert.equal('damage'in model,false);
 });
 
@@ -200,7 +204,7 @@ test('7.5-R 세트 종료 런타임은 손패를 다시 뽑지 않고 새 트럼
   assert.match(source,/state\.slots\.forEach\(slot=>state\.discard\.push\(slot\.card\)\)/);
 });
 
-test('7.5-R 활성 런타임에는 폐기된 전술 덱·트럼프 자동승리·상시 무늬 우세·사후 리버·위력차 피해·연쇄 배율 코드가 없다',()=>{
+test('7.5-R 활성 런타임에는 폐기된 전술 덱·트럼프 자동승리·상시 무늬 우세·사후 리버·연쇄 배율 코드가 없고 차이 피해 정산은 존재한다',()=>{
   const runtimeFiles=['battle-core.js','cards.js','effects.js','chip-economy.js','deck-boundaries.js','enemy-information.js','showdown-resolution.js','encounter-rules.js','trump-fields.js','index.html'];
   const sources=Object.fromEntries(runtimeFiles.map(file=>[file,read(file)]));
   const all=Object.values(sources).join('\n');
@@ -209,7 +213,11 @@ test('7.5-R 활성 런타임에는 폐기된 전술 덱·트럼프 자동승리�
   assert.doesNotMatch(sources['battle-core.js'],/SHOWDOWN_ADVANTAGE_POWER|advantageMargin|showdownAdvantagePower|advantage_count_at_least|on_showdown_advantage/);
   assert.doesNotMatch(sources['encounter-rules.js'],/advantageMargin|showdownAdvantagePower|lowRankWinsWhenSameTrumpState/);
   assert.doesNotMatch(sources['showdown-resolution.js'],/detectRiverCompletion|addRiverCompletionMultiplier/);
-  assert.doesNotMatch(sources['showdown-resolution.js'],/Math\.abs\(model\.player\.finalPower-model\.enemy\.finalPower\)|model\.damage=\{target:/);
+  assert.match(sources['showdown-resolution.js'],/Math\.abs\(playerPower-enemyPower\)/);
+  assert.match(sources['showdown-resolution.js'],/power_comparison/);
+  assert.match(sources['showdown-resolution.js'],/difference_damage/);
+  assert.doesNotMatch(sources['showdown-resolution.js'],/order:\['player_attack','enemy_survival_check','enemy_attack'\]/);
+  assert.doesNotMatch(sources['showdown-resolution.js'],/model\.damage=\{target:/);
   assert.doesNotMatch(sources['showdown-resolution.js'],/multiplierProduct\s*\*=/);
   assert.doesNotMatch(sources['battle-core.js'],/playerTrump\s*!==\s*enemyTrump|playerTrump\s*&&\s*!enemyTrump|enemyTrump\s*&&\s*!playerTrump/);
 });
