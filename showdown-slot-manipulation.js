@@ -137,6 +137,7 @@
     ensureState(battle);const target=normalizeSlot(slot,battle);if(!target)return fail('exchange','invalid_slot',{slot});
     const original=battle.slots[target-1],oldCard=slotCard(original),block=operationBlock(battle,'exchange',[oldCard]);
     if(block)return fail('exchange','blocked',{slot:target,block});
+    if(handRef==null)return fail('exchange','invalid_hand_card',{slot:target,handRef});
     const hand=battle.hand;let handIndex=-1;
     if(Number.isInteger(handRef))handIndex=handRef;
     else handIndex=hand.findIndex(card=>cardUid(card)===handRef);
