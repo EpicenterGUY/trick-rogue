@@ -127,11 +127,12 @@ test('폴드 기록은 전투/런 통계에 세트·슬롯 수·실제 체력 �
   assert.deepEqual(run.foldStats,{count:1,hpLost:3,bySlotCount:{3:0,4:1}});
 });
 
-test('8-E 런타임은 8-D 뒤, 최종 전투 레이아웃 전에 로드되며 기존 index에 폴드 쇼다운 우회 코드를 박지 않는다',()=>{
+test('8-E 런타임은 8-D 뒤, 8-F 저장 계층을 거쳐 최종 전투 레이아웃 전에 로드되며 기존 index에 폴드 쇼다운 우회 코드를 박지 않는다',()=>{
   const loader=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
   assert.match(loader,/function finishShowdownSlotManipulation\(\)\{\s*loadFoldExperiment\(\);\s*\}/);
   assert.match(loader,/fold-experiment\.js/);
-  assert.match(loader,/function finishFoldExperiment\(\)[\s\S]*loadBattleLayoutFinal\(\)/);
+  assert.match(loader,/function finishFoldExperiment\(\)\{\s*loadRunPersistence\(\);\s*\}/);
+  assert.match(loader,/function finishRunPersistence\(\)[\s\S]*loadBattleLayoutFinal\(\)/);
   assert.doesNotMatch(index,/function\s+(foldCurrentSet|resolveFold|requestFold)\s*\(/);
 });
