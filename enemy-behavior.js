@@ -37,10 +37,15 @@
     const script=loadScript('encounter-tempo.js','trick-encounter-tempo-runtime');
     if(script?.dataset?.loaded==='true')loadDeckBoundaries();else script?.addEventListener?.('load',loadDeckBoundaries,{once:true});
   }
-  function loadBattleLayoutFile(){
-    if(root.ShowdownResolution){loadEncounterTempo();return;}
-    const script=loadScript('showdown-resolution.js','trick-showdown-resolution-runtime');
+  function loadShowdownHighRoll(){
+    if(root.ShowdownHighRoll){loadEncounterTempo();return;}
+    const script=loadScript('showdown-highroll.js','trick-showdown-highroll-runtime');
     if(script?.dataset?.loaded==='true')loadEncounterTempo();else script?.addEventListener?.('load',loadEncounterTempo,{once:true});
+  }
+  function loadBattleLayoutFile(){
+    if(root.ShowdownResolution){loadShowdownHighRoll();return;}
+    const script=loadScript('showdown-resolution.js','trick-showdown-resolution-runtime');
+    if(script?.dataset?.loaded==='true')loadShowdownHighRoll();else script?.addEventListener?.('load',loadShowdownHighRoll,{once:true});
   }
   function loadBattleLayoutRuntime(){
     if(root.ChipEconomy){loadBattleLayoutFile();return;}
