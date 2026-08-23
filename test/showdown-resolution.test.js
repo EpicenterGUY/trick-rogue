@@ -51,8 +51,8 @@ test('breakdown은 기본 위력, 덧셈, 희귀 배율을 분리하고 배율�
 
 test('7.5-A 임시 score 배율은 7.5-C 전용 배율 단계 전에 원래 덧셈 값으로 되돌릴 수 있다',()=>{
   const state={setIndex:2,advantageState:{appliedSet:2,lastPlayerPreMultiplier:28,lastPlayerPostMultiplier:35}},score={value:35};
-  assert.equal(Resolution.undoLegacyAdvantageScale(state,state.score),true);
-  assert.equal(state.score.value,28);
+  assert.equal(Resolution.undoLegacyAdvantageScale(state,score),true);
+  assert.equal(score.value,28);
 });
 
 test('브라우저 쇼다운은 쇼다운 전 효과로 값 변경을 끝낸 뒤 족보→덧셈→배율→피해 순으로 계산한다',async()=>{
