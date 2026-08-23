@@ -22,10 +22,15 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function loadEnemyInformation(){
-    if(root.EnemyInformation){loadBattleLayoutFinal();return;}
-    const script=loadScript('enemy-information.js','trick-enemy-information-runtime');
+  function loadRunStartV2(){
+    if(root.RunStartV2){loadBattleLayoutFinal();return;}
+    const script=loadScript('run-start-v2.js','trick-run-start-v2-runtime');
     if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});
+  }
+  function loadEnemyInformation(){
+    if(root.EnemyInformation){loadRunStartV2();return;}
+    const script=loadScript('enemy-information.js','trick-enemy-information-runtime');
+    if(script?.dataset?.loaded==='true')loadRunStartV2();else script?.addEventListener?.('load',loadRunStartV2,{once:true});
   }
   function loadDeckBoundaries(){
     if(root.DeckBoundaries){loadEnemyInformation();return;}
