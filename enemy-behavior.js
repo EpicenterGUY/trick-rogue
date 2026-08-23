@@ -92,10 +92,15 @@
     const script=loadScript('relics.js','trick-relic-system-runtime');
     if(script?.dataset?.loaded==='true')loadStatusSystem();else script?.addEventListener?.('load',loadStatusSystem,{once:true});
   }
-  function loadRunFields(){
+  function loadRunFieldsRuntime(){
     if(root.RunFields){loadRelics();return;}
     const script=loadScript('run-fields.js','trick-run-fields-runtime');
     if(script?.dataset?.loaded==='true')loadRelics();else script?.addEventListener?.('load',loadRelics,{once:true});
+  }
+  function loadRunFields(){
+    if(root.TrumpFields){loadRunFieldsRuntime();return;}
+    const script=loadScript('trump-fields.js','trick-trump-fields-runtime');
+    if(script?.dataset?.loaded==='true')loadRunFieldsRuntime();else script?.addEventListener?.('load',loadRunFieldsRuntime,{once:true});
   }
   function loadEncounterRules(){
     if(root.EncounterRules){loadRunFields();return;}
