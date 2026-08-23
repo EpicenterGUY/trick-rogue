@@ -24,7 +24,7 @@
       rulesOverride:Object.freeze({advantageMargin:3}),effects:Object.freeze([])
     }),
     inversion_zone:Object.freeze({
-      id:'inversion_zone',label:'역상 구역',description:'양쪽 카드의 트럼프 여부가 같으면 낮은 트릭 숫자가 승리한다.',
+      id:'inversion_zone',label:'역상 구역',description:'낮은 최종 적용 숫자가 승리한다.',
       rulesOverride:Object.freeze({lowRankWinsWhenSameTrumpState:true}),effects:Object.freeze([])
     })
   });
@@ -49,7 +49,7 @@
         Object.freeze({
           id:'phase_2',label:'2페이즈',minHpRatio:.40,rulesOverride:Object.freeze({}),
           rule:Object.freeze({
-            id:'watcher-phase-2',label:'감시 역전',description:'같은 트럼프 상태에서는 낮은 트릭 숫자가 이긴다. 세트 시작 시 보호막 2를 얻는다.',
+            id:'watcher-phase-2',label:'감시 역전',description:'낮은 최종 적용 숫자가 이긴다. 세트 시작 시 보호막 2를 얻는다.',
             rulesOverride:Object.freeze({lowRankWinsWhenSameTrumpState:true}),
             effects:Object.freeze([
               Object.freeze({id:'watcher-phase-2-shield',trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'shield',amount:2}),duration:'set'})
@@ -59,7 +59,7 @@
         Object.freeze({
           id:'phase_3',label:'3페이즈',minHpRatio:0,rulesOverride:Object.freeze({}),
           rule:Object.freeze({
-            id:'watcher-phase-3',label:'규칙 재작성',description:'역전 규칙을 유지하고 적의 쇼다운 우세 기본 위력은 +5가 된다. 세트 시작 시 보호막 4를 얻는다.',
+            id:'watcher-phase-3',label:'규칙 재작성',description:'낮은 최종 적용 숫자가 이기는 역전 규칙을 유지하고 적의 쇼다운 우세 기본 위력은 +5가 된다. 세트 시작 시 보호막 4를 얻는다.',
             rulesOverride:Object.freeze({lowRankWinsWhenSameTrumpState:true,enemyAdvantagePower:5}),
             effects:Object.freeze([
               Object.freeze({id:'watcher-phase-3-shield',trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'shield',amount:4}),duration:'set'})
@@ -234,14 +234,12 @@
     const core=battleCore(),fallback=core?.SHOWDOWN_ADVANTAGE_POWER??3,rules=activeRulesOverride(state),general=ruleNumber(rules,'showdownAdvantagePower',fallback);
     return{player:ruleNumber(rules,'playerAdvantagePower',general),enemy:ruleNumber(rules,'enemyAdvantagePower',general)};
   }
-  function compareTrickWithRules(playerCard,enemyCard,trump,state,baseCompare){
+  function compareTrickWithRules(playerCard,enemyCard,trump,state,baseCompare,options={}){
     const core=battleCore();if(!core)throw new TypeError('BattleCore is required');
     const compare=baseCompare||originalCoreCompareTrick||core.compareTrick;
+    const result=compare(playerCard,enemyCard,trump,options);
     const rules=activeRulesOverride(state);
-    if(rules.lowRankWinsWhenSameTrumpState!==true)return compare(playerCard,enemyCard,trump);
-    const playerTrump=core.isTrumpCard(playerCard,trump),enemyTrump=core.isTrumpCard(enemyCard,trump);
-    if(playerTrump!==enemyTrump)return playerTrump?1:-1;
-    return Math.sign(core.trickRank(enemyCard)-core.trickRank(playerCard));
+    return rules.lowRankWinsWhenSameTrumpState===true?-result:result;
   }
   function resolveShowdownAdvantageWithRules({playerCards,enemyCards},state){
     const core=battleCore();if(!core)throw new TypeError('BattleCore is required');
@@ -340,7 +338,7 @@
     const core=runtimeRoot?.BattleCore||battleCore();if(!core)return false;
     if(typeof core.compareTrick==='function'&&!core.compareTrick.__encounterRulesAdapter){
       const original=core.compareTrick;if(!originalCoreCompareTrick)originalCoreCompareTrick=original;
-      const wrapped=function(playerCard,enemyCard,trump){return compareTrickWithRules(playerCard,enemyCard,trump,ensureInitialized(runtimeRoot),original)};
+      const wrapped=function(playerCard,enemyCard,trump,options){return compareTrickWithRules(playerCard,enemyCard,trump,ensureInitialized(runtimeRoot),original,options)};
       wrapped.__encounterRulesAdapter=true;wrapped.__legacyCompareTrick=original;core.compareTrick=wrapped;
     }
     if(typeof core.resolveShowdownAdvantage==='function'&&!core.resolveShowdownAdvantage.__encounterRulesAdapter){
