@@ -19,18 +19,23 @@
     document.head.appendChild(script);return script;
   }
   function loadBattleLayoutFinal(){
-    const loadFinal=()=>{
-      if(root.BattleLayout)return;
-      loadScript('battle-layout.js','trick-battle-layout-runtime');
-    };
-    if(root.DeckBoundaries){loadFinal();return;}
+    if(root.BattleLayout)return;
+    loadScript('battle-layout.js','trick-battle-layout-runtime');
+  }
+  function loadEnemyInformation(){
+    if(root.EnemyInformation){loadBattleLayoutFinal();return;}
+    const script=loadScript('enemy-information.js','trick-enemy-information-runtime');
+    if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});
+  }
+  function loadDeckBoundaries(){
+    if(root.DeckBoundaries){loadEnemyInformation();return;}
     const script=loadScript('deck-boundaries.js','trick-deck-boundaries-runtime');
-    if(script?.dataset?.loaded==='true')loadFinal();else script?.addEventListener?.('load',loadFinal,{once:true});
+    if(script?.dataset?.loaded==='true')loadEnemyInformation();else script?.addEventListener?.('load',loadEnemyInformation,{once:true});
   }
   function loadEncounterTempo(){
-    if(root.EncounterTempo){loadBattleLayoutFinal();return;}
+    if(root.EncounterTempo){loadDeckBoundaries();return;}
     const script=loadScript('encounter-tempo.js','trick-encounter-tempo-runtime');
-    if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});
+    if(script?.dataset?.loaded==='true')loadDeckBoundaries();else script?.addEventListener?.('load',loadDeckBoundaries,{once:true});
   }
   function loadBattleLayoutFile(){
     if(root.ShowdownResolution){loadEncounterTempo();return;}
