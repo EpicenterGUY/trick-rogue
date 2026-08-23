@@ -72,7 +72,7 @@ test('전투 시작 어댑터는 기존 적 정의를 유지하면서 현재 노
   assert.equal(root.rendered,1);
 });
 
-test('강한 일반 적이 첫 쇼다운을 버티면 플레이어 공격 뒤 적 반격을 받고 다음 세트로 자연스럽게 이어진다',async()=>{
+test('강한 일반 적이 첫 쇼다운을 버티면 리버 적중 공격 뒤 적 반격을 받고 다음 세트로 자연스럽게 이어진다',async()=>{
   const state={
     node:{id:'n2',type:'battle',row:1},type:'battle',enemy:{name:'폐허 약탈자',hp:58,maxHp:58},
     slots:cards([2,3,4,5,6]).map((card,index)=>({card:{...card,uid:`p${index}`}})),
@@ -82,6 +82,9 @@ test('강한 일반 적이 첫 쇼다운을 버티면 플레이어 공격 뒤 �
     maxHandSize:3,slotBonus:0,chip:2,maxChip:5,mods:{paint:false,plus:0,reverse:false,double:false},trump:'H'
   };
   Tempo.applyTempoToBattle(state,state.node);
+  state.riverSnapshot=Resolution.createRiverSnapshot(state.slots.slice(0,4),{
+    valueResolver:(card,key)=>BattleCore.showdownValue(card,key),setIndex:state.setIndex
+  });
   const root={
     battle:state,run:{hp:50,maxHp:50},
     BattleCore:{...BattleCore,resolveShowdownAdvantage(){return{mode:'explicit',automaticSuitComparison:false,multiplier:1.25,playerActive:false,enemyActive:false,playerAdvantageCount:0,enemyAdvantageCount:0,playerAdvantages:[],enemyAdvantages:[],playerSuitCounts:{},enemySuitCounts:{}}}},
@@ -93,7 +96,8 @@ test('강한 일반 적이 첫 쇼다운을 버티면 플레이어 공격 뒤 �
   const result=await Resolution.resolveRuntimeShowdown(root);
   assert.equal(result.player.basePower,24);
   assert.equal(result.enemy.basePower,5);
-  assert.equal(result.riverCompletion.active,true,'5번째 6이 스트레이트를 완성해 리버 ×1.25가 적용된다');
+  assert.equal(result.riverHit.active,true,'4장 시점에 고정한 6 후보를 5번째 카드로 실제 적중한다');
+  assert.equal(result.riverHit.target.id,'straight');
   assert.equal(result.player.finalPower,30);
   assert.equal(result.attacks.player.dealt,30);
   assert.equal(result.attacks.enemy.dealt,5);
