@@ -19,14 +19,14 @@ test('7.5-G 트럼프는 절대 승리권이 아니라 양쪽에 대칭적인 +3
 test('7.5-G 역상 규칙은 트럼프 여부 분기 없이 최종 적용 숫자 비교만 뒤집는다',()=>{
   const state=battleState();
   EncounterRules.initializeBattle(state);
-  const trumpLow={suit:'H',rank:2}; // 최종 5
-  const offTrumpHigh={suit:'C',rank:10}; // 최종 10
+  const trumpLow={suit:'H',rank:2};
+  const offTrumpHigh={suit:'C',rank:10};
   assert.equal(EncounterRules.compareTrickWithRules(trumpLow,offTrumpHigh,'H',state),-1);
   EncounterRules.setFieldFromSource(state,'inversion_zone',{type:'event',id:'test'});
   assert.equal(EncounterRules.compareTrickWithRules(trumpLow,offTrumpHigh,'H',state),1);
 
-  const trumpTen={suit:'H',rank:10}; // 최종 13
-  const queen={suit:'C',rank:12}; // 최종 12
+  const trumpTen={suit:'H',rank:10};
+  const queen={suit:'C',rank:12};
   assert.equal(EncounterRules.compareTrickWithRules(trumpTen,queen,'H',{...state,field:null,rulesOverride:{}}),1);
   assert.equal(EncounterRules.compareTrickWithRules(trumpTen,queen,'H',state),-1);
 });
@@ -38,6 +38,52 @@ test('7.5-G 적 AI가 트럼프 무늬를 골라도 낮은 숫자면 높은 비�
   assert.equal(play.card.rank,6);
   assert.equal(BattleCore.trickValue(play.card,'D'),9);
   assert.equal(BattleCore.compareTrick(play.card,{suit:'H',rank:13},'D'),-1);
+});
+
+test('7.5-G 브라우저 호환 어댑터는 트릭 숫자 14 상한을 제거하고 +3 최종값을 표시한다',()=>{
+  BattleCore.resetBrowserTrumpAdapterForTests();
+  const elements={
+    trumpText:{textContent:'♠'},
+    inspectApply:{textContent:''}
+  };
+  const document={
+    getElementById(id){return elements[id]||null},
+    querySelector(){return null},
+    querySelectorAll(){return[]}
+  };
+  const root={
+    document,
+    BattleCore,
+    battle:{trump:'S',mods:{plus:3,paint:false,reverse:false}},
+    effective(card){return BattleCore.effectiveCard(card,{rank:Math.min(14,card.rank+this.battle.mods.plus),suit:card.suit})},
+    compare(card,enemy){return BattleCore.compareTrick(this.effective(card),BattleCore.effectiveCard(enemy),this.battle.trump)},
+    classifyWin(){return null},
+    renderBattle(){elements.trumpText.textContent='♠'},
+    inspectCard(){elements.inspectApply.textContent='인쇄 ♥Q → 트릭 ♥A · 예상 승리'},
+    showTerm(){},showTerms(){}
+  };
+  assert.equal(BattleCore.installBrowserTrumpAdapter(root),true);
+  const queen={suit:'H',rank:12};
+  assert.equal(root.effective(queen).trickRank,15);
+  assert.equal(root.compare({suit:'S',rank:3},{suit:'H',rank:13}),-1);
+  root.renderBattle();
+  assert.equal(elements.trumpText.textContent,'♠ +3');
+  root.inspectCard(queen,false);
+  assert.match(elements.inspectApply.textContent,/최종 적용 숫자 15/);
+});
+
+test('7.5-G 브라우저 리버스는 같은 무늬 여부와 무관하게 최종 적용 숫자 비교 전체를 뒤집는다',()=>{
+  BattleCore.resetBrowserTrumpAdapterForTests();
+  const root={
+    document:{getElementById(){return null},querySelector(){return null},querySelectorAll(){return[]}},
+    BattleCore,
+    battle:{trump:'H',mods:{plus:0,paint:false,reverse:true}},
+    effective(card){return BattleCore.effectiveCard(card)},
+    compare(){return 0}
+  };
+  BattleCore.installBrowserTrumpAdapter(root);
+  assert.equal(root.compare({suit:'H',rank:2},{suit:'C',rank:10}),1);
+  assert.equal(root.compare({suit:'H',rank:10},{suit:'C',rank:12}),-1);
 });
 
 test('7.5-G 실제 판정 코드에는 한쪽 트럼프 자동 승리 분기가 남지 않는다',()=>{
