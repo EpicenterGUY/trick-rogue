@@ -110,10 +110,12 @@ test('강한 일반 적이 첫 쇼다운을 버티면 리버 적중 공격 뒤 �
   assert.notEqual(root.won,true);
 });
 
-test('7.5-E 런타임은 쇼다운 계산 뒤, 후속 규칙 체인을 거쳐 전투 레이아웃 전에 로드된다',()=>{
+test('7.5-E 런타임은 쇼다운 계산과 Q 고점 판정 뒤, 후속 규칙 체인을 거쳐 전투 레이아웃 전에 로드된다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
+  assert(source.includes("loadScript('showdown-highroll.js','trick-showdown-highroll-runtime')"));
+  assert(source.includes("if(root.ShowdownResolution){loadShowdownHighRoll();return;}"));
+  assert(source.includes("if(root.ShowdownHighRoll){loadEncounterTempo();return;}"));
   assert(source.includes("loadScript('encounter-tempo.js','trick-encounter-tempo-runtime')"));
-  assert(source.includes("if(root.ShowdownResolution){loadEncounterTempo();return;}"));
   assert(source.includes("if(root.EncounterTempo){loadDeckBoundaries();return;}"));
   assert(source.includes("loadScript('deck-boundaries.js','trick-deck-boundaries-runtime')"));
   assert(source.includes("loadScript('enemy-information.js','trick-enemy-information-runtime')"));
