@@ -22,10 +22,15 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function loadBattleLayoutFile(){
-    if(root.ShowdownResolution){loadBattleLayoutFinal();return;}
-    const script=loadScript('showdown-resolution.js','trick-showdown-resolution-runtime');
+  function loadEncounterTempo(){
+    if(root.EncounterTempo){loadBattleLayoutFinal();return;}
+    const script=loadScript('encounter-tempo.js','trick-encounter-tempo-runtime');
     if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});
+  }
+  function loadBattleLayoutFile(){
+    if(root.ShowdownResolution){loadEncounterTempo();return;}
+    const script=loadScript('showdown-resolution.js','trick-showdown-resolution-runtime');
+    if(script?.dataset?.loaded==='true')loadEncounterTempo();else script?.addEventListener?.('load',loadEncounterTempo,{once:true});
   }
   function loadBattleLayoutRuntime(){
     if(root.ChipEconomy){loadBattleLayoutFile();return;}

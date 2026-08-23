@@ -100,11 +100,11 @@ test('브라우저 쇼다운은 쇼다운 전 효과로 값 변경을 끝낸 뒤
   assert.deepEqual(battle.showdownTrace,Resolution.traceLines(result));
 });
 
-test('7.5-C 런타임은 칩 경제 뒤, 전투 레이아웃 전에 로드된다',()=>{
+test('7.5-C 런타임은 칩 경제 뒤, 7.5-E 템포 단계보다 먼저 로드된다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert(source.includes("loadScript('showdown-resolution.js','trick-showdown-resolution-runtime')"));
-  assert(source.includes("if(root.ShowdownResolution){loadBattleLayoutFinal();return;}"));
+  assert(source.includes("if(root.ShowdownResolution){loadEncounterTempo();return;}"));
   assert(source.includes("if(root.ChipEconomy){loadBattleLayoutFile();return;}"));
-  assert(source.includes("if(script?.dataset?.loaded==='true')loadBattleLayoutFinal();else script?.addEventListener?.('load',loadBattleLayoutFinal,{once:true});"));
-  assert(source.includes("loadScript('battle-layout.js','trick-battle-layout-runtime')"));
+  assert(source.includes("if(script?.dataset?.loaded==='true')loadEncounterTempo();else script?.addEventListener?.('load',loadEncounterTempo,{once:true});"));
+  assert(source.includes("loadScript('encounter-tempo.js','trick-encounter-tempo-runtime')"));
 });
