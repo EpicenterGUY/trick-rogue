@@ -90,8 +90,11 @@ test('브라우저 쇼다운은 쇼다운 전 효과로 값 변경을 끝낸 뒤
   assert.equal(result.player.basePower,24);
   assert.equal(result.player.additiveTotal,10);
   assert.equal(result.player.preMultiplierPower,34);
-  assert.equal(result.player.finalPower,43);
-  assert.equal(root.damage,38);
+  assert.equal(result.riverCompletion.active,true,'쇼다운 전 효과가 5번째 카드로 스트레이트를 완성했으므로 리버 완성이다');
+  assert.deepEqual(result.player.multipliers.map(entry=>entry.id),['river_completion','advantage']);
+  assert.deepEqual(result.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43],[43,54]]);
+  assert.equal(result.player.finalPower,54);
+  assert.equal(root.damage,49);
   assert.equal(battle.chip,2,'세트가 넘어가도 칩 잔액을 리셋하지 않는다');
   assert.equal(battle.setIndex,2);
   assert.deepEqual(battle.showdownTrace,Resolution.traceLines(result));
