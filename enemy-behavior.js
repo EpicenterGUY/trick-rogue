@@ -19,8 +19,13 @@
     document.head.appendChild(script);return script;
   }
   function loadBattleLayoutFinal(){
-    if(root.BattleLayout)return;
-    loadScript('battle-layout.js','trick-battle-layout-runtime');
+    const loadFinal=()=>{
+      if(root.BattleLayout)return;
+      loadScript('battle-layout.js','trick-battle-layout-runtime');
+    };
+    if(root.DeckBoundaries){loadFinal();return;}
+    const script=loadScript('deck-boundaries.js','trick-deck-boundaries-runtime');
+    if(script?.dataset?.loaded==='true')loadFinal();else script?.addEventListener?.('load',loadFinal,{once:true});
   }
   function loadEncounterTempo(){
     if(root.EncounterTempo){loadBattleLayoutFinal();return;}
