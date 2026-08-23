@@ -2,6 +2,7 @@
   const DEFAULT_MAX_HAND_SIZE=3;
   const TRICKS_PER_SET=5;
   const SUITS=Object.freeze(['S','H','D','C']);
+  const DEFAULT_TRUMP_BONUS=3;
   const SHOWDOWN_ADVANTAGE_POWER=3;
   const EFFECT_DURATIONS=Object.freeze(['trick','set','battle','run']);
   const ENCOUNTER_PROGRESSION=Object.freeze({
@@ -88,10 +89,18 @@
     return card?.treatedAsTrump===true||trickSuit===trump;
   }
   function trickRank(card){return card?.trickRank??card?.effectiveRank??card?.rank;}
-  function compareTrick(playerCard,enemyCard,trump){
-    const playerTrump=isTrumpCard(playerCard,trump),enemyTrump=isTrumpCard(enemyCard,trump);
-    if(playerTrump!==enemyTrump)return playerTrump?1:-1;
-    return Math.sign(trickRank(playerCard)-trickRank(enemyCard));
+  function trumpRankBonus(card,trump,bonus=DEFAULT_TRUMP_BONUS){
+    const amount=Number(bonus);
+    return isTrumpCard(card,trump)&&Number.isFinite(amount)?amount:0;
+  }
+  function trickValue(card,trump,options={}){
+    const base=Number(trickRank(card));
+    const bonus=Number.isFinite(options?.trumpBonus)?options.trumpBonus:DEFAULT_TRUMP_BONUS;
+    const modifier=Number.isFinite(options?.modifier)?options.modifier:0;
+    return(Number.isFinite(base)?base:0)+trumpRankBonus(card,trump,bonus)+modifier;
+  }
+  function compareTrick(playerCard,enemyCard,trump,options={}){
+    return Math.sign(trickValue(playerCard,trump,options)-trickValue(enemyCard,trump,options));
   }
   function resolveShowdownAdvantage({playerCards,enemyCards}){
     if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
@@ -112,5 +121,5 @@
     return state;
   }
   function endBattle(state){expireEffects(state,'battle');state.phase='ended';}
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,isTrumpCard,trickRank,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle};
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,DEFAULT_TRUMP_BONUS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,isTrumpCard,trickRank,trumpRankBonus,trickValue,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle};
 });
