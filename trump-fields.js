@@ -135,6 +135,7 @@
   function compareTrickWithRules(playerCard,enemyCard,trump,state,baseCompare,options={}){
     const compare=baseCompare||BattleCore?.compareTrick;if(typeof compare!=='function')throw new TypeError('BattleCore is required');
     const rules=activeRulesOverride(state),result=compare(playerCard,enemyCard,trump,{...(options||{}),trumpBonus:trumpBonusForState(state)});
+    if(result===0)return 0;
     return rules.lowFinalValueWins===true?-result:result;
   }
 
@@ -175,6 +176,7 @@
       const state=activeBattle(runtimeRoot);if(!state)return legacy.call(this,playerCard,enemyCard,trump,options);
       syncDerivedBattleRules(state);
       const result=legacy.call(this,playerCard,enemyCard,trump,{...(options||{}),trumpBonus:trumpBonusForState(state)});
+      if(result===0)return 0;
       return activeRulesOverride(state).lowFinalValueWins===true?-result:result;
     };
     wrapped.__trumpFields75O=true;wrapped.__legacyCompareTrick=legacy;core.compareTrick=wrapped;return true;
