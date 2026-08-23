@@ -39,7 +39,7 @@
       id:'pack02.river_ticket',
       name:'리버 티켓',short:'리버 티켓',suit:'H',rank:5,
       description:'조건: 4번째 트릭 종료 때 고정한 리버 후보를 5번째 카드로 실제 적중. 효과: 쇼다운 최종 위력 +8.',
-      terms:['리버','트릭','쇼다운','최종 위력'],
+      terms:['트릭','쇼다운','최종 위력'],
       image:'assets/cards/pack01/scheduled_delivery.png',packId:'pack02',art:'placeholder_ticket',
       effects:[{trigger:'on_showdown_score',action:'showdown_power',value:8,condition:'river_hit',duration:'set'}]
     },
@@ -47,7 +47,7 @@
       id:'pack02.clean_cut',
       name:'정석 승부',short:'정석 승부',suit:'D',rank:8,
       description:'조건: 쇼다운 5장에 순수 카드가 1장 이상 있음. 효과: 쇼다운 최종 위력 +5.',
-      terms:['쇼다운','순수 카드','최종 위력'],
+      terms:['쇼다운','순수','최종 위력'],
       image:'assets/cards/pack01/sharp_glass.png',packId:'pack02',art:'placeholder_clean',
       effects:[{trigger:'on_showdown_score',action:'showdown_power',value:5,condition:'pure_card_in_showdown',duration:'set'}]
     },
@@ -87,7 +87,7 @@
       id:'pack02.trump_forge',
       name:'트럼프 단조',short:'트럼프 단조',suit:'C',rank:11,
       description:'조건: 이번 트릭에 칩을 소비해 손패 교환을 사용함. 발동: 이 카드를 낼 때. 효과: 이 카드의 트릭 무늬를 현재 트럼프로 바꾸고 트릭 숫자 +2. 인쇄값과 쇼다운값은 바뀌지 않는다.',
-      terms:['칩','손패','교환','트럼프','트릭값','인쇄값','쇼다운값'],
+      terms:['칩','손패','트럼프','트릭값','인쇄값','쇼다운값'],
       image:'assets/cards/pack01/emergency_guard.png',packId:'pack02',art:'placeholder_forge',
       effects:[
         {trigger:'on_play',action:'set_next_trick_suit_to_trump',condition:'chips_spent',duration:'trick'},
