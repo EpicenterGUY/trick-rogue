@@ -9,11 +9,14 @@ function battle({wins=0,losses=0,draws=0,playerAdvantage=false,enemyAdvantage=fa
   return{setIndex:1,slots:Array.from({length:5},(_,i)=>({card:{uid:`c${i}`}})),setHistory:{wins,losses,draws},advantage:advantage(playerAdvantage,enemyAdvantage),advantageState:{player:playerAdvantage,enemy:enemyAdvantage,playerSource:playerAdvantage?'test':null,enemySource:enemyAdvantage?'test':null,grantedSet:1}};
 }
 
-test('7.5-P는 계약 3종·금기 3종·대응 묶음 3종을 최신 조건으로 유지한다',()=>{
+test('7.5-P 기존 계약 3종을 보존하고 9-C 계약·금기·대응 묶음 3종씩을 추가한다',()=>{
   assert.equal(Contracts.STAGE,'7.5-P');
-  assert.equal(Object.keys(Contracts.CONTRACT_DEFINITIONS).length,3);
-  assert.equal(Object.keys(Contracts.TABOO_DEFINITIONS).length,3);
-  assert.equal(Object.keys(Contracts.OFFERINGS).length,3);
+  assert.equal(Object.keys(Contracts.CONTRACT_DEFINITIONS).length,6);
+  assert.equal(Object.keys(Contracts.TABOO_DEFINITIONS).length,6);
+  assert.equal(Object.keys(Contracts.OFFERINGS).length,6);
+  for(const id of ['edge_clause','three_wins','clean_ledger','river_clause','four_wins','draw_clause'])assert(Contracts.CONTRACT_DEFINITIONS[id]);
+  for(const id of ['enemy_edge','three_losses','any_draw','river_miss','two_losses','no_draw'])assert(Contracts.TABOO_DEFINITIONS[id]);
+  for(const id of ['sharp_oath','third_signature','clean_account','river_crossing','dominant_hand','draw_ledger'])assert(Contracts.OFFERINGS[id]);
   assert.deepEqual(Contracts.validateRegistry(),[]);
 });
 

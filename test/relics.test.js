@@ -14,9 +14,10 @@ function battleState(){
   };
 }
 
-test('6-2B 유물 8종은 공통 효과 엔진에서 전부 유효한 run 지속 효과다',()=>{
+test('6-2B 기존 유물 8종을 보존하고 9-C 유물 4종을 같은 run 효과 레지스트리에 추가한다',()=>{
   const defs=Object.values(RelicSystem.RELIC_DEFINITIONS);
-  assert.equal(defs.length,8);
+  assert.equal(defs.length,12);
+  for(const id of ['reinforced_buckle','victory_bandage','losers_token','draw_coin','cracked_abacus','rusty_needle','sprout_brooch','cracked_target','original_stamp','pure_crown','ash_needle','hunter_tag'])assert(RelicSystem.RELIC_DEFINITIONS[id]);
   assert.deepEqual(RelicSystem.validateRelicRegistry(),[]);
   for(const relic of defs){
     assert.equal(relic.effectOwnerType,'relic');

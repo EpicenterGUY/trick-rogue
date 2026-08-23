@@ -39,6 +39,22 @@
     cracked_target:Object.freeze({
       id:'cracked_target',name:'금 간 표적',rarity:'uncommon',description:'세트 시작 시 적에게 취약 2를 부여한다.',effectOwnerType:'relic',
       effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'vulnerable',amount:2}),duration:'run'})])
+    }),
+    original_stamp:Object.freeze({
+      id:'original_stamp',name:'원본 도장',rarity:'common',description:'인쇄값과 최종 트릭값이 같은 카드로 트릭에서 이기면 칩 +1.',effectOwnerType:'relic',
+      effects:Object.freeze([Object.freeze({trigger:'on_trick_win',condition:'printed_equals_trick',action:'gain_chips',value:1,duration:'run'})])
+    }),
+    pure_crown:Object.freeze({
+      id:'pure_crown',name:'순수 왕관',rarity:'rare',description:'쇼다운 슬롯에 순수 카드가 있으면 쇼다운 위력 +4.',effectOwnerType:'relic',
+      effects:Object.freeze([Object.freeze({trigger:'on_showdown_score',condition:'pure_card_in_showdown',action:'showdown_power',value:4,duration:'run'})])
+    }),
+    ash_needle:Object.freeze({
+      id:'ash_needle',name:'잿빛 바늘',rarity:'uncommon',description:'세트 시작 시 적에게 흉터 1을 부여한다.',effectOwnerType:'relic',
+      effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'scar',amount:1}),duration:'run'})])
+    }),
+    hunter_tag:Object.freeze({
+      id:'hunter_tag',name:'추적 표찰',rarity:'uncommon',description:'세트 시작 시 적에게 표식 2를 부여한다.',effectOwnerType:'relic',
+      effects:Object.freeze([Object.freeze({trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'mark',amount:2}),duration:'run'})])
     })
   });
   let originalShowReward=null;

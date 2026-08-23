@@ -18,6 +18,18 @@
     clean_ledger:Object.freeze({
       id:'clean_ledger',type:'contract',name:'무결점 계약',value:4,condition:'no_draws',
       description:'이번 세트에 무승부가 없었다면 쇼다운 위력 +4.'
+    }),
+    river_clause:Object.freeze({
+      id:'river_clause',type:'contract',name:'리버 계약',value:8,condition:'river_hit',
+      description:'4트릭에 고정된 리버 후보를 5번째 카드로 실제 적중시키면 쇼다운 위력 +8.'
+    }),
+    four_wins:Object.freeze({
+      id:'four_wins',type:'contract',name:'압도 계약',value:8,condition:'player_wins_at_least',conditionValue:4,
+      description:'이번 세트에서 트릭을 4번 이상 이겼다면 쇼다운 위력 +8.'
+    }),
+    draw_clause:Object.freeze({
+      id:'draw_clause',type:'contract',name:'동점 계약',value:5,condition:'has_draws',
+      description:'이번 세트에 무승부가 한 번이라도 있었다면 쇼다운 위력 +5.'
     })
   });
   const TABOO_DEFINITIONS=Object.freeze({
@@ -32,6 +44,18 @@
     any_draw:Object.freeze({
       id:'any_draw',type:'taboo',name:'무승부 금기',value:-2,condition:'has_draws',
       description:'이번 세트에 무승부가 한 번이라도 있었다면 쇼다운 위력 -2.'
+    }),
+    river_miss:Object.freeze({
+      id:'river_miss',type:'taboo',name:'헛물 금기',value:-3,condition:'river_miss',
+      description:'리버 후보가 있었지만 5번째 카드가 후보를 맞히지 못했다면 쇼다운 위력 -3.'
+    }),
+    two_losses:Object.freeze({
+      id:'two_losses',type:'taboo',name:'역풍 금기',value:-3,condition:'player_losses_at_least',conditionValue:2,
+      description:'이번 세트에서 트릭을 2번 이상 졌다면 쇼다운 위력 -3.'
+    }),
+    no_draw:Object.freeze({
+      id:'no_draw',type:'taboo',name:'단조 금기',value:-2,condition:'no_draws',
+      description:'이번 세트에 무승부가 한 번도 없었다면 쇼다운 위력 -2.'
     })
   });
   const OFFERINGS=Object.freeze({
@@ -46,6 +70,18 @@
     clean_account:Object.freeze({
       id:'clean_account',name:'깨끗한 장부',contractId:'clean_ledger',tabooId:'any_draw',
       description:'무승부가 없는 세트를 보상하지만 한 번의 동점도 금기로 기록한다.'
+    }),
+    river_crossing:Object.freeze({
+      id:'river_crossing',name:'강 건너기',contractId:'river_clause',tabooId:'river_miss',
+      description:'4트릭에 보인 리버 아웃을 실제로 맞히면 크게 보상받지만 후보를 놓치면 대가를 치른다.'
+    }),
+    dominant_hand:Object.freeze({
+      id:'dominant_hand',name:'압도적 패',contractId:'four_wins',tabooId:'two_losses',
+      description:'트릭을 거의 휩쓸면 큰 보상을 받고, 세트가 흔들리기 시작하면 빠르게 손해가 난다.'
+    }),
+    draw_ledger:Object.freeze({
+      id:'draw_ledger',name:'동점 장부',contractId:'draw_clause',tabooId:'no_draw',
+      description:'무승부를 전략 자원으로 바꾸지만 동점 없이 끝난 세트에는 대가가 붙는다.'
     })
   });
   let installed=false;
@@ -64,7 +100,7 @@
     if(!Number.isFinite(definition.value)||definition.value===0)errors.push('value must be a non-zero number');
     if(type==='contract'&&definition.value<0)errors.push('contract value must be positive');
     if(type==='taboo'&&definition.value>0)errors.push('taboo value must be negative');
-    if(!['player_has_advantage','enemy_has_advantage','player_wins_at_least','player_losses_at_least','no_draws','has_draws'].includes(definition.condition))errors.push(`unknown condition ${definition.condition}`);
+    if(!['player_has_advantage','enemy_has_advantage','player_wins_at_least','player_losses_at_least','no_draws','has_draws','river_hit','river_miss'].includes(definition.condition))errors.push(`unknown condition ${definition.condition}`);
     return errors;
   }
   function validateRegistry(){
@@ -114,6 +150,8 @@
     if(context?.advantage?.[`${side}Active`]===true)return true;
     return context?.battle?.advantageState?.[side]===true;
   }
+  function riverState(context={}){return context?.riverHit||context?.battle?.riverHit||null}
+  function riverSnapshot(context={}){return context?.riverSnapshot||context?.battle?.riverSnapshot||null}
   function conditionMet(definition,context={}){
     const history=setHistory(context),threshold=Number(definition.conditionValue)||1;
     if(definition.condition==='player_has_advantage')return explicitAdvantage(context,'player');
@@ -122,6 +160,8 @@
     if(definition.condition==='player_losses_at_least')return (Number(history.losses)||0)>=threshold;
     if(definition.condition==='no_draws')return (Number(history.draws)||0)===0;
     if(definition.condition==='has_draws')return (Number(history.draws)||0)>0;
+    if(definition.condition==='river_hit')return riverState(context)?.active===true;
+    if(definition.condition==='river_miss')return riverSnapshot(context)?.active===true&&riverState(context)?.active!==true;
     return false;
   }
   function resolveRules(ids,registry,context){
@@ -210,7 +250,7 @@
       const result=original.call(this,trigger,card,extra);
       if(trigger==='on_showdown_score'){
         const state=activeBattle(runtimeRoot),runState=activeRun(runtimeRoot),slotIndex=extra?.slotIndex,lastIndex=Math.max(0,(state?.slots?.length||1)-1),token=state?.setIndex??1;
-        if(state&&runState&&Number.isFinite(extra?.score?.value)&&slotIndex===lastIndex&&state.contractTabooResolvedSet!==token){state.contractTabooResolvedSet=token;resolveShowdown(runState,{battle:state,score:extra.score,advantage:extra.advantage||state.advantage,setHistory:state.setHistory})}
+        if(state&&runState&&Number.isFinite(extra?.score?.value)&&slotIndex===lastIndex&&state.contractTabooResolvedSet!==token){state.contractTabooResolvedSet=token;resolveShowdown(runState,{battle:state,score:extra.score,advantage:extra.advantage||state.advantage,setHistory:state.setHistory,riverHit:state.riverHit,riverSnapshot:state.riverSnapshot})}
       }
       return result;
     };
