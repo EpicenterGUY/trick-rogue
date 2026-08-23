@@ -17,7 +17,7 @@
 
   const COMMON_CARD_POOL_IDS=Object.freeze([
     'core.paint','core.plus2','core.draw','core.scout','core.double','core.barrier',
-    'core.burn','core.reverse','core.pureboost','core.clean','core.recolor','core.fakeid'
+    'core.burn','core.pureboost','core.clean'
   ]);
   const COMMON_STARTER_EFFECT_CARD_IDS=Object.freeze(['core.plus2','core.draw','core.burn','core.pureboost','core.clean']);
   const COMMON_STARTER_PURE_SLOTS=Object.freeze(['S5','H4','H7','D2','D3','C3','C5']);
@@ -149,8 +149,7 @@
 
   function offerTraits(rng=Math.random,count=TRAIT_OFFER_COUNT){
     const pool=[...RUN_TRAITS];
-    for(let i=pool.length-1;i>0;i--){const raw=Number(rng());const safe=Number.isFinite(raw)?Math.max(0,Math.min(.999999999,raw)):0;const j=Math.floor(safe*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
-    return pool.slice(0,Math.max(1,Math.min(count,pool.length)));
+    for(let i=pool.length-1;i>0;i--){const raw=Number(rng());const safe=Number.isFinite(raw)?Math.max(0,Math.min(.999999999,raw)):0;const j=Math.floor(safe*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}return pool.slice(0,Math.max(1,Math.min(count,pool.length)));
   }
   function createSelection(rng=Math.random){
     const offers=offerTraits(rng,TRAIT_OFFER_COUNT);
