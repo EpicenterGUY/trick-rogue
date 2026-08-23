@@ -104,17 +104,21 @@ test('브라우저 beginRun 어댑터는 기존 런 초기화 뒤 새 시작 정
   assert.equal(root.rendered,1);
 });
 
-test('8-A 시작 정체성 뒤 8-B 최신 런 흐름을 거쳐 최종 전투 레이아웃을 로드한다',()=>{
+test('8-A 시작 정체성 뒤 8-B 런 흐름과 8-C 경제 계층을 거쳐 최종 전투 레이아웃을 로드한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/enemy-information\.js/);
   assert.match(source,/run-start-v2\.js/);
   assert.match(source,/run-flow-v2\.js/);
+  assert.match(source,/run-economy-v2\.js/);
   assert.match(source,/battle-layout\.js/);
   assert.match(source,/function loadRunStartV2\(\)/);
   assert.match(source,/function loadRunFlowV2\(\)/);
+  assert.match(source,/function loadRunEconomyV2\(\)/);
   assert.match(source,/if\(root\.EnemyInformation\)\{loadRunStartV2\(\);return;\}/);
   assert.match(source,/loadScript\('run-start-v2\.js','trick-run-start-v2-runtime'/);
   assert.match(source,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
   assert.match(source,/loadScript\('run-flow-v2\.js','trick-run-flow-v2-runtime'/);
-  assert.match(source,/if\(root\.RunFlowV2\)\{loadBattleLayoutFinal\(\);return;\}/);
+  assert.match(source,/if\(root\.RunFlowV2\)\{loadRunEconomyV2\(\);return;\}/);
+  assert.match(source,/loadScript\('run-economy-v2\.js','trick-run-economy-v2-runtime'/);
+  assert.match(source,/if\(root\.RunEconomyV2\)\{finishRunEconomyV2\(\);return;\}/);
 });
