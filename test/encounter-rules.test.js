@@ -14,7 +14,6 @@ function state(type='battle',hp=100,maxHp=100){
     statuses:{player:{shield:0,bleed:0,poison:0},enemy:{shield:0,bleed:0,poison:0}},reservations:[],history:CardEffects.newHistory(),setHistory:{wins:0,losses:0,draws:0}
   };
 }
-function showdownCards(){return{player:[{suit:'S',rank:2},{suit:'S',rank:3},{suit:'S',rank:4},{suit:'H',rank:5},{suit:'D',rank:6}],enemy:[{suit:'S',rank:7},{suit:'H',rank:8},{suit:'H',rank:9},{suit:'D',rank:10},{suit:'C',rank:11}]}}
 
 test('7.5-F 모든 조우 프로필은 자동 기본 필드를 가지지 않는다',()=>{
   assert.equal(EncounterRules.FIELD_SLOT_COUNT,1);
@@ -64,10 +63,10 @@ test('보스 페이즈가 바뀌면 외부 규칙은 보존하고 관리 규칙�
   assert.equal(battle.field,null);assert.equal(battle.bossPhase.id,'phase_1');
   battle.enemy.hp=90;EncounterRules.syncEncounterRules(battle);
   assert.deepEqual(battle.bossRules.map(rule=>rule.id),['external-rule','watcher-phase-2']);
-  assert.equal(battle.rulesOverride.lowRankWinsWhenSameTrumpState,true);
+  assert.equal(battle.rulesOverride.lowFinalValueWins,true);
   battle.enemy.hp=51;EncounterRules.syncEncounterRules(battle);
   assert.deepEqual(battle.bossRules.map(rule=>rule.id),['external-rule','watcher-phase-3']);
-  assert.equal(battle.rulesOverride.enemyAdvantagePower,5);
+  assert.deepEqual(battle.rulesOverride,{lowFinalValueWins:true});
 });
 
 test('2·3페이즈의 보스 규칙은 다음 세트 시작부터 각각 보호막 2·4를 적용한다',()=>{
@@ -88,7 +87,7 @@ test('특정 출처가 필드를 만들 때만 한 칸 필드와 출처 메타�
   EncounterRules.clearField(battle);assert.equal(battle.field,null);assert.equal(battle.fieldSource,null);
 });
 
-test('역상 구역은 명시적으로 생성된 경우에만 트릭 규칙을 바꾼다',()=>{
+test('뒤집힌 세계는 명시적으로 생성된 경우에만 최종 적용 숫자 비교를 뒤집는다',()=>{
   const normal=state('battle',58,58);EncounterRules.initializeBattle(normal);
   assert.equal(EncounterRules.compareTrickWithRules({suit:'S',rank:2},{suit:'C',rank:10},'H',normal),-1);
   EncounterRules.setFieldFromSource(normal,'inversion_zone',{type:'card',id:'test-card'});
@@ -96,18 +95,19 @@ test('역상 구역은 명시적으로 생성된 경우에만 트릭 규칙을 �
   assert.equal(EncounterRules.compareTrickWithRules({suit:'H',rank:2},{suit:'C',rank:10},'H',normal),1);
 });
 
-test('구식 우세 연동 필드 정의는 7.5-G 리워크 전까지 명시 생성 시에만 작동한다',()=>{
-  const battle=state('battle',58,58);EncounterRules.initializeBattle(battle);EncounterRules.setFieldFromSource(battle,'thin_signal',{type:'scripted',id:'legacy-test'});
-  const cards=showdownCards();
-  const field=EncounterRules.resolveShowdownAdvantageWithRules({playerCards:cards.player,enemyCards:cards.enemy},battle);
-  assert.deepEqual(field.playerAdvantages,[]);
-  EncounterRules.setFieldFromSource(battle,'resonance_floor',{type:'scripted',id:'legacy-test'});
-  assert.deepEqual(EncounterRules.applyShowdownAdvantageWithRules(10,10,{playerAdvantages:['S'],enemyAdvantages:[]},battle),{playerPower:14,enemyPower:10});
+test('7.5-R 조우 기본 필드 정의도 최신 트럼프·손패·최종값 규칙만 가진다',()=>{
+  assert.deepEqual(EncounterRules.RULE_OVERRIDE_KEYS,['trumpBonus','maxHandModifier','lowFinalValueWins']);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.resonance_floor.rulesOverride.trumpBonus,5);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.thin_signal.rulesOverride.trumpBonus,1);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.outlaw_zone.rulesOverride.trumpBonus,0);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.narrow_table.rulesOverride.maxHandModifier,-1);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.inversion_zone.rulesOverride.lowFinalValueWins,true);
+  assert(EncounterRules.validateRulesOverride({advantageMargin:2}).some(error=>error.includes('unsupported rule override')));
 });
 
 test('필드 효과는 출처가 있을 때 기존 field 효과 소유자 경로에서 한 번만 실행된다',()=>{
   const battle=state('battle',58,58);EncounterRules.initializeBattle(battle);
-  EncounterRules.setFieldFromSource(battle,{id:'chip-field',label:'칩 필드',effects:[{trigger:'on_trick_start',action:'gain_chips',value:2,duration:'battle'}]},{type:'elite',id:'test-elite'});
+  EncounterRules.setFieldFromSource(battle,{id:'chip-field',label:'칩 필드',rulesOverride:{},effects:[{trigger:'on_trick_start',action:'gain_chips',value:2,duration:'battle'}]},{type:'elite',id:'test-elite'});
   const owners=CombatEffects.activeEffectOwners(battle,{});assert(owners.some(owner=>owner.ownerType==='field'&&owner.ownerId==='chip-field'));
   BattleEvents.dispatchNonCardOwnersOnce('on_trick_start',{state:battle,runState:{}});BattleEvents.dispatchNonCardOwnersOnce('on_trick_start',{state:battle,runState:{}});
   assert.equal(battle.chip,2);
@@ -117,7 +117,7 @@ test('전투 HUD 라벨은 필드가 없으면 적 규칙만, 필드가 생기�
   const battle=state('boss',90,130);EncounterRules.initializeBattle(battle);
   assert.deepEqual(EncounterRules.encounterRuleLabels(battle),['2페이즈','규칙 감시 역전']);
   EncounterRules.setFieldFromSource(battle,'inversion_zone',{type:'boss',id:'special-phase'});
-  assert.deepEqual(EncounterRules.encounterRuleLabels(battle),['필드 역상 구역','2페이즈','규칙 감시 역전']);
+  assert.deepEqual(EncounterRules.encounterRuleLabels(battle),['필드 뒤집힌 세계','2페이즈','규칙 감시 역전']);
 });
 
 test('startBattle 어댑터는 첫 on_set_start 전에 규칙을 초기화하되 필드를 자동 생성하지 않는다',()=>{

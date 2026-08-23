@@ -52,7 +52,7 @@ test('예약 필드가 없으면 엘리트와 보스도 완전한 기본 전투 
   }
 });
 
-test('이벤트 필드 선택은 역상 구역을 획득하고 다음 전투 한 번에 예약한다',()=>{
+test('이벤트 필드 선택은 뒤집힌 세계를 획득하고 다음 전투 한 번에 예약한다',()=>{
   const node={id:'n1',type:'event'},root={run:{gold:60,deck:[{id:'keep'}],map:[node]},completed:null,completeNode(value){this.completed=value}};
   const result=RunFields.eventFieldPick(root,'n1');
   assert.equal(result.currentId,'inversion_zone');assert.equal(root.run.fieldLoadout.queuedFieldId,'inversion_zone');assert.equal(root.run.fieldLoadout.activeFieldId,null);assert.equal(root.run.deck.length,1);assert.equal(root.completed,node);
@@ -88,7 +88,7 @@ test('전투 규칙 설명은 필드가 없을 때 적 규칙만 보이고 필�
   const battle=battleState('boss',90,130);EncounterRules.initializeBattle(battle);let entries=RunFields.ruleInfoEntries(battle);
   assert.equal(entries.some(entry=>entry.kind==='field'),false);assert(entries.some(entry=>entry.kind==='phase'));
   const run={};RunFields.acquireField(run,'inversion_zone',{source:'event:n1'});RunFields.consumeQueuedFieldForBattle(run,battle);entries=RunFields.ruleInfoEntries(battle);
-  assert(entries.some(entry=>entry.kind==='field'&&entry.label.includes('역상 구역')&&entry.description.includes('event')));
+  assert(entries.some(entry=>entry.kind==='field'&&entry.label.includes('뒤집힌 세계')&&entry.description.includes('event')));
 });
 
 test('맵 요약은 상시 장착 필드가 아니라 다음 전투 예약 필드만 반환한다',()=>{

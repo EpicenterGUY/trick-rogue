@@ -70,7 +70,7 @@ function rewardCardIds(enabledPacks=defaultEnabledPacks()){
 }
 function createCardRecord({suit,rank,cardId=null,definitionId=null,effects,metadata={}}={}){
   if(!['S','H','D','C'].includes(suit))throw new TypeError(`Unknown card suit: ${suit}`);
-  if(!Number.isFinite(rank)||rank<2||rank>14)throw new TypeError(`Invalid card rank: ${rank}`);
+  if(!Number.isInteger(rank)||rank<2||rank>14)throw new TypeError(`Invalid card rank: ${rank}`);
   const lookupId=definitionId||cardId;
   const definition=lookupId?CARD_DEFINITION_BY_ID[lookupId]||null:null;
   if(definitionId&&!definition)throw new TypeError(`Unknown card definition: ${definitionId}`);
