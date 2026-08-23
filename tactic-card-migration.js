@@ -11,7 +11,7 @@
   const RUNTIME_ACTIVE=true;
   const SUPPORTED_REQUIREMENTS=Object.freeze([
     'temporary_hand_capacity','post_refill_draw','secondary_hand_target','next_enemy_preview_ui',
-    'advantage_count_condition','unmodified_trick_value_condition','printed_equals_trick_condition'
+    'unmodified_trick_value_condition','printed_equals_trick_condition'
   ]);
 
   const PLAN=Object.freeze([
@@ -43,10 +43,9 @@
     }),
     Object.freeze({
       legacyId:'double',name:'더블다운',printedSuit:'H',printedRank:2,status:'redesign',activationStage:ACTIVATION_STAGE,
-      cardText:'쇼다운에서 내가 우세 무늬를 2개 이상 확보했다면 쇼다운 위력 +6.',
-      proposedEffects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'advantage_count_at_least',conditionValue:2,duration:'set'}]),
-      requires:Object.freeze(['advantage_count_condition']),
-      note:'복수 우세를 추가 보상하는 저랭크 쇼다운 카드로 확정했다. 기본 우세 +3은 기존 규칙대로 한 번만 적용된다.'
+      cardText:'이 카드가 5번 쇼다운 슬롯에 있으면 쇼다운 위력 +6.',
+      proposedEffects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'slot_is',conditionValue:5,duration:'set'}]),
+      note:'상시 우세 무늬 시스템 제거에 맞춰 마지막 슬롯에 저랭크 카드를 커밋하는 쇼다운 보상 카드로 재설계했다.'
     }),
     Object.freeze({
       legacyId:'barrier',name:'임시 장벽',printedSuit:'S',printedRank:6,status:'direct',activationStage:'3-1',
