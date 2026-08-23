@@ -31,7 +31,7 @@ test('에이스 로우 스트레이트도 7.5-C 족보 판정에서 유지된다
   assert.equal(result.power,24);
 });
 
-test('breakdown은 기본 위력, 덧셈, 희귀 배율을 분리하고 양쪽 최종 위력을 각각 공격값으로 만든다',()=>{
+test('breakdown은 기본 위력, 덧셈, 추가 배율을 분리하고 배율 합계를 한 번만 적용한다',()=>{
   const playerHand=Resolution.evaluatePoker(cards([2,3,4,5,6]),{valueResolver:(card,key)=>BattleCore.showdownValue(card,key)});
   const enemyHand=Resolution.evaluatePoker(cards([2,5,8,11,13]),{valueResolver:(card,key)=>BattleCore.showdownValue(card,key)});
   const model=Resolution.createBreakdown({playerHand,enemyHand,setIndex:1});
@@ -43,10 +43,12 @@ test('breakdown은 기본 위력, 덧셈, 희귀 배율을 분리하고 양쪽 �
   assert.equal(model.player.basePower,24);
   assert.equal(model.player.additiveTotal,10);
   assert.equal(model.player.preMultiplierPower,34);
-  assert.deepEqual(model.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43],[43,65]]);
-  assert.equal(model.player.finalPower,65);
+  assert.deepEqual(model.player.multipliers.map(entry=>entry.bonus),[0.25,0.5]);
+  assert.equal(model.player.multiplierBonusTotal,0.75);
+  assert.equal(model.player.finalMultiplier,1.75);
+  assert.equal(model.player.finalPower,60);
   assert.equal(model.enemy.finalPower,5);
-  assert.equal(model.attacks.player.plannedAmount,65);
+  assert.equal(model.attacks.player.plannedAmount,60);
   assert.equal(model.attacks.enemy.plannedAmount,5);
   assert.equal('damage' in model,false,'위력 차이 단일 피해 모델을 만들지 않는다');
 });
@@ -99,7 +101,8 @@ test('쇼다운 전 효과로 최종 족보가 바뀌어도 리버는 5번째 �
   assert.equal(result.player.additiveTotal,10);
   assert.equal(result.player.preMultiplierPower,34);
   assert.deepEqual(result.player.multipliers.map(entry=>entry.id),['advantage']);
-  assert.deepEqual(result.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43]]);
+  assert.equal(result.player.multipliers[0].bonus,0.25);
+  assert.equal(result.player.finalMultiplier,1.25);
   assert.equal(result.player.finalPower,43);
   assert.equal(result.enemy.finalPower,5);
   assert.deepEqual(attacks.map(entry=>entry.slice(0,3)),[['player',43,'showdown'],['enemy',5,'showdown']]);
