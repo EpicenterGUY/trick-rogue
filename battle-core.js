@@ -83,12 +83,28 @@
     const override=card?.[`showdown${key}`];
     return override===undefined?printedValue(card,key):override;
   }
+  function finiteNumber(value,fallback=0){
+    const number=Number(value);
+    return Number.isFinite(number)?number:fallback;
+  }
+  function firstFinite(...values){
+    for(const value of values){
+      const number=Number(value);
+      if(Number.isFinite(number))return number;
+    }
+    return 0;
+  }
   function effectiveCard(card,modifiers={}){
     const printedRank=printedValue(card,'Rank'),printedSuit=printedValue(card,'Suit');
-    const effectiveRank=modifiers.rank??modifiers.effectiveRank??card?.trickRank??card?.effectiveRank??printedRank;
-    const effectiveSuit=modifiers.suit??modifiers.effectiveSuit??card?.trickSuit??card?.effectiveSuit??printedSuit;
+    const explicitModifier=Number.isFinite(Number(modifiers.rankModifier))?Number(modifiers.rankModifier):null;
+    const requestedRank=modifiers.rank??modifiers.effectiveRank??modifiers.trickRank;
+    const fallbackRank=card?.trickRank??card?.effectiveRank??card?.rank??printedRank;
+    const effectiveRank=requestedRank!==undefined?requestedRank:explicitModifier!==null?finiteNumber(printedRank)+explicitModifier:fallbackRank;
+    const effectiveSuit=modifiers.suit??modifiers.effectiveSuit??modifiers.trickSuit??card?.trickSuit??card?.effectiveSuit??printedSuit;
     const treatedAsTrump=modifiers.treatedAsTrump??card?.treatedAsTrump??false;
-    return{...card,printedRank,printedSuit,rank:effectiveRank,suit:effectiveSuit,effectiveRank,effectiveSuit,trickRank:effectiveRank,trickSuit:effectiveSuit,treatedAsTrump};
+    const derivedModifier=finiteNumber(effectiveRank)-finiteNumber(printedRank);
+    const trickRankModifier=explicitModifier!==null?explicitModifier:Number.isFinite(Number(card?.trickRankModifier))?Number(card.trickRankModifier):derivedModifier;
+    return{...card,printedRank,printedSuit,rank:effectiveRank,suit:effectiveSuit,effectiveRank,effectiveSuit,trickRank:effectiveRank,trickSuit:effectiveSuit,trickRankModifier,treatedAsTrump};
   }
   function isTrumpCard(card,trump){
     const trickSuit=card?.trickSuit??card?.effectiveSuit??card?.suit;
@@ -99,14 +115,50 @@
     const amount=Number(bonus);
     return isTrumpCard(card,trump)&&Number.isFinite(amount)?amount:0;
   }
-  function trickValue(card,trump,options={}){
-    const base=Number(trickRank(card));
-    const bonus=Number.isFinite(options?.trumpBonus)?options.trumpBonus:DEFAULT_TRUMP_BONUS;
-    const modifier=Number.isFinite(options?.modifier)?options.modifier:0;
-    return(Number.isFinite(base)?base:0)+trumpRankBonus(card,trump,bonus)+modifier;
+  function sideTrickOptions(options={},side){
+    if(!options||typeof options!=='object')return{};
+    const common={...options};
+    delete common.player;delete common.enemy;delete common.playerOptions;delete common.enemyOptions;
+    const specific=options[side]||options[`${side}Options`]||{};
+    return specific&&typeof specific==='object'?{...common,...specific}:common;
   }
+  function resolveTrickValue(card,trump,options={}){
+    const printedRank=finiteNumber(printedValue(card,'Rank'));
+    const printedSuit=printedValue(card,'Suit');
+    const effectiveSuit=options.suit??options.effectiveSuit??options.trickSuit??card?.trickSuit??card?.effectiveSuit??card?.suit??printedSuit;
+    const treatedAsTrump=options.treatedAsTrump??card?.treatedAsTrump??false;
+    const directRank=options.rank??options.effectiveRank??options.trickRank;
+    const storedRank=trickRank(card);
+    const derivedCardModifier=directRank!==undefined?finiteNumber(directRank)-printedRank:
+      Number.isFinite(Number(card?.trickRankModifier))?Number(card.trickRankModifier):finiteNumber(storedRank)-printedRank;
+    const cardRankModifier=firstFinite(options.cardRankModifier,options.rankModifier,derivedCardModifier);
+    const otherNumberModifier=firstFinite(options.otherNumberModifier,options.numericModifier,options.modifier);
+    const statusModifier=firstFinite(options.statusModifier);
+    const fieldModifier=firstFinite(options.fieldModifier);
+    const configuredTrumpBonus=Number.isFinite(Number(options.trumpBonus))?Number(options.trumpBonus):DEFAULT_TRUMP_BONUS;
+    const trumpView={...card,trickSuit:effectiveSuit,effectiveSuit,suit:effectiveSuit,treatedAsTrump};
+    const trumpApplied=isTrumpCard(trumpView,trump);
+    const appliedTrumpBonus=trumpApplied?configuredTrumpBonus:0;
+    const valueAfterTrump=printedRank+appliedTrumpBonus;
+    const valueAfterCardEffects=valueAfterTrump+cardRankModifier+otherNumberModifier;
+    const finalValue=valueAfterCardEffects+statusModifier+fieldModifier;
+    return{
+      printedRank,printedSuit,effectiveSuit,treatedAsTrump,trumpApplied,trumpBonus:appliedTrumpBonus,
+      cardRankModifier,otherNumberModifier,statusModifier,fieldModifier,valueAfterTrump,valueAfterCardEffects,finalValue,
+      stages:Object.freeze([
+        Object.freeze({id:'printed',rank:printedRank,suit:printedSuit,value:printedRank}),
+        Object.freeze({id:'suit',suit:effectiveSuit,value:printedRank}),
+        Object.freeze({id:'trump',applied:trumpApplied,bonus:appliedTrumpBonus,value:valueAfterTrump}),
+        Object.freeze({id:'number',cardModifier:cardRankModifier,otherModifier:otherNumberModifier,value:valueAfterCardEffects}),
+        Object.freeze({id:'status_field',statusModifier,fieldModifier,value:finalValue})
+      ])
+    };
+  }
+  function trickValue(card,trump,options={}){return resolveTrickValue(card,trump,options).finalValue;}
   function compareTrick(playerCard,enemyCard,trump,options={}){
-    return Math.sign(trickValue(playerCard,trump,options)-trickValue(enemyCard,trump,options));
+    const player=resolveTrickValue(playerCard,trump,sideTrickOptions(options,'player'));
+    const enemy=resolveTrickValue(enemyCard,trump,sideTrickOptions(options,'enemy'));
+    return Math.sign(player.finalValue-enemy.finalValue);
   }
   function resolveShowdownAdvantage({playerCards,enemyCards}){
     if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
@@ -135,6 +187,8 @@
   function suitFromSymbol(symbol){
     return symbol==='♠'?'S':symbol==='♥'?'H':symbol==='♦'?'D':symbol==='♣'?'C':null;
   }
+  function suitSymbol(suit){return suit==='S'?'♠':suit==='H'?'♥':suit==='D'?'♦':suit==='C'?'♣':String(suit??'?')}
+  function signed(value){const number=finiteNumber(value);return number>0?`+${number}`:`${number}`}
   function installBrowserTrumpAdapter(runtimeRoot=typeof globalThis!=='undefined'?globalThis:null){
     if(browserTrumpAdapterInstalled)return true;
     if(!runtimeRoot||typeof runtimeRoot.effective!=='function'||typeof runtimeRoot.compare!=='function')return false;
@@ -143,11 +197,11 @@
     runtimeRoot.effective=function(card){
       const state=browserBattle(runtimeRoot);
       if(!state)return oldEffective.call(this,card);
-      const rank=(Number(card?.rank)||0)+(Number(state?.mods?.plus)||0)+(Number(card?.effectiveRankBonus)||0);
+      const rankModifier=(Number(state?.mods?.plus)||0)+(Number(card?.effectiveRankBonus)||0);
       const suit=state?.mods?.paint?state.trump:card?.suit;
-      return effectiveCard(card,{rank,suit,treatedAsTrump:card?.treatedAsTrump===true});
+      return effectiveCard(card,{rankModifier,suit,treatedAsTrump:card?.treatedAsTrump===true});
     };
-    runtimeRoot.effective.__trumpPlus3Adapter=true;
+    runtimeRoot.effective.__trickValuePipelineAdapter=true;
     runtimeRoot.effective.__legacyEffective=oldEffective;
     runtimeRoot.compare=function(card,enemyCard){
       const state=browserBattle(runtimeRoot);
@@ -157,7 +211,7 @@
       const result=compare(player,enemy,state.trump);
       return state?.mods?.reverse?-result:result;
     };
-    runtimeRoot.compare.__trumpPlus3Adapter=true;
+    runtimeRoot.compare.__trickValuePipelineAdapter=true;
     runtimeRoot.compare.__legacyCompare=oldCompare;
 
     if(typeof runtimeRoot.classifyWin==='function'){
@@ -166,13 +220,13 @@
         if(result<=0)return null;
         const state=browserBattle(runtimeRoot);if(!state)return oldClassify.call(this,card,enemyCard,result);
         const player=runtimeRoot.effective(card),enemy=effectiveCard(enemyCard);
-        const diff=Math.abs(trickValue(player,state.trump)-trickValue(enemy,state.trump));
+        const diff=Math.abs(resolveTrickValue(player,state.trump).finalValue-resolveTrickValue(enemy,state.trump).finalValue);
         if(Number(card?.rank)<Number(enemyCard?.rank))return'역전';
         if(diff===1)return'아슬아슬';
         if(diff>=5)return'압승';
         return null;
       };
-      runtimeRoot.classifyWin.__trumpPlus3Adapter=true;
+      runtimeRoot.classifyWin.__trickValuePipelineAdapter=true;
     }
     if(typeof runtimeRoot.renderBattle==='function'){
       const oldRender=runtimeRoot.renderBattle;
@@ -182,7 +236,7 @@
         if(el&&!String(el.textContent).includes('+3'))el.textContent=`${el.textContent} +3`;
         return result;
       };
-      runtimeRoot.renderBattle.__trumpPlus3Adapter=true;
+      runtimeRoot.renderBattle.__trickValuePipelineAdapter=true;
       runtimeRoot.renderBattle.__legacyRenderBattle=oldRender;
     }
     if(typeof runtimeRoot.inspectCard==='function'){
@@ -192,15 +246,18 @@
         if(!placed){
           const state=browserBattle(runtimeRoot),doc=runtimeRoot.document,el=doc?.getElementById?.('inspectApply');
           if(state&&card&&el){
-            const effective=runtimeRoot.effective(card),finalValue=trickValue(effective,state.trump);
+            const effective=runtimeRoot.effective(card),trace=resolveTrickValue(effective,state.trump);
+            const suitStep=trace.printedSuit===trace.effectiveSuit?suitSymbol(trace.effectiveSuit):`${suitSymbol(trace.printedSuit)}→${suitSymbol(trace.effectiveSuit)}`;
+            const numberModifier=trace.cardRankModifier+trace.otherNumberModifier;
+            const statusField=trace.statusModifier+trace.fieldModifier;
             let text=String(el.textContent||'').replace(' · 트럼프',' · 트럼프 +3');
-            if(!text.includes('최종 적용 숫자'))text+=` · 최종 적용 숫자 ${finalValue}`;
+            text+=` · 계산: ${trace.printedRank} → 무늬 ${suitStep} → 트럼프 ${signed(trace.trumpBonus)} → 숫자 ${signed(numberModifier)} → 상태/필드 ${signed(statusField)} → 최종 ${trace.finalValue}`;
             el.textContent=text;
           }
         }
         return result;
       };
-      runtimeRoot.inspectCard.__trumpPlus3Adapter=true;
+      runtimeRoot.inspectCard.__trickValuePipelineAdapter=true;
       runtimeRoot.inspectCard.__legacyInspectCard=oldInspect;
     }
     if(typeof runtimeRoot.showTerm==='function'){
@@ -209,11 +266,11 @@
         const result=oldShowTerm.call(this,term,...args);
         if(term==='트럼프'){
           const p=runtimeRoot.document?.querySelector?.('#modal p');
-          if(p)p.textContent='현재 세트의 지정 무늬. 해당 무늬 카드는 트릭에서 최종 적용 숫자 +3을 받으며, 비트럼프를 자동으로 이기지는 않는다. 쇼다운 원래 값에는 자동 보너스를 주지 않는다.';
+          if(p)p.textContent='현재 세트의 지정 무늬. 카드 효과로 최종 무늬를 먼저 정한 뒤 트럼프 여부를 판정하며, 해당 무늬는 트릭 적용 숫자 +3을 받는다. 비트럼프 자동 승리는 없고 쇼다운 원래 값도 바꾸지 않는다.';
         }
         return result;
       };
-      runtimeRoot.showTerm.__trumpPlus3Adapter=true;
+      runtimeRoot.showTerm.__trickValuePipelineAdapter=true;
     }
     if(typeof runtimeRoot.showTerms==='function'){
       const oldShowTerms=runtimeRoot.showTerms;
@@ -222,11 +279,11 @@
         for(const button of buttons){
           if(button.querySelector?.('b')?.textContent!=='트럼프')continue;
           const span=button.querySelector?.('span');
-          if(span)span.textContent='현재 세트의 지정 무늬. 트릭에서 최종 적용 숫자 +3. 비트럼프 자동 승리 없음.';
+          if(span)span.textContent='최종 무늬 판정 뒤 트릭 적용 숫자 +3. 모든 보정 후 최종 적용 숫자로 승패를 정한다.';
         }
         return result;
       };
-      runtimeRoot.showTerms.__trumpPlus3Adapter=true;
+      runtimeRoot.showTerms.__trickValuePipelineAdapter=true;
     }
     browserTrumpAdapterInstalled=true;
     return true;
@@ -243,5 +300,5 @@
   }
   function resetBrowserTrumpAdapterForTests(){browserTrumpAdapterInstalled=false;}
 
-  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,DEFAULT_TRUMP_BONUS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,effectiveCard,isTrumpCard,trickRank,trumpRankBonus,trickValue,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle,browserBattle,suitFromSymbol,installBrowserTrumpAdapter,installBrowserTrumpAdapterWhenReady,resetBrowserTrumpAdapterForTests};
+  return{DEFAULT_MAX_HAND_SIZE,TRICKS_PER_SET,SUITS,DEFAULT_TRUMP_BONUS,SHOWDOWN_ADVANTAGE_POWER,EFFECT_DURATIONS,ENCOUNTER_PROGRESSION,createSetHistory,createBattleState,drawToMaxHand,playCard,addEffect,expireEffects,recordTrickResult,endTrick,printedValue,showdownValue,finiteNumber,effectiveCard,isTrumpCard,trickRank,trumpRankBonus,sideTrickOptions,resolveTrickValue,trickValue,compareTrick,resolveShowdownAdvantage,showdownAdvantageBonus,applyShowdownAdvantage,finishShowdown,endBattle,browserBattle,suitFromSymbol,suitSymbol,installBrowserTrumpAdapter,installBrowserTrumpAdapterWhenReady,resetBrowserTrumpAdapterForTests};
 });
