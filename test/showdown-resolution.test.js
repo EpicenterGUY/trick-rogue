@@ -57,7 +57,7 @@ test('7.5-A 임시 score 배율은 7.5-C 전용 배율 단계 전에 원래 덧�
   assert.equal(score.value,28);
 });
 
-test('브라우저 쇼다운은 쇼다운 전 효과→족보→덧셈→배율 뒤 플레이어 공격과 적 반격을 각각 적용한다',async()=>{
+test('쇼다운 전 효과로 최종 족보가 바뀌어도 리버는 5번째 카드 선택 시점 후보 적중만 인정한다',async()=>{
   const playerSlots=cards([2,3,4,5,9]).map((card,index)=>({card:{...card,uid:`p${index}`}}));
   const enemySlots=cards([2,5,8,11,13]).map((card,index)=>({card:{...card,uid:`e${index}`}}));
   const events=[],attacks=[];
@@ -68,6 +68,9 @@ test('브라우저 쇼다운은 쇼다운 전 효과→족보→덧셈→배율 
     maxHandSize:3,slotBonus:0,chip:2,maxChip:5,mods:{paint:false,plus:0,reverse:false,double:false},trump:'H',
     advantageState:{player:true,enemy:false,playerSource:'test-edge',enemySource:null,grantedSet:1,appliedSet:null,scoreBase:null,lastPlayerPreMultiplier:null,lastPlayerPostMultiplier:null}
   };
+  battle.riverSnapshot=Resolution.createRiverSnapshot(playerSlots.slice(0,4),{
+    valueResolver:(card,key)=>BattleCore.showdownValue(card,key),setIndex:battle.setIndex
+  });
   const root={
     battle,run:{hp:50,maxHp:50},
     BattleCore:{...BattleCore,resolveShowdownAdvantage(){return{mode:'explicit',automaticSuitComparison:false,multiplier:1.25,playerActive:true,enemyActive:false,playerSource:'test-edge',enemySource:null,playerAdvantageCount:1,enemyAdvantageCount:0,playerAdvantages:[],enemyAdvantages:[],playerSuitCounts:{},enemySuitCounts:{}}}},
@@ -88,22 +91,24 @@ test('브라우저 쇼다운은 쇼다운 전 효과→족보→덧셈→배율 
   Resolution.installBrowser(root);
   const result=await root.showdown();
   assert(events.slice(0,5).every(trigger=>trigger==='before_showdown'));
-  assert.equal(result.player.hand.id,'straight','5번째 카드의 쇼다운 숫자 변경이 족보 계산 전에 반영된다');
+  assert.equal(result.riverHit.active,false,'5번째 카드 선택 당시 9는 스트레이트 후보가 아니므로 리버는 불발이다');
+  assert.equal(result.riverHit.reason,'candidate_miss');
+  assert.equal(result.riverHit.fifth.rank,9,'쇼다운 전 효과가 9를 6으로 바꾸기 전에 리버 적중을 잠근다');
+  assert.equal(result.player.hand.id,'straight','쇼다운 전 효과로 최종 포커 족보 자체는 스트레이트가 될 수 있다');
   assert.equal(result.player.basePower,24);
   assert.equal(result.player.additiveTotal,10);
   assert.equal(result.player.preMultiplierPower,34);
-  assert.equal(result.riverCompletion.active,true,'쇼다운 전 효과가 5번째 카드로 스트레이트를 완성했으므로 리버 완성이다');
-  assert.deepEqual(result.player.multipliers.map(entry=>entry.id),['river_completion','advantage']);
-  assert.deepEqual(result.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43],[43,54]]);
-  assert.equal(result.player.finalPower,54);
+  assert.deepEqual(result.player.multipliers.map(entry=>entry.id),['advantage']);
+  assert.deepEqual(result.player.multipliers.map(entry=>[entry.before,entry.after]),[[34,43]]);
+  assert.equal(result.player.finalPower,43);
   assert.equal(result.enemy.finalPower,5);
-  assert.deepEqual(attacks.map(entry=>entry.slice(0,3)),[['player',54,'showdown'],['enemy',5,'showdown']]);
+  assert.deepEqual(attacks.map(entry=>entry.slice(0,3)),[['player',43,'showdown'],['enemy',5,'showdown']]);
   assert.equal(attacks[0][3].source,'showdown_player_attack');
   assert.equal(attacks[1][3].source,'showdown_enemy_attack');
-  assert.equal(result.attacks.player.dealt,54);
+  assert.equal(result.attacks.player.dealt,43);
   assert.equal(result.attacks.enemy.dealt,5);
   assert.equal(result.attackSequence.enemyAttackCancelled,false);
-  assert.equal(battle.enemy.hp,46);
+  assert.equal(battle.enemy.hp,57);
   assert.equal(root.run.hp,45);
   assert.equal(battle.chip,2,'세트가 넘어가도 칩 잔액을 리셋하지 않는다');
   assert.equal(battle.setIndex,2);
