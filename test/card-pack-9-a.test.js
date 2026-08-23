@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const Cards=require('../cards.js');
 const Effects=require('../effects.js');
+const Economy=require('../run-economy-v2.js');
 
 function performLog(){
   const calls=[];
@@ -50,6 +51,17 @@ test('pack02 정의 카드는 인쇄값과 고유 effects를 그대로 가진 �
   assert.notEqual(card.effects,Cards.CARD_PACKS.pack02.cards[1].effects);
 });
 
+test('pack01 메타데이터는 실제 효과와 일치해 검은 탄환에 가짜 우세 태그가 없고 비열한 승부사에는 칩이 남는다',()=>{
+  const bullet=Cards.CARD_DEFINITION_BY_ID['pack01.black_bullet'];
+  const gambler=Cards.CARD_DEFINITION_BY_ID['pack01.dirty_gambler'];
+  assert.equal(bullet.terms.includes('우세'),false);
+  assert.ok(bullet.terms.includes('피해'));
+  assert.ok(gambler.terms.includes('칩'));
+  const tags=Economy.gameplayTagsForDefinition(bullet);
+  assert.ok(tags.includes('damage'));
+  assert.equal(tags.includes('advantage'),false);
+});
+
 test('트럼프 신호는 인쇄 무늬가 아니라 최종 트릭 무늬가 트럼프일 때만 칩을 준다',()=>{
   assert.equal(Effects.conditions.effective_suit_is_trump({card:{suit:'S'},effectiveSuit:'H',battle:{trump:'H'}}),true);
   assert.equal(Effects.conditions.effective_suit_is_trump({card:{suit:'H'},effectiveSuit:'S',battle:{trump:'H'}}),false);
@@ -78,6 +90,20 @@ test('정석 승부와 후반 가속은 순수 카드 및 4~5번 슬롯 조건�
   assert.equal(runCard('pack02.afterburner','after_card_slotted',{slotIndex:2}).calls.length,0);
 });
 
+test('선수필승은 트럼프 무늬로 트릭을 이긴 경우에만 조건부 고점 피해 6을 준다',()=>{
+  const hit=runCard('pack02.first_strike','on_trick_win',{effectiveSuit:'H',battle:{trump:'H'}});
+  const miss=runCard('pack02.first_strike','on_trick_win',{effectiveSuit:'S',battle:{trump:'H'}});
+  assert.deepEqual(hit.calls.map(x=>[x.action,x.value]),[['damage_enemy',6]]);
+  assert.equal(miss.calls.length,0);
+});
+
+test('트럼프 단조는 2칩 손패 교환을 사용한 트릭에만 트럼프화와 숫자 +2를 함께 얻는다',()=>{
+  const hit=runCard('pack02.trump_forge','on_play',{history:{chipsSpent:2}});
+  const miss=runCard('pack02.trump_forge','on_play',{history:{chipsSpent:0}});
+  assert.deepEqual(hit.calls.map(x=>[x.action,x.value]),[['set_next_trick_suit_to_trump',undefined],['increase_next_trick_rank',2]]);
+  assert.equal(miss.calls.length,0);
+});
+
 test('보험 교환은 이번 트릭 칩 소비, 원본주의는 무보정 최종 트릭값 조건을 사용한다',()=>{
   const insured=runCard('pack02.insurance_exchange','on_play',{history:{chipsSpent:2}});
   const noSpend=runCard('pack02.insurance_exchange','on_play',{history:{chipsSpent:0}});
@@ -89,13 +115,23 @@ test('보험 교환은 이번 트릭 칩 소비, 원본주의는 무보정 최�
   assert.equal(modified.calls.length,0);
 });
 
-test('우세 청산과 누적 이자는 명시적 우세와 세트 3승 조건에서만 발동한다',()=>{
+test('우세 청산과 누적 이자는 명시적 우세와 세트 4승 조건에서만 고점 보상을 준다',()=>{
   const advantage=runCard('pack02.advantage_settlement','on_showdown_score',{advantage:{playerActive:true}});
   const noAdvantage=runCard('pack02.advantage_settlement','on_showdown_score',{advantage:{playerActive:false}});
   assert.deepEqual(advantage.calls.map(x=>[x.action,x.value]),[['showdown_power',10]]);
   assert.equal(noAdvantage.calls.length,0);
-  assert.deepEqual(runCard('pack02.long_game','on_showdown_score',{setHistory:{wins:3}}).calls.map(x=>[x.action,x.value]),[['showdown_power',8]]);
-  assert.equal(runCard('pack02.long_game','on_showdown_score',{setHistory:{wins:2}}).calls.length,0);
+  assert.deepEqual(runCard('pack02.long_game','on_showdown_score',{setHistory:{wins:4}}).calls.map(x=>[x.action,x.value]),[['showdown_power',12]]);
+  assert.equal(runCard('pack02.long_game','on_showdown_score',{setHistory:{wins:3}}).calls.length,0);
+});
+
+test('pack02의 재조정된 세 카드는 공용 단순 카드와 달리 모두 명시적인 조건을 가진다',()=>{
+  for(const id of ['pack02.first_strike','pack02.long_game','pack02.trump_forge']){
+    const card=Cards.CARD_DEFINITION_BY_ID[id];
+    assert.ok(card.effects.length>0);
+    assert.ok(card.effects.every(effect=>effect.condition),`${id} has unconditional effect`);
+  }
+  assert.equal(Cards.CARD_DEFINITION_BY_ID['core.paint'].effects[0].condition,undefined,'공용 페인트는 단순 무조건 카드로 남긴다');
+  assert.equal(Cards.CARD_DEFINITION_BY_ID['core.double'].effects[0].conditionValue,3,'공용 더블다운 3승 기준은 유지한다');
 });
 
 test('pack02는 폐기된 전술 덱·트럼프 자동 승리·상시 무늬 우세 규칙을 다시 만들지 않는다',()=>{
