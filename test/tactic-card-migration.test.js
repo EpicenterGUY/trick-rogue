@@ -65,8 +65,10 @@ test('3-2B 드로우/번/정찰은 3-2A 지원 액션을 사용한다',()=>{
   assert.deepEqual(Migration.BY_ID.burn.targeting,{zone:'hand',count:1,excludeSelf:true});
 });
 
-test('더블다운은 복수 우세 2개 이상에서 쇼다운 위력 +6으로 확정한다',()=>{
-  assert.deepEqual(Migration.BY_ID.double.proposedEffects,[{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'advantage_count_at_least',conditionValue:2,duration:'set'}]);
+test('더블다운은 상시 우세 무늬 대신 5번 쇼다운 슬롯 보상으로 재설계한다',()=>{
+  assert.deepEqual(Migration.BY_ID.double.proposedEffects,[{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'slot_is',conditionValue:5,duration:'set'}]);
+  assert.equal(Migration.BY_ID.double.cardText,'이 카드가 5번 쇼다운 슬롯에 있으면 쇼다운 위력 +6.');
+  assert.ok(!Migration.SUPPORTED_REQUIREMENTS.includes('advantage_count_condition'));
 });
 
 test('기본에 충실/무첨가는 순수 카드 분류 없이 인쇄값과 트릭값 조건을 사용한다',()=>{
