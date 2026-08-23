@@ -30,6 +30,14 @@
     inversion_zone:Object.freeze({
       id:'inversion_zone',label:'뒤집힌 세계',description:'모든 보정을 끝낸 최종 적용 숫자가 낮은 쪽이 트릭에서 승리한다.',
       rulesOverride:Object.freeze({lowFinalValueWins:true}),effects:Object.freeze([])
+    }),
+    loaded_table:Object.freeze({
+      id:'loaded_table',label:'과열 테이블',description:'기본 최대 손패가 1 감소하지만 트럼프 카드의 트릭 적용 숫자 보너스가 +4가 된다. 트럼프는 자동 승리하지 않는다.',
+      rulesOverride:Object.freeze({trumpBonus:4,maxHandModifier:-1}),effects:Object.freeze([])
+    }),
+    wide_table:Object.freeze({
+      id:'wide_table',label:'넓은 테이블',description:'기본 최대 손패가 1 증가하지만 트럼프 카드의 트릭 적용 숫자 보너스가 +2가 된다. 트럼프는 자동 승리하지 않는다.',
+      rulesOverride:Object.freeze({trumpBonus:2,maxHandModifier:1}),effects:Object.freeze([])
     })
   });
   let rulesInstalled=false;
@@ -213,10 +221,10 @@
   }
   function installTermsAdapter(runtimeRoot=root){
     if(typeof runtimeRoot?.showTerm==='function'&&!runtimeRoot.showTerm.__trumpFields75O){
-      const legacy=runtimeRoot.showTerm;const wrapped=function(term,...args){const result=legacy.call(this,term,...args);if(term==='트럼프'){const p=runtimeRoot.document?.querySelector?.('#modal p');if(p)p.textContent='현재 세트의 지정 무늬. 최종 무늬 판정 뒤 기본적으로 트릭 적용 숫자 +3을 받으며, 필드에 따라 +5·+1·0으로 바뀔 수 있다. 자동 승리권은 아니며 쇼다운 원래 값도 바꾸지 않는다.'}return result};wrapped.__trumpFields75O=true;wrapped.__legacyShowTerm=legacy;runtimeRoot.showTerm=wrapped;
+      const legacy=runtimeRoot.showTerm;const wrapped=function(term,...args){const result=legacy.call(this,term,...args);if(term==='트럼프'){const p=runtimeRoot.document?.querySelector?.('#modal p');if(p)p.textContent='현재 세트의 지정 무늬. 최종 무늬 판정 뒤 기본적으로 트릭 적용 숫자 +3을 받으며, 필드에 따라 값이 바뀔 수 있다. 자동 승리권은 아니며 쇼다운 원래 값도 바꾸지 않는다.'}return result};wrapped.__trumpFields75O=true;wrapped.__legacyShowTerm=legacy;runtimeRoot.showTerm=wrapped;
     }
     if(typeof runtimeRoot?.showTerms==='function'&&!runtimeRoot.showTerms.__trumpFields75O){
-      const legacy=runtimeRoot.showTerms;const wrapped=function(...args){const result=legacy.apply(this,args),buttons=runtimeRoot.document?.querySelectorAll?.('#modal .choice')||[];for(const button of buttons){if(button.querySelector?.('b')?.textContent!=='트럼프')continue;const span=button.querySelector?.('span');if(span)span.textContent='최종 무늬 판정 뒤 기본 +3. 필드가 있으면 +5·+1·0 등으로 바뀌며 최종 적용 숫자로 승패를 정한다.'}return result};wrapped.__trumpFields75O=true;wrapped.__legacyShowTerms=legacy;runtimeRoot.showTerms=wrapped;
+      const legacy=runtimeRoot.showTerms;const wrapped=function(...args){const result=legacy.apply(this,args),buttons=runtimeRoot.document?.querySelectorAll?.('#modal .choice')||[];for(const button of buttons){if(button.querySelector?.('b')?.textContent!=='트럼프')continue;const span=button.querySelector?.('span');if(span)span.textContent='최종 무늬 판정 뒤 기본 +3. 필드가 있으면 보너스가 바뀌며 최종 적용 숫자로 승패를 정한다.'}return result};wrapped.__trumpFields75O=true;wrapped.__legacyShowTerms=legacy;runtimeRoot.showTerms=wrapped;
     }
     return true;
   }
