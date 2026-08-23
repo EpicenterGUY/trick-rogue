@@ -19,13 +19,13 @@
     'core.paint','core.plus2','core.draw','core.scout','core.double','core.barrier',
     'core.burn','core.pureboost','core.clean'
   ]);
-  const COMMON_STARTER_EFFECT_CARD_IDS=Object.freeze(['core.plus2','core.draw','core.burn','core.pureboost','core.clean']);
-  const COMMON_STARTER_PURE_SLOTS=Object.freeze(['S5','H4','H7','D2','D3','C3','C5']);
+  const COMMON_STARTER_EFFECT_CARD_IDS=Object.freeze(['core.plus2','core.draw','core.burn','core.scout']);
+  const COMMON_STARTER_PURE_SLOTS=Object.freeze(['S5','H4','H7','D2','D3','C3','C5','C10']);
 
   const STARTERS=Object.freeze([
     Object.freeze({
       id:COMMON_STARTER_ID,name:'공용 스타터',icon:'◫',kind:'common',
-      desc:'순수 카드, 손패 순환, 칩 운용을 함께 익히는 공용 시작 덱. 특정 카드군에 속하지 않는다.',
+      desc:'순수 카드와 숫자·순환·칩·정보 기본기를 익히는 공용 시작 덱. 특정 카드군에 속하지 않는다.',
       pureSlots:COMMON_STARTER_PURE_SLOTS,
       effectCardIds:COMMON_STARTER_EFFECT_CARD_IDS,
       exposed:true
