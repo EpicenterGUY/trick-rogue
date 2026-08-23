@@ -7,6 +7,9 @@
   }
 })(typeof globalThis!=='undefined'?globalThis:this,function(defaultRoot){
   const STAGE='7.5-C';
+  const BURST_STAGE='7.5-D';
+  const RIVER_MULTIPLIER=1.25;
+  const PERFECT_SET_MULTIPLIER=1.5;
   const SHOWDOWN_PHASES=Object.freeze([
     'cards_locked',
     'pre_showdown_effects',
@@ -30,6 +33,7 @@
     four_kind:Object.freeze({id:'four_kind',name:'포카드',power:42}),
     straight_flush:Object.freeze({id:'straight_flush',name:'스트레이트 플러시',power:60})
   });
+  const POKER_STRENGTH=Object.freeze(['high_card','pair','two_pair','three_kind','straight','flush','full_house','four_kind','straight_flush']);
 
   function activeBattle(runtimeRoot=defaultRoot){
     try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}
@@ -72,6 +76,43 @@
     else if(groups[0]===2)definition=POKER_HANDS.pair;
     return{...definition,ranks:[...ranks],suits:[...suits]};
   }
+  function evaluateFourCardState(entries,{valueResolver}={}){
+    if(!Array.isArray(entries)||entries.length!==4)throw new RangeError('River comparison requires exactly four prior cards');
+    const cards=entries.map(unwrapCard);
+    const ranks=cards.map(card=>numeric(showdownValue(card,'Rank',valueResolver),NaN)).sort((a,b)=>a-b);
+    const suits=cards.map(card=>showdownValue(card,'Suit',valueResolver));
+    if(ranks.some(rank=>!Number.isFinite(rank)))throw new TypeError('Showdown ranks must be numeric');
+    const counts={};for(const rank of ranks)counts[rank]=(counts[rank]||0)+1;
+    const groups=Object.values(counts).sort((a,b)=>b-a);
+    let definition=POKER_HANDS.high_card;
+    if(groups[0]===4)definition=POKER_HANDS.four_kind;
+    else if(groups[0]===3)definition=POKER_HANDS.three_kind;
+    else if(groups[0]===2&&groups[1]===2)definition=POKER_HANDS.two_pair;
+    else if(groups[0]===2)definition=POKER_HANDS.pair;
+    return{...definition,ranks:[...ranks],suits:[...suits],partial:true};
+  }
+  function pokerStrength(handOrId){
+    const id=typeof handOrId==='string'?handOrId:handOrId?.id;
+    return POKER_STRENGTH.indexOf(id);
+  }
+  function detectRiverCompletion(entries,{valueResolver}={}){
+    if(!Array.isArray(entries)||entries.length!==5)throw new RangeError('River completion requires exactly five showdown cards');
+    const before=evaluateFourCardState(entries.slice(0,4),{valueResolver});
+    const after=evaluatePoker(entries,{valueResolver});
+    const fifth=unwrapCard(entries[4]);
+    const active=pokerStrength(after)>pokerStrength(before);
+    return{
+      stage:BURST_STAGE,active,multiplier:RIVER_MULTIPLIER,
+      before:{id:before.id,name:before.name,ranks:[...before.ranks],suits:[...before.suits]},
+      after:{id:after.id,name:after.name,ranks:[...after.ranks],suits:[...after.suits]},
+      fifth:{rank:showdownValue(fifth,'Rank',valueResolver),suit:showdownValue(fifth,'Suit',valueResolver)}
+    };
+  }
+  function detectPerfectSet(setHistory){
+    const results=Array.isArray(setHistory?.trickResults)?setHistory.trickResults:[];
+    const active=results.length===5&&results.every(result=>result==='player');
+    return{stage:BURST_STAGE,active,multiplier:PERFECT_SET_MULTIPLIER,wins:results.filter(result=>result==='player').length,results:[...results]};
+  }
   function createSide(hand){
     return{
       hand:{...hand,ranks:[...(hand?.ranks||[])],suits:[...(hand?.suits||[])]},
@@ -107,6 +148,18 @@
     const entry={id:id||`${source}:${target.multipliers.length+1}`,label:label||source,factor:multiplier,source,before:null,after:null};
     if(metadata!==undefined)entry.metadata=metadata;
     target.multipliers.push(entry);return entry;
+  }
+  function addRiverCompletionMultiplier(model,entries,{valueResolver,side='player'}={}){
+    const river=detectRiverCompletion(entries,{valueResolver});
+    model.riverCompletion=river;
+    if(river.active)addMultiplier(model,side,{id:'river_completion',label:'리버 완성',factor:river.multiplier,source:'river',metadata:{before:river.before,after:river.after,fifth:river.fifth}});
+    return river;
+  }
+  function addPerfectSetMultiplier(model,setHistory,{side='player'}={}){
+    const perfect=detectPerfectSet(setHistory);
+    model.perfectSet=perfect;
+    if(perfect.active)addMultiplier(model,side,{id:'perfect_set',label:'5전 전승',factor:perfect.multiplier,source:'trick_record',metadata:{wins:perfect.wins,results:perfect.results}});
+    return perfect;
   }
   function finalizeSide(side){
     side.additiveTotal=side.additives.reduce((sum,entry)=>sum+numeric(entry.value),0);
@@ -208,6 +261,7 @@
     show('5장 확정','쇼다운 계산 시작');await wait(runtimeRoot,75);
     show('쇼다운 전 효과','숫자·무늬·슬롯 변경 확정');await wait(runtimeRoot,90);
     show('족보 확정',`나 ${model.player.hand.name} ${model.player.basePower} / 적 ${model.enemy.hand.name} ${model.enemy.basePower}`);await wait(runtimeRoot,110);
+    if(model.riverCompletion?.active){show('리버 완성',`${model.riverCompletion.before.name} → ${model.riverCompletion.after.name} · ×${model.riverCompletion.multiplier}`,'multiplier');await wait(runtimeRoot,110)}
     show('덧셈 정산',`나 ${additiveText(model.player)} / 적 ${additiveText(model.enemy)}`);await wait(runtimeRoot,110);
     if(model.player.multipliers.length||model.enemy.multipliers.length){
       show('배율 정산',`나 ${multiplierText(model.player)} / 적 ${multiplierText(model.enemy)}`,'multiplier');await wait(runtimeRoot,120);
@@ -257,11 +311,15 @@
     const untracked=numeric(score.value)-represented;
     if(untracked)addAdditive(model,'player',{id:'untracked_additive',label:'기타 덧셈',value:untracked,source:'runtime'});
 
+    // 7.5-D 희귀 배율 순서: 리버 완성 → 우세 → 5전 전승.
+    // 3승/4승 덧셈은 아직 밸런스 후보이므로 자동 적용하지 않는다.
+    addRiverCompletionMultiplier(model,state.slots,{valueResolver:resolver});
     addActiveAdvantageMultipliers(runtimeRoot,state,model,advantage);
+    addPerfectSetMultiplier(model,state.setHistory);
     finalizeBreakdown(model);
     syncAdvantageDiagnostics(state,model,advantage);
     const archived=archiveBreakdown(state,model);
-    if(runtimeRoot?.console?.debug)runtimeRoot.console.debug('[showdown 7.5-C]',archived);
+    if(runtimeRoot?.console?.debug)runtimeRoot.console.debug('[showdown 7.5-D]',archived);
 
     await animateBreakdown(runtimeRoot,state,model);
     const sequence=runtimeRoot?.document?.getElementById?.('showdownSequence');
@@ -317,9 +375,9 @@
   function installBrowser(runtimeRoot=defaultRoot){return{poker:wrapPoker(runtimeRoot),showdown:wrapShowdown(runtimeRoot)}}
 
   return{
-    STAGE,SHOWDOWN_PHASES,POKER_HANDS,
-    activeBattle,activeRun,numeric,signed,unwrapCard,showdownValue,evaluatePoker,
-    createBreakdown,addAdditive,addMultiplier,finalizeSide,finalizeBreakdown,multiplierText,additiveText,traceLines,snapshotBreakdown,
+    STAGE,BURST_STAGE,RIVER_MULTIPLIER,PERFECT_SET_MULTIPLIER,SHOWDOWN_PHASES,POKER_HANDS,POKER_STRENGTH,
+    activeBattle,activeRun,numeric,signed,unwrapCard,showdownValue,evaluatePoker,evaluateFourCardState,pokerStrength,detectRiverCompletion,detectPerfectSet,
+    createBreakdown,addAdditive,addMultiplier,addRiverCompletionMultiplier,addPerfectSetMultiplier,finalizeSide,finalizeBreakdown,multiplierText,additiveText,traceLines,snapshotBreakdown,
     cardLabel,advantageExtra,currentContractResolution,recordScoreTrigger,undoLegacyAdvantageScale,addActiveAdvantageMultipliers,syncAdvantageDiagnostics,
     animateBreakdown,archiveBreakdown,resolveRuntimeShowdown,wrapPoker,wrapShowdown,installBrowser
   };
