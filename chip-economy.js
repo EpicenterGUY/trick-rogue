@@ -6,7 +6,7 @@
     api.installBrowser(root);
   }
 })(typeof globalThis!=='undefined'?globalThis:this,function(defaultRoot){
-  const STAGE='7.5-B';
+  const STAGE='7.5-I';
   const CHIP_CAP=5;
   const TRICK_WIN_REWARD=1;
   const HAND_EXCHANGE_COST=2;
@@ -30,10 +30,14 @@
       state.chipEconomy={
         balance:clampChips(initialBalance??state.chip??0),
         lastBaseWinKey:null,
+        lastExchangeKey:null,
         exchanges:0
       };
     }
     state.chipEconomy.balance=clampChips(state.chipEconomy.balance);
+    if(!('lastBaseWinKey'in state.chipEconomy))state.chipEconomy.lastBaseWinKey=null;
+    if(!('lastExchangeKey'in state.chipEconomy))state.chipEconomy.lastExchangeKey=null;
+    state.chipEconomy.exchanges=Math.max(0,Math.floor(Number(state.chipEconomy.exchanges)||0));
     state.maxChip=CHIP_CAP;
     state.chip=state.chipEconomy.balance;
     return state.chipEconomy;
@@ -41,10 +45,22 @@
 
   function initializeBattleChipState(state,{balance=0}={}){
     if(!state||typeof state!=='object')throw new TypeError('A battle state is required');
-    state.chipEconomy={balance:clampChips(balance),lastBaseWinKey:null,exchanges:0};
+    state.chipEconomy={balance:clampChips(balance),lastBaseWinKey:null,lastExchangeKey:null,exchanges:0};
     state.maxChip=CHIP_CAP;
     state.chip=state.chipEconomy.balance;
     return state.chipEconomy;
+  }
+
+  function resetBattleChipState(state){
+    const economy=ensureChipState(state);
+    if(!economy)return null;
+    economy.balance=0;
+    economy.lastBaseWinKey=null;
+    economy.lastExchangeKey=null;
+    economy.exchanges=0;
+    state.maxChip=CHIP_CAP;
+    state.chip=0;
+    return economy;
   }
 
   function trickKey(state,context={}){
@@ -92,21 +108,33 @@
     if(!state||!economy)return{ok:false,reason:'no_battle'};
     if(state.phase&&state.phase!=='trick')return{ok:false,reason:'not_trick'};
     if(state.animating)return{ok:false,reason:'animating'};
+    if(economy.lastExchangeKey===trickKey(state))return{ok:false,reason:'already_exchanged'};
     if(economy.balance<HAND_EXCHANGE_COST)return{ok:false,reason:'not_enough_chips'};
     if(!Array.isArray(state.hand))return{ok:false,reason:'no_hand'};
     const index=state.hand.findIndex(card=>cardKey(card)===uid);
     if(index<0)return{ok:false,reason:'no_selection'};
     const replacements=(Array.isArray(state.deck)?state.deck.length:0)+(Array.isArray(state.discard)?state.discard.length:0);
     if(replacements<1)return{ok:false,reason:'no_replacement'};
-    return{ok:true,index,card:state.hand[index]};
+    return{ok:true,index,card:state.hand[index],trickKey:trickKey(state)};
   }
 
   function recycleDiscard(state,shuffleFn){
     if(state.deck.length||!state.discard.length)return false;
     const pool=state.discard.splice(0);
     const shuffled=typeof shuffleFn==='function'?shuffleFn(pool):pool;
-    state.deck.push(...(Array.isArray(shuffled)?shuffled:pool));
+    state.deck.push(...(Array.isArray(shuffled)&&shuffled.length?shuffled:pool));
     return true;
+  }
+
+  function putOnDeckBottom(state,card){
+    if(!Array.isArray(state.deck))state.deck=[];
+    state.deck.unshift(card);
+    return card;
+  }
+
+  function drawFromDeckTop(state){
+    if(!Array.isArray(state.deck)||!state.deck.length)return null;
+    return state.deck.pop()||null;
   }
 
   function exchangeHandCard(state,uid,{shuffle}={}){
@@ -115,37 +143,48 @@
     if(!Array.isArray(state.deck))state.deck=[];
     if(!Array.isArray(state.discard))state.discard=[];
 
-    const outgoing=state.hand.splice(availability.index,1)[0];
     recycleDiscard(state,shuffle);
-    const incoming=state.deck.pop();
+    if(!state.deck.length)return{ok:false,reason:'no_replacement'};
+
+    const payment=spendChips(state,HAND_EXCHANGE_COST,{recordHistory:true});
+    if(!payment.ok)return{ok:false,reason:'not_enough_chips'};
+
+    const outgoing=state.hand.splice(availability.index,1)[0];
+    putOnDeckBottom(state,outgoing);
+    const incoming=drawFromDeckTop(state);
     if(!incoming){
+      state.deck.shift();
       state.hand.splice(availability.index,0,outgoing);
+      economyRefund(state,payment);
       return{ok:false,reason:'no_replacement'};
     }
 
-    const payment=spendChips(state,HAND_EXCHANGE_COST,{recordHistory:true});
-    if(!payment.ok){
-      state.deck.push(incoming);
-      state.hand.splice(availability.index,0,outgoing);
-      return{ok:false,reason:'not_enough_chips'};
-    }
-
     state.hand.splice(availability.index,0,incoming);
-    state.discard.push(outgoing);
     if(!state.history||typeof state.history!=='object')state.history={};
     state.history.cardsDrawn=(Number(state.history.cardsDrawn)||0)+1;
     const economy=ensureChipState(state);
     economy.exchanges=(Number(economy.exchanges)||0)+1;
+    economy.lastExchangeKey=availability.trickKey;
     if(state.selected===uid)state.selected=null;
     state.inspectSlot=null;
     state.inspectStage=null;
-    return{ok:true,cost:HAND_EXCHANGE_COST,discarded:outgoing,drawn:incoming,balance:economy.balance};
+    return{ok:true,cost:HAND_EXCHANGE_COST,returnedToDeckBottom:outgoing,drawn:incoming,balance:economy.balance,trickKey:availability.trickKey};
+  }
+
+  function economyRefund(state,payment){
+    const economy=ensureChipState(state);
+    const amount=Math.max(0,Number(payment?.spent)||0);
+    economy.balance=clampChips(economy.balance+amount);
+    state.chip=economy.balance;
+    if(state.history&&amount)state.history.chipsSpent=Math.max(0,(Number(state.history.chipsSpent)||0)-amount);
+    return economy.balance;
   }
 
   function reasonText(reason){
+    if(reason==='already_exchanged')return'이번 트릭에서는 이미 손패를 교환했다.';
     if(reason==='not_enough_chips')return`칩 ${HAND_EXCHANGE_COST}개가 필요하다.`;
     if(reason==='no_selection')return'교환할 손패 카드를 먼저 선택한다.';
-    if(reason==='no_replacement')return'덱과 버림 더미에 교환할 카드가 없다.';
+    if(reason==='no_replacement')return'드로우 덱과 버림 더미에 뽑을 카드가 없다.';
     if(reason==='animating')return'카드 처리 중에는 교환할 수 없다.';
     if(reason==='not_trick')return'트릭 선택 단계에서만 교환할 수 있다.';
     return'현재는 손패를 교환할 수 없다.';
@@ -204,9 +243,9 @@
     const availability=exchangeAvailability(state,state.selected);
     button.textContent=`교환 ${HAND_EXCHANGE_COST}칩`;
     button.disabled=!availability.ok;
-    button.title=availability.ok?'선택한 손패 1장을 버리고 카드 1장을 뽑는다.':reasonText(availability.reason);
+    button.title=availability.ok?'선택한 손패 1장을 드로우 덱 맨 아래로 보내고 카드 1장을 뽑는다. 트릭당 1회.':reasonText(availability.reason);
     const chipText=runtimeRoot?.document?.getElementById?.('chipText');
-    if(chipText)chipText.title=`트릭 승리 +${TRICK_WIN_REWARD} · 최대 ${CHIP_CAP} · 손패 교환 ${HAND_EXCHANGE_COST}칩`;
+    if(chipText)chipText.title=`트릭 승리 +${TRICK_WIN_REWARD} · 최대 ${CHIP_CAP} · 손패 교환 ${HAND_EXCHANGE_COST}칩 · 트릭당 1회`;
     return availability.ok&&economy.balance>=HAND_EXCHANGE_COST;
   }
 
@@ -303,12 +342,28 @@
     return true;
   }
 
+  function wrapBattleEnd(runtimeRoot=defaultRoot,name){
+    const original=runtimeRoot?.[name];
+    if(typeof original!=='function'||original.__tricklogChipEconomy75IEnd)return false;
+    function wrapped(){
+      const state=activeBattle(runtimeRoot);
+      if(state)resetBattleChipState(state);
+      return original.apply(this,arguments);
+    }
+    wrapped.__tricklogChipEconomy75IEnd=true;
+    wrapped.__original=original;
+    runtimeRoot[name]=wrapped;
+    return true;
+  }
+
   function installBrowser(runtimeRoot=defaultRoot){
     const installed={
       chipHandler:installGainChipHandler(runtimeRoot),
       startBattle:wrapStartBattle(runtimeRoot),
       runCardEffects:wrapRunCardEffects(runtimeRoot),
-      renderBattle:wrapRenderBattle(runtimeRoot)
+      renderBattle:wrapRenderBattle(runtimeRoot),
+      winBattle:wrapBattleEnd(runtimeRoot,'winBattle'),
+      loseRun:wrapBattleEnd(runtimeRoot,'loseRun')
     };
     ensureExchangeStyle(runtimeRoot);
     syncExchangeButton(runtimeRoot);
@@ -317,9 +372,10 @@
 
   return{
     STAGE,CHIP_CAP,TRICK_WIN_REWARD,HAND_EXCHANGE_COST,
-    activeBattle,clampChips,cardKey,ensureChipState,initializeBattleChipState,trickKey,
-    grantChips,spendChips,rewardTrickWin,exchangeAvailability,recycleDiscard,exchangeHandCard,reasonText,
-    presentGain,ensureExchangeStyle,ensureExchangeButton,syncExchangeButton,exchangeSelected,prepareRuntimeState,
-    installGainChipHandler,wrapStartBattle,wrapRunCardEffects,wrapRenderBattle,installBrowser
+    activeBattle,clampChips,cardKey,ensureChipState,initializeBattleChipState,resetBattleChipState,trickKey,
+    grantChips,spendChips,rewardTrickWin,exchangeAvailability,recycleDiscard,putOnDeckBottom,drawFromDeckTop,
+    exchangeHandCard,economyRefund,reasonText,presentGain,ensureExchangeStyle,ensureExchangeButton,syncExchangeButton,
+    exchangeSelected,prepareRuntimeState,installGainChipHandler,wrapStartBattle,wrapRunCardEffects,wrapRenderBattle,
+    wrapBattleEnd,installBrowser
   };
 });
