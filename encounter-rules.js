@@ -9,23 +9,27 @@
   const FIELD_SLOT_COUNT=1;
   const FIELD_SOURCE_TYPES=Object.freeze(['card','boss','elite','event','shop','relic','contract','scripted']);
   const RULE_KINDS=Object.freeze(['elite_modifier','boss_phase']);
-  const RULE_OVERRIDE_KEYS=Object.freeze([
-    'advantageMargin','playerAdvantageMargin','enemyAdvantageMargin',
-    'showdownAdvantagePower','playerAdvantagePower','enemyAdvantagePower',
-    'lowRankWinsWhenSameTrumpState'
-  ]);
+  const RULE_OVERRIDE_KEYS=Object.freeze(['trumpBonus','maxHandModifier','lowFinalValueWins']);
   const FIELD_DEFINITIONS=Object.freeze({
     resonance_floor:Object.freeze({
-      id:'resonance_floor',label:'공명 바닥',description:'쇼다운에서 우세를 얻은 쪽의 기본 우세 위력이 +4가 된다.',
-      rulesOverride:Object.freeze({showdownAdvantagePower:4}),effects:Object.freeze([])
+      id:'resonance_floor',label:'과충전 구역',description:'트럼프 카드의 트릭 적용 숫자 보너스가 +3 대신 +5가 된다.',
+      rulesOverride:Object.freeze({trumpBonus:5}),effects:Object.freeze([])
     }),
     thin_signal:Object.freeze({
-      id:'thin_signal',label:'희박 신호',description:'쇼다운 무늬 우세는 양측 장수 차이가 3 이상일 때만 성립한다.',
-      rulesOverride:Object.freeze({advantageMargin:3}),effects:Object.freeze([])
+      id:'thin_signal',label:'감쇠 지대',description:'트럼프 카드의 트릭 적용 숫자 보너스가 +3 대신 +1이 된다.',
+      rulesOverride:Object.freeze({trumpBonus:1}),effects:Object.freeze([])
+    }),
+    outlaw_zone:Object.freeze({
+      id:'outlaw_zone',label:'무법지대',description:'이번 전투에서 트럼프 무늬는 유지되지만 트릭 적용 숫자 보너스는 0이 된다.',
+      rulesOverride:Object.freeze({trumpBonus:0}),effects:Object.freeze([])
+    }),
+    narrow_table:Object.freeze({
+      id:'narrow_table',label:'좁은 테이블',description:'기본 최대 손패가 1 감소한다.',
+      rulesOverride:Object.freeze({maxHandModifier:-1}),effects:Object.freeze([])
     }),
     inversion_zone:Object.freeze({
-      id:'inversion_zone',label:'역상 구역',description:'낮은 최종 적용 숫자가 승리한다.',
-      rulesOverride:Object.freeze({lowRankWinsWhenSameTrumpState:true}),effects:Object.freeze([])
+      id:'inversion_zone',label:'뒤집힌 세계',description:'모든 보정을 끝낸 최종 적용 숫자가 낮은 쪽이 트릭에서 승리한다.',
+      rulesOverride:Object.freeze({lowFinalValueWins:true}),effects:Object.freeze([])
     })
   });
   const ENCOUNTER_PROFILES=Object.freeze({
@@ -50,7 +54,7 @@
           id:'phase_2',label:'2페이즈',minHpRatio:.40,rulesOverride:Object.freeze({}),
           rule:Object.freeze({
             id:'watcher-phase-2',label:'감시 역전',description:'낮은 최종 적용 숫자가 이긴다. 세트 시작 시 보호막 2를 얻는다.',
-            rulesOverride:Object.freeze({lowRankWinsWhenSameTrumpState:true}),
+            rulesOverride:Object.freeze({lowFinalValueWins:true}),
             effects:Object.freeze([
               Object.freeze({id:'watcher-phase-2-shield',trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'shield',amount:2}),duration:'set'})
             ])
@@ -59,8 +63,8 @@
         Object.freeze({
           id:'phase_3',label:'3페이즈',minHpRatio:0,rulesOverride:Object.freeze({}),
           rule:Object.freeze({
-            id:'watcher-phase-3',label:'규칙 재작성',description:'낮은 최종 적용 숫자가 이기는 역전 규칙을 유지하고 적의 쇼다운 우세 기본 위력은 +5가 된다. 세트 시작 시 보호막 4를 얻는다.',
-            rulesOverride:Object.freeze({lowRankWinsWhenSameTrumpState:true,enemyAdvantagePower:5}),
+            id:'watcher-phase-3',label:'규칙 재작성',description:'낮은 최종 적용 숫자가 이기는 역전 규칙을 유지한다. 세트 시작 시 보호막 4를 얻는다.',
+            rulesOverride:Object.freeze({lowFinalValueWins:true}),
             effects:Object.freeze([
               Object.freeze({id:'watcher-phase-3-shield',trigger:'on_set_start',action:'apply_status',value:Object.freeze({target:'enemy',statusId:'shield',amount:4}),duration:'set'})
             ])
@@ -74,8 +78,6 @@
   let originalDamageEnemy=null;
   let originalRenderBattle=null;
   let originalCoreCompareTrick=null;
-  let originalCoreResolveShowdownAdvantage=null;
-  let originalCoreApplyShowdownAdvantage=null;
 
   function battleCore(){return NodeBattleCore||root.BattleCore||null}
   function cloneEffects(effects=[]){return effects.map(effect=>({...effect,value:effect?.value&&typeof effect.value==='object'?{...effect.value}:effect?.value}))}
@@ -87,11 +89,10 @@
     if(overrides===undefined)return[];
     if(!overrides||typeof overrides!=='object'||Array.isArray(overrides))return[`${prefix}: invalid rulesOverride`];
     const errors=[];
-    const marginKeys=['advantageMargin','playerAdvantageMargin','enemyAdvantageMargin'];
-    const powerKeys=['showdownAdvantagePower','playerAdvantagePower','enemyAdvantagePower'];
-    for(const key of marginKeys)if(key in overrides&&(!Number.isInteger(overrides[key])||overrides[key]<1||overrides[key]>5))errors.push(`${prefix}: ${key} must be an integer from 1 to 5`);
-    for(const key of powerKeys)if(key in overrides&&(!Number.isFinite(overrides[key])||overrides[key]<0||overrides[key]>20))errors.push(`${prefix}: ${key} must be a number from 0 to 20`);
-    if('lowRankWinsWhenSameTrumpState' in overrides&&typeof overrides.lowRankWinsWhenSameTrumpState!=='boolean')errors.push(`${prefix}: lowRankWinsWhenSameTrumpState must be boolean`);
+    for(const key of Object.keys(overrides))if(!RULE_OVERRIDE_KEYS.includes(key))errors.push(`${prefix}: unsupported rule override ${key}`);
+    if('trumpBonus' in overrides&&(!Number.isFinite(Number(overrides.trumpBonus))||Number(overrides.trumpBonus)<0||Number(overrides.trumpBonus)>10))errors.push(`${prefix}: trumpBonus must be a number from 0 to 10`);
+    if('maxHandModifier' in overrides&&(!Number.isInteger(overrides.maxHandModifier)||overrides.maxHandModifier<-2||overrides.maxHandModifier>2))errors.push(`${prefix}: maxHandModifier must be an integer from -2 to 2`);
+    if('lowFinalValueWins' in overrides&&typeof overrides.lowFinalValueWins!=='boolean')errors.push(`${prefix}: lowFinalValueWins must be boolean`);
     return errors;
   }
   function validateRule(rule,prefix='rule'){
@@ -103,7 +104,7 @@
     errors.push(...CardEffects.validateEffectList(rule.effects||[],{requireTrigger:true,requireDuration:true}).map(error=>`${prefix}: ${error}`));
     return errors;
   }
-  function validateEncounterProfiles(profiles=ENCOUNTER_PROFILES,fields=FIELD_DEFINITIONS){
+  function validateEncounterProfiles(profiles=ENCOUNTER_PROFILES){
     const errors=[];
     for(const [type,profile] of Object.entries(profiles)){
       if(!profile?.id)errors.push(`${type}: missing id`);
@@ -225,37 +226,12 @@
     return merged;
   }
   function activeRulesOverride(state){return state?.rulesOverride&&typeof state.rulesOverride==='object'?state.rulesOverride:resolveRulesOverride(state||{})}
-  function ruleNumber(rules,key,fallback){return Number.isFinite(rules?.[key])?rules[key]:fallback}
-  function advantageMargins(state){
-    const rules=activeRulesOverride(state),general=ruleNumber(rules,'advantageMargin',2);
-    return{player:ruleNumber(rules,'playerAdvantageMargin',general),enemy:ruleNumber(rules,'enemyAdvantageMargin',general)};
-  }
-  function advantagePowers(state){
-    const core=battleCore(),fallback=core?.SHOWDOWN_ADVANTAGE_POWER??3,rules=activeRulesOverride(state),general=ruleNumber(rules,'showdownAdvantagePower',fallback);
-    return{player:ruleNumber(rules,'playerAdvantagePower',general),enemy:ruleNumber(rules,'enemyAdvantagePower',general)};
-  }
   function compareTrickWithRules(playerCard,enemyCard,trump,state,baseCompare,options={}){
     const core=battleCore();if(!core)throw new TypeError('BattleCore is required');
     const compare=baseCompare||originalCoreCompareTrick||core.compareTrick;
     const result=compare(playerCard,enemyCard,trump,options);
-    const rules=activeRulesOverride(state);
-    return rules.lowRankWinsWhenSameTrumpState===true?-result:result;
-  }
-  function resolveShowdownAdvantageWithRules({playerCards,enemyCards},state){
-    const core=battleCore();if(!core)throw new TypeError('BattleCore is required');
-    if(!Array.isArray(playerCards)||!Array.isArray(enemyCards))throw new TypeError('Showdown advantage requires both showdown card arrays');
-    const margins=advantageMargins(state);
-    const count=cards=>Object.fromEntries(core.SUITS.map(suit=>[suit,cards.filter(entry=>core.showdownValue(entry.card||entry,'Suit')===suit).length]));
-    const playerSuitCounts=count(playerCards),enemySuitCounts=count(enemyCards),playerAdvantages=[],enemyAdvantages=[];
-    for(const suit of core.SUITS){
-      const difference=playerSuitCounts[suit]-enemySuitCounts[suit];
-      if(difference>=margins.player)playerAdvantages.push(suit);else if(difference<=-margins.enemy)enemyAdvantages.push(suit);
-    }
-    return{playerAdvantages,enemyAdvantages,playerAdvantageCount:playerAdvantages.length,enemyAdvantageCount:enemyAdvantages.length,playerSuitCounts,enemySuitCounts};
-  }
-  function applyShowdownAdvantageWithRules(playerPower,enemyPower,advantage,state){
-    const powers=advantagePowers(state),playerHas=Array.isArray(advantage?.playerAdvantages)&&advantage.playerAdvantages.length>0,enemyHas=Array.isArray(advantage?.enemyAdvantages)&&advantage.enemyAdvantages.length>0;
-    return{playerPower:playerPower+(playerHas?powers.player:0),enemyPower:enemyPower+(enemyHas?powers.enemy:0)};
+    if(result===0)return 0;
+    return activeRulesOverride(state).lowFinalValueWins===true?-result:result;
   }
   function syncEncounterRules(state){
     if(!state||typeof state!=='object')throw new TypeError('syncEncounterRules requires battle state');
@@ -341,16 +317,6 @@
       const wrapped=function(playerCard,enemyCard,trump,options){return compareTrickWithRules(playerCard,enemyCard,trump,ensureInitialized(runtimeRoot),original,options)};
       wrapped.__encounterRulesAdapter=true;wrapped.__legacyCompareTrick=original;core.compareTrick=wrapped;
     }
-    if(typeof core.resolveShowdownAdvantage==='function'&&!core.resolveShowdownAdvantage.__encounterRulesAdapter){
-      const original=core.resolveShowdownAdvantage;if(!originalCoreResolveShowdownAdvantage)originalCoreResolveShowdownAdvantage=original;
-      const wrapped=function(input){const state=ensureInitialized(runtimeRoot);return state?resolveShowdownAdvantageWithRules(input,state):original(input)};
-      wrapped.__encounterRulesAdapter=true;wrapped.__legacyResolveShowdownAdvantage=original;core.resolveShowdownAdvantage=wrapped;
-    }
-    if(typeof core.applyShowdownAdvantage==='function'&&!core.applyShowdownAdvantage.__encounterRulesAdapter){
-      const original=core.applyShowdownAdvantage;if(!originalCoreApplyShowdownAdvantage)originalCoreApplyShowdownAdvantage=original;
-      const wrapped=function(playerPower,enemyPower,advantage){const state=ensureInitialized(runtimeRoot);return state?applyShowdownAdvantageWithRules(playerPower,enemyPower,advantage,state):original(playerPower,enemyPower,advantage)};
-      wrapped.__encounterRulesAdapter=true;wrapped.__legacyApplyShowdownAdvantage=original;core.applyShowdownAdvantage=wrapped;
-    }
     return true;
   }
   function wrapRenderBattle(runtimeRoot=root){
@@ -379,7 +345,6 @@
   return{
     FIELD_SLOT_COUNT,FIELD_SOURCE_TYPES,RULE_KINDS,RULE_OVERRIDE_KEYS,FIELD_DEFINITIONS,ENCOUNTER_PROFILES,battleCore,profileFor,validateRulesOverride,validateRule,validateEncounterProfiles,validateFieldDefinition,validateFieldRegistry,
     hpRatio,resolveBossPhase,makeRuleOwner,managedRulesFor,preserveExternalBossRules,fieldDefinition,createField,normalizeFieldSource,setField,setFieldFromSource,clearField,resolveRulesOverride,activeRulesOverride,
-    advantageMargins,advantagePowers,compareTrickWithRules,resolveShowdownAdvantageWithRules,applyShowdownAdvantageWithRules,syncEncounterRules,initializeBattle,encounterRuleLabels,renderEncounterHud,
-    activeBattle,ensureInitialized,wrapStartBattle,wrapDamageEnemy,wrapBattleCore,wrapRenderBattle,installBrowserRuntime,installWhenReady
+    compareTrickWithRules,syncEncounterRules,initializeBattle,encounterRuleLabels,renderEncounterHud,activeBattle,ensureInitialized,wrapStartBattle,wrapDamageEnemy,wrapBattleCore,wrapRenderBattle,installBrowserRuntime,installWhenReady
   };
 });
