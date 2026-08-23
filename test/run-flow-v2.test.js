@@ -122,7 +122,11 @@ test('두 번째 지역 보스까지 끝내면 최종지역으로 전환되고 �
 
 test('지역 선택 중에는 맵 노드 진입을 막고 선택 완료 후 다시 기존 enterNode로 넘긴다',()=>{
   RunFlow.resetForTests();
-  const root=runtime();root.run={runFlow:RunFlow.createFlowState(),actId:'common'};root.run.runFlow.phase='region_choice';root.calls=[];root.enterNode(node){this.calls.push(node.id);return true};
+  const root=runtime();
+  root.run={runFlow:RunFlow.createFlowState(),actId:'common'};
+  root.run.runFlow.phase='region_choice';
+  root.calls=[];
+  root.enterNode=function(node){this.calls.push(node.id);return true};
   RunFlow.wrapEnterNode(root);
   assert.equal(root.enterNode({id:'c0'}),false);
   assert.deepEqual(root.calls,[]);
