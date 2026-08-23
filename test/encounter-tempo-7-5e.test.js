@@ -92,8 +92,9 @@ test('강한 일반 적이 첫 쇼다운을 버티면 5트릭 종료가 아니�
   const result=await Resolution.resolveRuntimeShowdown(root);
   assert.equal(result.player.basePower,24);
   assert.equal(result.enemy.basePower,5);
-  assert.equal(result.damage.amount,19);
-  assert.equal(state.enemy.hp,17);
+  assert.equal(result.riverCompletion.active,true,'5번째 6이 스트레이트를 완성해 리버 ×1.25가 적용된다');
+  assert.equal(result.damage.amount,25);
+  assert.equal(state.enemy.hp,11);
   assert.equal(state.setIndex,2);
   assert.equal(state.trick,1);
   assert.equal(state.phase,'trick');
