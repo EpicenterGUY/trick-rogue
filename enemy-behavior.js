@@ -22,9 +22,17 @@
     if(root.BattleLayout)return;
     loadScript('battle-layout.js','trick-battle-layout-runtime');
   }
-  function finishFoldExperiment(){
+  function finishRunPersistence(){
     root.RelicSystem?.wrapShowReward?.(root);
     loadBattleLayoutFinal();
+  }
+  function loadRunPersistence(){
+    if(root.RunPersistence){finishRunPersistence();return;}
+    const script=loadScript('run-persistence.js','trick-run-persistence-runtime');
+    if(script?.dataset?.loaded==='true')finishRunPersistence();else script?.addEventListener?.('load',finishRunPersistence,{once:true});
+  }
+  function finishFoldExperiment(){
+    loadRunPersistence();
   }
   function loadFoldExperiment(){
     if(root.FoldExperiment){finishFoldExperiment();return;}
