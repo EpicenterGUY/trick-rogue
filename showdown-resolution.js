@@ -8,6 +8,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(defaultRoot){
   const STAGE='7.5-C';
   const BURST_STAGE='7.5-D';
+  const ATTACK_STAGE='7.5-L';
   const RIVER_MULTIPLIER=1.25;
   const PERFECT_SET_MULTIPLIER=1.5;
   const SHOWDOWN_PHASES=Object.freeze([
@@ -18,7 +19,9 @@
     'additive_bonuses',
     'rare_multipliers',
     'final_power',
-    'damage',
+    'player_attack',
+    'enemy_survival_check',
+    'enemy_attack',
     'overkill',
     'set_end'
   ]);
@@ -124,9 +127,8 @@
   function createBreakdown({playerHand,enemyHand,setIndex=1}={}){
     if(!playerHand||!enemyHand)throw new TypeError('Both showdown hands are required');
     return{
-      stage:STAGE,order:[...SHOWDOWN_PHASES],setIndex,
-      player:createSide(playerHand),enemy:createSide(enemyHand),
-      damage:{target:null,amount:0},finalized:false
+      stage:STAGE,attackStage:ATTACK_STAGE,order:[...SHOWDOWN_PHASES],setIndex,
+      player:createSide(playerHand),enemy:createSide(enemyHand),attacks:null,attackSequence:null,finalized:false
     };
   }
   function sideOf(model,side){
@@ -172,23 +174,39 @@
     side.finalPower=current;
     return side;
   }
+  function createAttack(attacker,target,plannedAmount){
+    return{
+      stage:ATTACK_STAGE,attacker,target,plannedAmount:Math.max(0,numeric(plannedAmount)),
+      dealt:null,hpBefore:null,hpAfter:null,cancelled:false,cancelReason:null,targetDefeated:false
+    };
+  }
   function finalizeBreakdown(model){
     finalizeSide(model.player);finalizeSide(model.enemy);
-    const difference=Math.abs(model.player.finalPower-model.enemy.finalPower);
-    model.damage={target:difference?(model.player.finalPower>model.enemy.finalPower?'enemy':'player'):null,amount:difference};
+    model.attacks={
+      player:createAttack('player','enemy',model.player.finalPower),
+      enemy:createAttack('enemy','player',model.enemy.finalPower)
+    };
+    model.attackSequence=null;
     model.finalized=true;return model;
   }
   function multiplierText(side){
     return side.multipliers.length?side.multipliers.map(entry=>`${entry.label} ×${entry.factor}`).join(' · '):'없음';
   }
   function additiveText(side){return `${signed(side.additiveTotal)}`}
+  function attackTraceText(attack,label){
+    if(!attack)return`${label} 없음`;
+    if(attack.cancelled)return`${label} 취소`;
+    const amount=Number.isFinite(attack.dealt)?attack.dealt:attack.plannedAmount;
+    return`${label} ${amount}`;
+  }
   function traceLines(model){
     if(!model?.finalized)finalizeBreakdown(model);
     return[
       `족보: ${model.player.hand.name} ${model.player.basePower} / 적 ${model.enemy.hand.name} ${model.enemy.basePower}`,
       `덧셈: 나 ${additiveText(model.player)} / 적 ${additiveText(model.enemy)}`,
       `배율: 나 ${multiplierText(model.player)} / 적 ${multiplierText(model.enemy)}`,
-      `최종 위력: ${model.player.finalPower} : ${model.enemy.finalPower}`
+      `최종 위력: ${model.player.finalPower} : ${model.enemy.finalPower}`,
+      `쇼다운 공격: ${attackTraceText(model.attacks?.player,'적 피해')} / ${attackTraceText(model.attacks?.enemy,'플레이어 피해')}`
     ];
   }
   function snapshotBreakdown(model){return JSON.parse(JSON.stringify(model))}
@@ -272,6 +290,35 @@
     const sequence=runtimeRoot?.document?.getElementById?.('showdownSequence');
     if(sequence){sequence.className='';sequence.innerHTML=''}
   }
+  function resolveShowdownAttacks(runtimeRoot,state,runState,model){
+    if(!model?.finalized)finalizeBreakdown(model);
+    const playerAttack=model.attacks.player,enemyAttack=model.attacks.enemy;
+    const sequence=runtimeRoot?.document?.getElementById?.('showdownSequence');
+    if(playerAttack.plannedAmount>0)sequence?.classList?.add?.('impact');
+    playerAttack.hpBefore=Math.max(0,numeric(state?.enemy?.hp));
+    playerAttack.dealt=Math.max(0,numeric(runtimeRoot.damageEnemy?.(playerAttack.plannedAmount,'showdown',{source:'showdown_player_attack',attacker:'player',target:'enemy'})));
+    playerAttack.hpAfter=Math.max(0,numeric(state?.enemy?.hp));
+    playerAttack.targetDefeated=playerAttack.hpAfter<=0;
+    if(playerAttack.dealt>0)runtimeRoot.flash?.(`적 -${playerAttack.dealt}`);
+
+    const enemyDefeated=playerAttack.targetDefeated;
+    enemyAttack.hpBefore=Math.max(0,numeric(runState?.hp));
+    if(enemyDefeated){
+      enemyAttack.cancelled=true;enemyAttack.cancelReason='enemy_defeated';enemyAttack.dealt=0;enemyAttack.hpAfter=enemyAttack.hpBefore;enemyAttack.targetDefeated=false;
+      runtimeRoot.flash?.('적 반격 취소');
+    }else{
+      if(enemyAttack.plannedAmount>0)sequence?.classList?.add?.('impact');
+      enemyAttack.dealt=Math.max(0,numeric(runtimeRoot.damagePlayer?.(enemyAttack.plannedAmount,'showdown',{source:'showdown_enemy_attack',attacker:'enemy',target:'player'})));
+      enemyAttack.hpAfter=Math.max(0,numeric(runState?.hp));
+      enemyAttack.targetDefeated=enemyAttack.hpAfter<=0;
+      if(enemyAttack.dealt>0)runtimeRoot.flash?.(`플레이어 -${enemyAttack.dealt}`);
+    }
+    model.attackSequence={
+      stage:ATTACK_STAGE,order:['player_attack','enemy_survival_check','enemy_attack'],
+      enemyDefeated,enemyAttackCancelled:enemyAttack.cancelled,playerDefeated:enemyAttack.targetDefeated
+    };
+    return model.attackSequence;
+  }
   function archiveBreakdown(state,model){
     const snapshot=snapshotBreakdown(model);
     state.showdownBreakdown=snapshot;
@@ -318,19 +365,19 @@
     addPerfectSetMultiplier(model,state.setHistory);
     finalizeBreakdown(model);
     syncAdvantageDiagnostics(state,model,advantage);
-    const archived=archiveBreakdown(state,model);
-    if(runtimeRoot?.console?.debug)runtimeRoot.console.debug('[showdown 7.5-D]',archived);
 
     await animateBreakdown(runtimeRoot,state,model);
-    const sequence=runtimeRoot?.document?.getElementById?.('showdownSequence');
-    if(model.damage.amount)sequence?.classList?.add?.('impact');
-    if(model.damage.target==='enemy'){
-      runtimeRoot.damageEnemy?.(model.damage.amount,'showdown');runtimeRoot.flash?.(`적 -${model.damage.amount}`);
-    }else if(model.damage.target==='player'){
-      runtimeRoot.damagePlayer?.(model.damage.amount,'showdown');runtimeRoot.flash?.(`플레이어 -${model.damage.amount}`);
-    }else runtimeRoot.flash?.('동점');
+    resolveShowdownAttacks(runtimeRoot,state,runState,model);
+    const archived=archiveBreakdown(state,model);
+    if(runtimeRoot?.console?.debug)runtimeRoot.console.debug('[showdown 7.5-L]',archived);
 
-    state.slots.forEach(slot=>runtimeRoot.runCardEffects?.('after_showdown_result',slot.card,{playerWon:model.player.finalPower>model.enemy.finalPower,draw:model.player.finalPower===model.enemy.finalPower,showdownBreakdown:archived}));
+    const legacyPowerLead=model.player.finalPower>model.enemy.finalPower;
+    const legacyPowerDraw=model.player.finalPower===model.enemy.finalPower;
+    state.slots.forEach(slot=>runtimeRoot.runCardEffects?.('after_showdown_result',slot.card,{
+      playerWon:legacyPowerLead,draw:legacyPowerDraw,showdownBreakdown:archived,
+      enemyDefeated:model.attackSequence.enemyDefeated,enemyAttackCancelled:model.attackSequence.enemyAttackCancelled,
+      playerDefeated:model.attackSequence.playerDefeated,playerAttack:model.attacks.player,enemyAttack:model.attacks.enemy
+    }));
     await wait(runtimeRoot,450);
     clearShowdownSequence(runtimeRoot);
     state.slots.forEach(slot=>runtimeRoot.runCardEffects?.('on_set_end',slot.card,{showdownBreakdown:archived}));
@@ -375,10 +422,10 @@
   function installBrowser(runtimeRoot=defaultRoot){return{poker:wrapPoker(runtimeRoot),showdown:wrapShowdown(runtimeRoot)}}
 
   return{
-    STAGE,BURST_STAGE,RIVER_MULTIPLIER,PERFECT_SET_MULTIPLIER,SHOWDOWN_PHASES,POKER_HANDS,POKER_STRENGTH,
+    STAGE,BURST_STAGE,ATTACK_STAGE,RIVER_MULTIPLIER,PERFECT_SET_MULTIPLIER,SHOWDOWN_PHASES,POKER_HANDS,POKER_STRENGTH,
     activeBattle,activeRun,numeric,signed,unwrapCard,showdownValue,evaluatePoker,evaluateFourCardState,pokerStrength,detectRiverCompletion,detectPerfectSet,
-    createBreakdown,addAdditive,addMultiplier,addRiverCompletionMultiplier,addPerfectSetMultiplier,finalizeSide,finalizeBreakdown,multiplierText,additiveText,traceLines,snapshotBreakdown,
+    createBreakdown,addAdditive,addMultiplier,addRiverCompletionMultiplier,addPerfectSetMultiplier,finalizeSide,createAttack,finalizeBreakdown,multiplierText,additiveText,attackTraceText,traceLines,snapshotBreakdown,
     cardLabel,advantageExtra,currentContractResolution,recordScoreTrigger,undoLegacyAdvantageScale,addActiveAdvantageMultipliers,syncAdvantageDiagnostics,
-    animateBreakdown,archiveBreakdown,resolveRuntimeShowdown,wrapPoker,wrapShowdown,installBrowser
+    animateBreakdown,clearShowdownSequence,resolveShowdownAttacks,archiveBreakdown,resolveRuntimeShowdown,wrapPoker,wrapShowdown,installBrowser
   };
 });
