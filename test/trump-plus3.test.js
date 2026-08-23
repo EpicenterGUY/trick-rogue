@@ -69,7 +69,8 @@ test('7.5-G 브라우저 호환 어댑터는 트릭 숫자 14 상한을 제거�
   root.renderBattle();
   assert.equal(elements.trumpText.textContent,'♠ +3');
   root.inspectCard(queen,false);
-  assert.match(elements.inspectApply.textContent,/최종 적용 숫자 15/);
+  assert.match(elements.inspectApply.textContent,/계산: 12/);
+  assert.match(elements.inspectApply.textContent,/최종 15/);
 });
 
 test('7.5-G 브라우저 리버스는 같은 무늬 여부와 무관하게 최종 적용 숫자 비교 전체를 뒤집는다',()=>{
