@@ -11,7 +11,7 @@
     plus2:Object.freeze({id:'core.plus2',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','인쇄값'])}),
     draw:Object.freeze({id:'core.draw',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','손패','드로우'])}),
     scout:Object.freeze({id:'core.scout',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','예측'])}),
-    double:Object.freeze({id:'core.double',activation:'쇼다운 위력 계산 시',terms:Object.freeze(['쇼다운','우세','최종 위력'])}),
+    double:Object.freeze({id:'core.double',activation:'쇼다운 위력 계산 시',terms:Object.freeze(['쇼다운','쇼다운 슬롯','최종 위력'])}),
     barrier:Object.freeze({id:'core.barrier',activation:'이 카드를 낼 때',terms:Object.freeze(['보호막'])}),
     burn:Object.freeze({id:'core.burn',activation:'이 카드를 낼 때',terms:Object.freeze(['손패','버림','칩','드로우']),targeting:Object.freeze({zone:'hand',count:1,excludeSelf:true})}),
     reverse:Object.freeze({id:'core.reverse',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','트릭값'])}),
