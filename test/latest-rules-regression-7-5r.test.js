@@ -193,12 +193,13 @@ test('7.5-R 필드는 기본 없음이며 트럼프 +5/+1/0, 손패 -1, 낮은 �
   assert.equal(EncounterRules.compareTrickWithRules(card('low','H',3),card('high','D',10),'S',state),1);
 });
 
-test('7.5-R 압승은 남은 HP 대비 예정 피해 150%/200%와 실제 처치를 기준으로만 판정한다',()=>{
-  assert.equal(HighRoll.classifyOverkill({plannedDamage:15,hpBefore:10,targetDefeated:true}).tier,'overkill');
-  assert.equal(HighRoll.classifyOverkill({plannedDamage:20,hpBefore:10,targetDefeated:true}).tier,'mega_overkill');
-  assert.equal(HighRoll.classifyOverkill({plannedDamage:14.9,hpBefore:10,targetDefeated:true}).qualified,false);
+test('7.5-R 압승은 남은 HP 대비 예정 피해 175%/250%와 실제 처치를 기준으로만 판정한다',()=>{
+  assert.equal(HighRoll.classifyOverkill({plannedDamage:17.4,hpBefore:10,targetDefeated:true}).qualified,false);
+  assert.equal(HighRoll.classifyOverkill({plannedDamage:17.5,hpBefore:10,targetDefeated:true}).tier,'overkill');
+  assert.equal(HighRoll.classifyOverkill({plannedDamage:24.9,hpBefore:10,targetDefeated:true}).tier,'overkill');
+  assert.equal(HighRoll.classifyOverkill({plannedDamage:25,hpBefore:10,targetDefeated:true}).tier,'mega_overkill');
   assert.equal(HighRoll.classifyOverkill({plannedDamage:30,hpBefore:10,targetDefeated:false}).qualified,false);
-  assert.deepEqual(HighRoll.classifyOverkill({plannedDamage:20,hpBefore:10,targetDefeated:true}).reward,{type:'none',amount:0});
+  assert.deepEqual(HighRoll.classifyOverkill({plannedDamage:25,hpBefore:10,targetDefeated:true}).reward,{type:'none',amount:0});
 });
 
 test('7.5-R 세트 종료 런타임은 손패를 다시 뽑지 않고 새 트럼프만 공개한다',()=>{

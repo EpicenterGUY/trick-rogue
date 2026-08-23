@@ -7,8 +7,8 @@
   }
 })(typeof globalThis!=='undefined'?globalThis:this,function(defaultRoot){
   const STAGE='7.5-Q';
-  const OVERKILL_THRESHOLD=1.5;
-  const MEGA_OVERKILL_THRESHOLD=2;
+  const OVERKILL_THRESHOLD=1.75;
+  const MEGA_OVERKILL_THRESHOLD=2.5;
   const HISTORY_LIMIT=20;
   const STYLE_ID='showdown-highroll-7-5q-style';
 
