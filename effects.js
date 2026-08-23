@@ -1,5 +1,5 @@
 (function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.CardEffects=api;if(typeof document!=='undefined'){api.loadTextCardRuntime();api.loadCombatEffectsRuntime();api.loadBattleEventsRuntime();api.loadTacticMigrationSupportRuntime();api.loadEnemyBehaviorRuntime()}})(typeof globalThis!=='undefined'?globalThis:this,function(){
-  const TRIGGERS=['on_play','on_set_start','on_trick_start','before_compare','after_compare','on_trick_win','on_trick_loss','on_trick_draw','after_card_slotted','on_trick_end','before_showdown','on_showdown_advantage','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
+  const TRIGGERS=['on_play','on_set_start','on_trick_start','before_compare','after_compare','on_trick_win','on_trick_loss','on_trick_draw','after_card_slotted','on_trick_end','before_showdown','on_showdown_score','after_showdown_result','on_set_end','before_damage','after_damage'];
   const DURATIONS=['trick','set','battle','run'];
   const EFFECT_OWNER_TYPES=Object.freeze(['card','status','reservation','field','boss_rule','relic','passive']);
   const ACTIONS=['damage_enemy','heal_player','gain_chips','gain_shield','apply_enemy_bleed','increase_enemy_forecast','increase_effective_rank','showdown_power','reserve_next_win_damage','set_next_trick_suit_to_trump','increase_next_trick_rank','draw_cards','increase_forecast','set_reverse_compare','set_last_showdown_suit_to_trump','increase_last_showdown_rank','discard_selected_card','apply_status','remove_status','add_reservation','grant_next_trick_hand_capacity','discard_secondary_target','reveal_next_enemy_card'];
@@ -20,21 +20,30 @@
     return context?.[key]??context?.[effective]??context?.card?.[key]??context?.card?.[effective]??context?.card?.[fallback];
   }
   function printedEqualsTrick(context){return printedValue(context,'Rank')===trickValue(context,'Rank')&&printedValue(context,'Suit')===trickValue(context,'Suit')}
-  function advantageCount(context,effect={}){
-    const side=effect.conditionSide==='enemy'?'enemy':'player',direct=context?.[`${side}AdvantageCount`];
-    if(Number.isFinite(direct))return direct;
-    const fromAdvantage=context?.advantage?.[`${side}AdvantageCount`];
-    if(Number.isFinite(fromAdvantage))return fromAdvantage;
-    const list=context?.[`${side}Advantages`]??context?.advantage?.[`${side}Advantages`];
-    return Array.isArray(list)?list.length:0;
+  function isPureCard(entry){
+    const card=entry?.card||entry;
+    if(!card||typeof card!=='object'||card.named||card.definition||card.cardId)return false;
+    const effects=Array.isArray(card.effects)?card.effects:Array.isArray(card.definition?.effects)?card.definition.effects:Array.isArray(card.named?.effects)?card.named.effects:[];
+    return effects.length===0;
   }
+  function setHistory(context){return context?.setHistory||context?.battle?.setHistory||{}}
+  function explicitAdvantage(context,side){
+    if(side!=='player'&&side!=='enemy')return false;
+    if(context?.advantage?.[`${side}Active`]===true)return true;
+    return context?.battle?.advantageState?.[side]===true;
+  }
+  function zoneCards(context,key){const direct=context?.[key];if(Array.isArray(direct))return direct;const battle=context?.battle?.[key];return Array.isArray(battle)?battle:[]}
   const conditions={
     chips_spent:c=>c.history.chipsSpent>0,
     effective_rank_at_most:(c,e)=>c.effectiveRank<=e.conditionValue,
     slot_is:(c,e)=>c.slotIndex+1===e.conditionValue,
     slot_at_least:(c,e)=>c.slotIndex+1>=e.conditionValue,
     same_suit:c=>c.card.suit===c.enemyCard.suit,
-    advantage_count_at_least:(c,e)=>advantageCount(c,e)>=(e.conditionValue??1),
+    player_has_advantage:c=>explicitAdvantage(c,'player'),
+    enemy_has_advantage:c=>explicitAdvantage(c,'enemy'),
+    set_wins_at_least:(c,e)=>(Number(setHistory(c).wins)||0)>=(Number(e.conditionValue)||1),
+    pure_card_in_hand:c=>zoneCards(c,'hand').some(isPureCard),
+    pure_card_in_showdown:c=>zoneCards(c,'slots').some(isPureCard),
     printed_equals_trick:c=>printedEqualsTrick(c),
     unmodified_trick_value:c=>printedEqualsTrick(c)
   };
@@ -251,5 +260,5 @@
     if(typeof document==='undefined'||document.querySelector('script[data-trick-enemy-behavior-runtime]'))return;
     const script=document.createElement('script');script.src='enemy-behavior.js';script.async=false;script.dataset.trickEnemyBehaviorRuntime='true';document.head.appendChild(script);
   }
-  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadTextCardRuntime,loadCombatEffectsRuntime,loadBattleEventsRuntime,loadTacticMigrationSupportRuntime,loadEnemyBehaviorRuntime};
+  return{TRIGGERS,DURATIONS,EFFECT_OWNER_TYPES,ACTIONS,COPYABLE_NUMERIC_ACTIONS,RESERVATION_EVENTS,MAX_EFFECT_EXECUTIONS,actionHandlers,conditions,handlers,isPureCard,effectOwnerType,effectOwnerId,effectOwner,effectList,cardEffectList,attachEffects,createEffectContext,validateEffectList,registerActionHandler,unregisterActionHandler,executeAction,createEffectChain,currentEffectChain,withEffectChain,effectExecutionKey,runEffectList,runOwner,run,dispatchOwners,createReservation,normalizeReservation,reservationMatches,reservationConditionMet,resolveReservations,expireReservations,resolveNextWinReservations,newHistory,loadTextCardRuntime,loadCombatEffectsRuntime,loadBattleEventsRuntime,loadTacticMigrationSupportRuntime,loadEnemyBehaviorRuntime};
 });
