@@ -108,8 +108,9 @@ test('CardEffects 이동 액션은 공용 버튼 없이 effect context의 battle
 test('8-D는 8-C 경제 뒤, 최종 전투 레이아웃 전에 로드되고 index에 공용 슬롯 조작 버튼을 직접 추가하지 않는다',()=>{
   const loader=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-  const economy=loader.indexOf("run-economy-v2.js"),slots=loader.indexOf("showdown-slot-manipulation.js"),layout=loader.indexOf("battle-layout.js");
-  assert.ok(economy>=0&&slots>economy&&layout>slots);
+  assert.match(loader,/function finishRunEconomyV2\(\)\{\s*loadShowdownSlotManipulation\(\);\s*\}/);
   assert.match(loader,/if\(root\.ShowdownSlotManipulation\)\{finishShowdownSlotManipulation\(\);return;\}/);
+  assert.match(loader,/showdown-slot-manipulation\.js/);
+  assert.match(loader,/function finishShowdownSlotManipulation\(\)[\s\S]*loadBattleLayoutFinal\(\)/);
   assert.doesNotMatch(index,/onclick=["'][^"']*(moveShowdownSlots|withdrawShowdownCard|exchangeShowdownCard|discardReplaceShowdownCard)/);
 });
