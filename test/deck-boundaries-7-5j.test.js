@@ -126,17 +126,22 @@ test('7.5-J 브라우저 쇼다운 어댑터는 5번째 트릭 직후 기존 쇼
   assert.equal(root.battle.hand.length,3);
 });
 
-test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 최종 전투 레이아웃 전에 로드된다',()=>{
+test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 후속 정보 계층과 최종 전투 레이아웃 전에 로드된다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   const finalStart=source.indexOf('function loadBattleLayoutFinal()');
+  const intelStart=source.indexOf('function loadEnemyInformation()');
+  const deckStart=source.indexOf('function loadDeckBoundaries()');
   const tempoStart=source.indexOf('function loadEncounterTempo()');
   const nextAfterTempo=source.indexOf('function loadBattleLayoutFile()');
-  assert.ok(finalStart>=0&&tempoStart>finalStart&&nextAfterTempo>tempoStart);
-  const finalBlock=source.slice(finalStart,tempoStart);
+  assert.ok(finalStart>=0&&intelStart>finalStart&&deckStart>intelStart&&tempoStart>deckStart&&nextAfterTempo>tempoStart);
+  const intelBlock=source.slice(intelStart,deckStart);
+  const deckBlock=source.slice(deckStart,tempoStart);
   const tempoBlock=source.slice(tempoStart,nextAfterTempo);
-  assert.match(finalBlock,/loadScript\('deck-boundaries\.js','trick-deck-boundaries-runtime'\)/);
-  assert.match(finalBlock,/if\(root\.DeckBoundaries\)\{loadFinal\(\);return;\}/);
-  assert.match(finalBlock,/addEventListener\?\.\('load',loadFinal/);
-  assert.match(tempoBlock,/if\(root\.EncounterTempo\)\{loadBattleLayoutFinal\(\);return;\}/);
-  assert.match(tempoBlock,/addEventListener\?\.\('load',loadBattleLayoutFinal/);
+  assert.match(deckBlock,/loadScript\('deck-boundaries\.js','trick-deck-boundaries-runtime'\)/);
+  assert.match(deckBlock,/if\(root\.DeckBoundaries\)\{loadEnemyInformation\(\);return;\}/);
+  assert.match(deckBlock,/addEventListener\?\.\('load',loadEnemyInformation/);
+  assert.match(intelBlock,/loadScript\('enemy-information\.js','trick-enemy-information-runtime'\)/);
+  assert.match(intelBlock,/addEventListener\?\.\('load',loadBattleLayoutFinal/);
+  assert.match(tempoBlock,/if\(root\.EncounterTempo\)\{loadDeckBoundaries\(\);return;\}/);
+  assert.match(tempoBlock,/addEventListener\?\.\('load',loadDeckBoundaries/);
 });
