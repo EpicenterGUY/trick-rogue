@@ -15,11 +15,14 @@ function runState(overrides={}){return{runSeed:123,actId:'region_theater',gold:2
 function regionNode(id='r1',type='battle',regionId='region_theater'){return{id,type,regionPlan:{regionId,rewardWeights:{neutral:.65,theme:.35}}}}
 function runtime(run){return{run,RunStartV2:RunStart,RunFlowV2:RunFlow,RelicSystem:Relics,...Cards,newUid:(()=>{let n=0;return()=>`u${++n}`})()}}
 
-test('8-C 전체 카드 카탈로그는 네임드/일반 효과 카드와 순수 카드를 함께 보관하고 효과 기반 gameplayTags를 가진다',()=>{
+test('8-C 전체 카드 카탈로그는 순수 52장 + 공용 효과 12장 + pack 20장을 독립 보관한다',()=>{
   const catalog=Economy.candidateCatalog(Cards);
   const paint=catalog.find(item=>item.definitionId==='core.paint');
   const bullet=catalog.find(item=>item.definitionId==='pack01.black_bullet');
   const pureCard=catalog.find(item=>item.kind==='pure');
+  assert.equal(catalog.length,84);
+  assert.equal(catalog.filter(item=>item.kind==='pure').length,52);
+  assert.equal(catalog.filter(item=>item.kind==='definition').length,32);
   assert.ok(paint);assert.ok(bullet);assert.ok(pureCard);
   assert.ok(paint.gameplayTags.includes('trump'));
   assert.ok(bullet.gameplayTags.includes('damage'));
@@ -62,22 +65,22 @@ test('지역별 태그 프로필은 카드군 소속이 아니라 실제 플레�
   assert.ok(Economy.candidateAffinity(guard,'region_frontier')>0);
 });
 
-test('공통지역 보상 풀은 40장 순수 + 12장 공용 효과의 52장만 사용하고 네임드/지역 카드를 숨긴다',()=>{
+test('공통지역 보상 풀은 순수 52장 + 공용 효과 12장의 64종을 사용하고 네임드/지역 카드를 숨긴다',()=>{
   const run=runState({actId:'common',runFlow:{phase:'common'}}),node={id:'c0',type:'battle'},root=runtime(run);
   const pools=Economy.rewardPools(run,node,root);
   assert.equal(pools.openingCommon,true);
   assert.equal(pools.regionId,null);
   assert.deepEqual(pools.weights,{neutral:1,theme:0});
   assert.equal(pools.theme.length,0);
-  assert.equal(pools.catalog.length,52);
-  assert.equal(pools.catalog.filter(candidate=>candidate.kind==='pure').length,40);
+  assert.equal(pools.catalog.length,64);
+  assert.equal(pools.catalog.filter(candidate=>candidate.kind==='pure').length,52);
   assert.equal(pools.catalog.filter(candidate=>candidate.kind==='definition').length,12);
   const commonIds=new Set(RunStart.COMMON_CARD_POOL_IDS);
   assert.ok(pools.catalog.filter(candidate=>candidate.kind==='definition').every(candidate=>commonIds.has(candidate.definitionId)));
   assert.equal(pools.catalog.some(candidate=>candidate.definitionId==='pack01.black_bullet'),false);
 });
 
-test('공통지역 전투 보상과 상점은 모두 같은 52장 공용 풀에서만 3장을 제시한다',()=>{
+test('공통지역 전투 보상과 상점은 모두 같은 64종 공용 풀에서만 3장을 제시한다',()=>{
   const run=runState({actId:'common',runFlow:{phase:'common'}}),root=runtime(run),battle={id:'c1',type:'battle'},shopNode={id:'cshop',type:'shop'};
   const reward=Economy.generateCardOffer(run,battle,{count:3,rng:seq([.2,.4,.6,.8]),runtimeRoot:root});
   const shop=Economy.createShopState(run,shopNode,{runtimeRoot:root});
@@ -86,6 +89,14 @@ test('공통지역 전투 보상과 상점은 모두 같은 52장 공용 풀에�
   assert.ok(reward.every(allowed));assert.ok(shop.cardOffers.every(allowed));
   assert.equal(reward.some(candidate=>candidate.definitionId?.startsWith('pack01.')),false);
   assert.equal(shop.cardOffers.some(candidate=>candidate.definitionId?.startsWith('pack01.')),false);
+});
+
+test('같은 인쇄값의 순수 카드와 효과 카드는 보상 카탈로그에서 서로 다른 후보로 공존한다',()=>{
+  const catalog=Economy.candidateCatalog(Cards);
+  assert.ok(catalog.some(item=>item.key==='pure:S3'&&item.kind==='pure'));
+  assert.ok(catalog.some(item=>item.key==='def:core.plus2'&&item.suit==='S'&&item.rank===3));
+  assert.ok(catalog.some(item=>item.key==='pure:D4'&&item.kind==='pure'));
+  assert.ok(catalog.some(item=>item.key==='def:core.paint'&&item.suit==='D'&&item.rank===4));
 });
 
 test('지역 카드 보상은 65/35 경향을 유지하면서 태그 일치 카드만 theme 풀로 분류한다',()=>{
@@ -108,7 +119,7 @@ test('한 카드가 여러 실제 효과 축을 가지면 여러 지역의 경�
   const burn=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.burn']);
   assert.equal(Economy.isThemeCandidate(burn,'region_observatory'),true,'손패 제어/드로우 때문에 관측소 경향');
   assert.equal(Economy.isThemeCandidate(burn,'region_frontier'),true,'칩 때문에 황야 전선 경향');
-  const frontierPools=Economy.rewardPools(runState({actId:'region_frontier'}),regionNode('f','battle','region_frontier'),runtime(runState({actId:'region_frontier'})));
+  const frontierRun=runState({actId:'region_frontier'}),frontierPools=Economy.rewardPools(frontierRun,regionNode('f','battle','region_frontier'),runtime(frontierRun));
   assert.ok(frontierPools.catalog.some(item=>item.definitionId==='core.scout'),'타지역 성향 카드를 카탈로그에서 차단하지 않는다');
 });
 
