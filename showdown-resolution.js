@@ -77,14 +77,13 @@
   }
   function pokerStrength(handOrId){const id=typeof handOrId==='string'?handOrId:handOrId?.id;return POKER_STRENGTH.indexOf(id)}
   function handSummary(hand){return{id:hand.id,name:hand.name,power:hand.power,strength:pokerStrength(hand)}}
-  function riverCandidateUniverse(entries,{valueResolver}={}){
+  function riverCandidateUniverse(entries){
     if(!Array.isArray(entries)||entries.length!==4)throw new RangeError('River candidate generation requires exactly four cards');
-    const seen=new Set();for(const entry of entries){const spec=standardCardSpec(unwrapCard(entry),valueResolver);if(spec)seen.add(spec.key)}
-    const universe=[];for(const suit of STANDARD_SUITS)for(const rank of STANDARD_RANKS){const key=`${suit}:${rank}`;if(!seen.has(key))universe.push({rank,suit,key})}return universe;
+    const universe=[];for(const suit of STANDARD_SUITS)for(const rank of STANDARD_RANKS)universe.push({rank,suit,key:`${suit}:${rank}`});return universe;
   }
   function createRiverCandidates(entries,{valueResolver}={}){
     const before=evaluateFourCardState(entries,{valueResolver}),beforeStrength=pokerStrength(before),candidates=[];
-    for(const candidate of riverCandidateUniverse(entries,{valueResolver})){
+    for(const candidate of riverCandidateUniverse(entries)){
       const after=evaluatePoker([...entries,candidate],{valueResolver}),strength=pokerStrength(after);if(strength<=beforeStrength)continue;
       candidates.push({rank:candidate.rank,suit:candidate.suit,key:candidate.key,target:{...handSummary(after)}});
     }
