@@ -22,10 +22,14 @@ test('스타팅 패키지는 일반 효과 카드 ID 10장만 사용한다',()=>
   assert(ids.every(id=>Cards.CARD_DEFINITION_BY_ID[id]?.category==='general'));
 });
 
-test('기본 덱 생성은 12개 일반 효과 카드 정의와 effects를 보존한다',()=>{
+test('기본 52장 생성은 순수 카드만 만들고 공용 효과 12장은 별도 정의로 보존한다',()=>{
   assert.match(index,/function baseDeck\(\)\{return createBaseCardSlots\(\)\.map\(cloneDeckCard\)\}/);
   const base=Cards.createBaseCardSlots();
-  assert.equal(base.filter(card=>card.definition?.category==='general').length,12);
+  assert.equal(base.length,52);
+  assert.equal(base.filter(Cards.isPureCard).length,52);
+  assert.equal(base.filter(card=>card.definition?.category==='general').length,0);
+  assert.equal(Cards.GENERAL_EFFECT_CARD_DEFINITIONS.length,12);
+  assert(Cards.GENERAL_EFFECT_CARD_DEFINITIONS.every(card=>card.category==='general'&&card.effects.length>0));
 });
 
 test('전투 덱 복제는 effects가 없는 네임드 카드에 빈 effects 배열을 덮어쓰지 않는다',()=>{
