@@ -2,7 +2,7 @@
   "name": "trick-rogue",
   "private": true,
   "scripts": {
-    "validate:cards": "node scripts/validate-card-packs.js",
+    "validate:cards": "node scripts/validate-effect-cards.js",
     "test:e2e": "node --test test/e2e-8-f.test.js",
     "test": "node --test && npm run validate:cards"
   }
