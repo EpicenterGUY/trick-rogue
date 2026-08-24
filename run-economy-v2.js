@@ -14,6 +14,8 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(root,Cards,RunFlowV2,RelicSystem,RunStartV2){
   const STAGE='8-C';
   const CARD_OFFER_COUNT=3;
+  const BATTLE_MARKET_OFFER_COUNT=8;
+  const BATTLE_MARKET_PRICES=Object.freeze({pure:12,general:20,effect:32});
   const MAX_UPGRADE_LEVEL=1;
   const UPGRADE_TRICK_BONUS=1;
   const CAMP_HEAL_RATIO=.30;
@@ -54,6 +56,7 @@
       ...current,version:STAGE,
       rewards:current.rewards&&typeof current.rewards==='object'?current.rewards:{},
       rewardClaims:current.rewardClaims&&typeof current.rewardClaims==='object'?current.rewardClaims:{},
+      rewardMarkets:current.rewardMarkets&&typeof current.rewardMarkets==='object'?current.rewardMarkets:{},
       shops:current.shops&&typeof current.shops==='object'?current.shops:{},
       history:Array.isArray(current.history)?current.history:[]
     };
@@ -147,9 +150,9 @@
 
   function definitionList(api=Cards){return Array.isArray(api?.ALL_CARD_DEFINITIONS)?api.ALL_CARD_DEFINITIONS:[]}
   function candidateFromDefinition(definition){
-    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',gameplayTags:gameplayTagsForDefinition(definition)};
+    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',category:definition.category||null,gameplayTags:gameplayTagsForDefinition(definition)};
   }
-  function candidateFromPure(card){return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common',gameplayTags:['pure']}}
+  function candidateFromPure(card){return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common',category:'pure',gameplayTags:['pure']}}
   function candidateCatalog(api=Cards){
     const definitions=definitionList(api).map(candidateFromDefinition);
     const slots=typeof api?.createBaseCardSlots==='function'?api.createBaseCardSlots():[];
@@ -188,7 +191,7 @@
     const neutral=catalog.filter(candidate=>!isThemeCandidate(candidate,regionId));
     return{catalog,theme,neutral,regionId,weights:rewardWeightsFor(runState,node,runtimeRoot),openingCommon:false};
   }
-  function chooseFromPool(pool,used,rng){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;return available[Math.floor(safeRngValue(rng)*available.length)]||available[0]}
+  function chooseFromPool(pool,used,rng){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;return available[Math.floor(safeRngValue(rng)*(i+1))]||available[0]}
   function decorateOfferCandidate(candidate,pools){
     const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
     return{...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags};
@@ -248,6 +251,42 @@
     state.rewardClaims[id]={key:null,skipped:true};record(runState,{action:'card_reward_skip',nodeId:id});return{ok:true,skipped:true};
   }
 
+  function battleRewardPrice(candidate){
+    if(!candidate)return Infinity;
+    if(candidate.kind==='pure')return BATTLE_MARKET_PRICES.pure;
+    if(candidate.category==='general'||String(candidate.definitionId||'').startsWith('core.'))return BATTLE_MARKET_PRICES.general;
+    return BATTLE_MARKET_PRICES.effect;
+  }
+  function createRewardMarketState(runState,node,{runtimeRoot=root}={}){
+    const economy=ensureEconomyState(runState),id=node?.id;if(!id)throw new TypeError('reward node id is required');
+    if(economy.rewardMarkets[id])return economy.rewardMarkets[id];
+    const rng=deterministicRng(runState,`8-C:reward-market:${runState.actId||'act'}:${id}`,runtimeRoot);
+    const offers=generateCardOffer(runState,node,{count:BATTLE_MARKET_OFFER_COUNT,rng,runtimeRoot});
+    economy.rewardMarkets[id]={offers,purchased:{},finished:!!economy.rewardClaims[id]};
+    return economy.rewardMarkets[id];
+  }
+  function rewardMarketFinished(runState,nodeId){
+    const state=ensureEconomyState(runState);return!!(state.rewardClaims[nodeId]||state.rewardMarkets[nodeId]?.finished);
+  }
+  function rewardMarketPurchases(runState,nodeId){return ensureEconomyState(runState).rewardMarkets[nodeId]?.purchased||{}}
+  function buyBattleRewardCard(runState,node,key,{runtimeRoot=root}={}){
+    const id=node?.id;if(!id)return{ok:false,reason:'invalid_node'};
+    const market=createRewardMarketState(runState,node,{runtimeRoot});
+    if(rewardMarketFinished(runState,id)||market.finished)return{ok:false,reason:'finished'};
+    if(market.purchased[key])return{ok:false,reason:'purchased'};
+    const candidate=market.offers.find(item=>item.key===key);if(!candidate)return{ok:false,reason:'not_offered'};
+    const cost=battleRewardPrice(candidate);if(finite(runState.gold)<cost)return{ok:false,reason:'gold',cost};
+    runState.gold-=cost;const card=instantiateCandidate(candidate,runtimeRoot);runState.deck.push(card);market.purchased[key]={cost};
+    record(runState,{action:'battle_reward_purchase',nodeId:id,key,cost});return{ok:true,card,candidate,cost};
+  }
+  function finishBattleRewardMarket(runState,node){
+    const id=node?.id,state=ensureEconomyState(runState);if(!id)return{ok:false,reason:'invalid_node'};
+    const market=createRewardMarketState(runState,node);if(market.finished||state.rewardClaims[id])return{ok:false,reason:'finished'};
+    const purchases=Object.keys(market.purchased);market.finished=true;
+    state.rewardClaims[id]={key:null,skipped:purchases.length===0,market:true,purchases:[...purchases]};
+    record(runState,{action:'battle_reward_market_close',nodeId:id,purchases:purchases.length});return{ok:true,purchases:[...purchases],skipped:purchases.length===0};
+  }
+
   function cardEffects(card){return Array.isArray(card?.effects)?card.effects:Array.isArray(card?.definition?.effects)?card.definition.effects:Array.isArray(card?.named?.effects)?card.named.effects:[]}
   function cardUpgradeLevel(card){return Math.max(0,finite(card?.upgradeLevel,0)|0)}
   function canUpgradeCard(card){return!!card&&cardUpgradeLevel(card)<MAX_UPGRADE_LEVEL}
@@ -297,18 +336,36 @@
     const preview=previewCard(candidate,runtimeRoot),art=preview&&typeof runtimeRoot?.artHtml==='function'?`<div class="cardArt">${runtimeRoot.artHtml(preview)}</div>`:'';
     const source=candidate.sourceCategory==='theme'?'지역 경향':'공용/무소속';return`<div class="rewardBox">${art}<h3>${escapeHtml(candidateName(candidate))}</h3><p>${escapeHtml(candidate.description||'')}</p><span class="tiny">${escapeHtml(source)}</span><div class="rewardBtns"><button onclick="RunEconomyV2.takeRewardFromUi('${escapeHtml(candidate.key)}')">받기</button></div></div>`;
   }
+  function rewardMarketTileHtml(candidate,market,selectedKey,runtimeRoot=root){
+    const preview=previewCard(candidate,runtimeRoot),art=preview&&typeof runtimeRoot?.artHtml==='function'?`<div class="cardArt">${runtimeRoot.artHtml(preview)}</div>`:'';
+    const bought=!!market.purchased[candidate.key],selected=selectedKey===candidate.key,price=battleRewardPrice(candidate);
+    const stateText=bought?'구매 완료':`${price}G`,outline=selected?'#7fe4ea':'#8d816d',opacity=bought?'.52':'1';
+    return`<button class="rewardBox" style="display:flex;flex-direction:column;min-width:0;padding:4px;cursor:pointer;opacity:${opacity};outline:2px solid ${outline};outline-offset:-2px" onclick="RunEconomyV2.selectRewardFromUi('${escapeHtml(candidate.key)}')">${art}<h3 style="margin:4px 0 2px">${escapeHtml(candidateName(candidate))}</h3><span style="font-size:9px;font-weight:800;margin-top:auto">${stateText}</span></button>`;
+  }
   function finishNode(runtimeRoot,node){if(typeof runtimeRoot?.closeOverlay==='function')runtimeRoot.closeOverlay();if(typeof runtimeRoot?.completeNode==='function')runtimeRoot.completeNode(node);return true}
-  function showBattleCardReward(runtimeRoot=root,node){
-    const runState=activeRun(runtimeRoot);if(!runState||!node)return false;if(rewardClaim(runState,node.id))return false;
-    const offer=ensureRewardOffer(runState,node,runtimeRoot),gold=BATTLE_GOLD_BY_TYPE[node.type]||0,pools=rewardPools(runState,node,runtimeRoot),weights=pools.weights,regionId=pools.regionId;
-    const mix=pools.openingCommon?'공통지역 · 순수 카드와 공용 효과 카드 최소 1장씩 제시':regionId?`지역 경향 ${Math.round(weights.theme*100)}% · 공용/무소속 ${Math.round(weights.neutral*100)}%`:'공용 카드 보상';
-    const html=`<h2>전투 보상</h2><p>골드 +${gold} 지급 완료. 카드 3장 중 1장을 고르거나 건너뛸 수 있다.<br><span class="tiny">${escapeHtml(mix)} · 건너뛰어도 추가 골드는 없다.</span></p><div class="rewardGrid">${offer.map(candidate=>candidateHtml(candidate,runtimeRoot)).join('')}</div><div class="choiceList"><button class="choice" onclick="RunEconomyV2.skipRewardFromUi()"><b>카드 보상 건너뛰기</b><span>덱에 카드를 추가하지 않는다.</span></button></div>`;
+  function showBattleCardReward(runtimeRoot=root,node,selectedKey=null){
+    const runState=activeRun(runtimeRoot);if(!runState||!node)return false;if(rewardMarketFinished(runState,node.id))return false;
+    const market=createRewardMarketState(runState,node,{runtimeRoot}),offer=market.offers,gold=BATTLE_GOLD_BY_TYPE[node.type]||0,pools=rewardPools(runState,node,runtimeRoot),weights=pools.weights,regionId=pools.regionId;
+    const selected=offer.find(candidate=>candidate.key===selectedKey)||offer.find(candidate=>!market.purchased[candidate.key])||offer[0]||null;
+    const mix=pools.openingCommon?'공통지역 풀':regionId?`지역 경향 ${Math.round(weights.theme*100)}% · 공용/무소속 ${Math.round(weights.neutral*100)}%`:'공용 카드 풀';
+    const tiles=offer.map(candidate=>rewardMarketTileHtml(candidate,market,selected?.key,runtimeRoot)).join('');
+    let detail='<div class="choice"><b>판매 카드 없음</b></div>';
+    if(selected){
+      const cost=battleRewardPrice(selected),bought=!!market.purchased[selected.key],affordable=finite(runState.gold)>=cost,source=selected.sourceCategory==='theme'?'지역 경향':'공용/무소속';
+      const buttonLabel=bought?'구매 완료':affordable?`구매 · ${cost}G`:`골드 부족 · ${cost}G`;
+      detail=`<div class="choice" style="margin-top:8px"><b>${escapeHtml(candidateName(selected))} · ${cost}G</b><span>${escapeHtml(selected.description||'')}<br>${escapeHtml(source)}</span><button style="width:100%;margin-top:7px;padding:7px" ${bought||!affordable?'disabled':''} onclick="RunEconomyV2.buyRewardFromUi('${escapeHtml(selected.key)}')">${buttonLabel}</button></div>`;
+    }
+    const boughtCount=Object.keys(market.purchased).length;
+    const html=`<h2>전투 카드 마켓</h2><p>골드 +${gold} 지급 완료 · 보유 골드 <b>${finite(runState.gold)}G</b><br>8장 중 원하는 카드를 골드가 허용하는 만큼 구매할 수 있다.<br><span class="tiny">순수 ${BATTLE_MARKET_PRICES.pure}G · 일반 효과 ${BATTLE_MARKET_PRICES.general}G · 추가 효과 ${BATTLE_MARKET_PRICES.effect}G · ${escapeHtml(mix)}</span></p><div class="rewardGrid" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;align-items:stretch">${tiles}</div>${detail}<div class="choiceList"><button class="choice" onclick="RunEconomyV2.leaveRewardMarketFromUi()"><b>마켓 나가기</b><span>${boughtCount?`${boughtCount}장 구매 완료`:'구매하지 않고 나가도 골드는 그대로 보존된다.'}</span></button></div>`;
     if(typeof runtimeRoot?.showModal==='function'){runtimeRoot.showModal(html);return offer}
     return false;
   }
-  function currentRewardNode(runtimeRoot=root){const runState=activeRun(runtimeRoot),battleState=runtimeRoot?.battle;return battleState?.node||(runState?.map||[]).find(node=>!rewardClaim(runState,node.id)&&['battle','elite','boss'].includes(node.type)&&runState?.currentNodeId===node.id)||null}
-  function takeRewardFromUi(key,runtimeRoot=root){const runState=activeRun(runtimeRoot),node=currentRewardNode(runtimeRoot);if(!runState||!node)return false;const result=claimCardReward(runState,node,key,{runtimeRoot});if(!result.ok)return false;if(typeof runtimeRoot?.sfx==='function')runtimeRoot.sfx('reward');return finishNode(runtimeRoot,node)}
-  function skipRewardFromUi(runtimeRoot=root){const runState=activeRun(runtimeRoot),node=currentRewardNode(runtimeRoot);if(!runState||!node)return false;const result=skipCardReward(runState,node);if(!result.ok)return false;return finishNode(runtimeRoot,node)}
+  function currentRewardNode(runtimeRoot=root){const runState=activeRun(runtimeRoot),battleState=runtimeRoot?.battle;return battleState?.node||(runState?.map||[]).find(node=>!rewardMarketFinished(runState,node.id)&&['battle','elite','boss'].includes(node.type)&&runState?.currentNodeId===node.id)||null}
+  function selectRewardFromUi(key,runtimeRoot=root){const node=currentRewardNode(runtimeRoot);return node?showBattleCardReward(runtimeRoot,node,key):false}
+  function buyRewardFromUi(key,runtimeRoot=root){const runState=activeRun(runtimeRoot),node=currentRewardNode(runtimeRoot);if(!runState||!node)return false;const result=buyBattleRewardCard(runState,node,key,{runtimeRoot});if(!result.ok){runtimeRoot.sfx?.('lose');return showBattleCardReward(runtimeRoot,node,key)}runtimeRoot.sfx?.('reward');return showBattleCardReward(runtimeRoot,node,key)}
+  function leaveRewardMarketFromUi(runtimeRoot=root){const runState=activeRun(runtimeRoot),node=currentRewardNode(runtimeRoot);if(!runState||!node)return false;const result=finishBattleRewardMarket(runState,node);if(!result.ok)return false;return finishNode(runtimeRoot,node)}
+  function takeRewardFromUi(key,runtimeRoot=root){return buyRewardFromUi(key,runtimeRoot)}
+  function skipRewardFromUi(runtimeRoot=root){return leaveRewardMarketFromUi(runtimeRoot)}
 
   function showCampV2(runtimeRoot=root,node){
     const runState=activeRun(runtimeRoot);if(!runState||!node)return false;const heal=Math.ceil(finite(runState.maxHp)*CAMP_HEAL_RATIO),eligible=runState.deck.filter(canUpgradeCard).length;
@@ -358,5 +415,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25);else console.warn('[run-economy-v2] 보상/캠프/상점 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false;originalShowReward=null;originalShowCamp=null;originalShowShop=null;uidCounter=0}
 
-  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,CARD_OFFER_COUNT,BATTLE_MARKET_OFFER_COUNT,BATTLE_MARKET_PRICES,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,battleRewardPrice,createRewardMarketState,rewardMarketFinished,rewardMarketPurchases,buyBattleRewardCard,finishBattleRewardMarket,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,selectRewardFromUi,buyRewardFromUi,leaveRewardMarketFromUi,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
 });
