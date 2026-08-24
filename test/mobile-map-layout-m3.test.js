@@ -11,10 +11,15 @@ test('M3 모바일 맵 노드는 축소하면서 기존 좌표 중심을 3px 보
   assert.match(Layout.STYLE_TEXT,/#mapGrid \.node\{width:66px;height:48px;margin-left:3px;margin-top:3px\}/);
 });
 
-test('선택 가능·잠김·완료 노드는 서로 다른 대비를 갖고 연결선은 더 가늘게 정리된다',()=>{
+test('맵 연결선과 노드는 같은 10px 내부 좌표계를 사용한다',()=>{
+  assert.match(Layout.STYLE_TEXT,/#mapWrap\{[^}]*padding:10px/);
+  assert.match(Layout.STYLE_TEXT,/#mapSvg\{left:10px;top:10px;right:auto;bottom:auto\}/);
+});
+
+test('선택 가능·잠김·완료 노드는 선이 비치지 않는 불투명 상태에서 명도 차이로 구분한다',()=>{
   assert.match(Layout.STYLE_TEXT,/#mapGrid \.node\.current\{[^}]*opacity:1[^}]*filter:none/);
-  assert.match(Layout.STYLE_TEXT,/#mapGrid \.node\.lock\{opacity:\.16/);
-  assert.match(Layout.STYLE_TEXT,/#mapGrid \.node\.done\{opacity:\.32/);
+  assert.match(Layout.STYLE_TEXT,/#mapGrid \.node\.lock\{opacity:1;filter:grayscale\(1\) brightness\(\.42\)/);
+  assert.match(Layout.STYLE_TEXT,/#mapGrid \.node\.done\{opacity:1;filter:saturate\(\.35\) brightness\(\.58\)/);
   assert.match(Layout.STYLE_TEXT,/#mapSvg line\{[^}]*stroke-width:3px[^}]*opacity:\.58/);
 });
 

@@ -57,13 +57,14 @@
   #mapScreen>.section .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
   #mapScreen>.section .badge{justify-content:space-between;min-width:0;padding:4px 6px;font-size:10px}
   #mapScreen>.section .badge:nth-child(n+3){font-size:9px;color:#9ba7c2;background:#0d121b;box-shadow:0 0 0 1px #29334a inset}
-  #mapWrap{margin:4px 8px 0;height:min(44dvh,360px);min-height:280px;max-height:360px;padding:8px}
+  #mapWrap{margin:4px 8px 0;height:min(44dvh,360px);min-height:280px;max-height:360px;padding:10px}
+  #mapSvg{left:10px;top:10px;right:auto;bottom:auto}
   #mapGrid .node{width:${MOBILE_MAP_NODE_WIDTH}px;height:${MOBILE_MAP_NODE_HEIGHT}px;margin-left:3px;margin-top:3px}
   #mapGrid .node .icon{font-size:16px}
   #mapGrid .node .nm{font-size:9px}
   #mapGrid .node.current{opacity:1;filter:none;background:linear-gradient(180deg,#2d4557,#1b2b38)}
-  #mapGrid .node.lock{opacity:.16;filter:grayscale(1) brightness(.72)}
-  #mapGrid .node.done{opacity:.32;filter:saturate(.35)}
+  #mapGrid .node.lock{opacity:1;filter:grayscale(1) brightness(.42);color:#6f7788}
+  #mapGrid .node.done{opacity:1;filter:saturate(.35) brightness(.58)}
   #mapSvg line{stroke:#7183a6;stroke-width:3px;opacity:.58;vector-effect:non-scaling-stroke}
   #mapScreen>.sectionTitle{padding:0 8px!important;margin:5px 0 3px!important;font-size:10px}
   #mapDeckStrip{margin:0 8px 8px;padding:5px;display:grid;grid-template-columns:repeat(${MOBILE_MAP_DECK_COLUMNS},minmax(0,1fr));gap:4px;overflow:hidden;align-items:start}
