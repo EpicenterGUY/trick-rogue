@@ -26,6 +26,27 @@
   #slotRow .slot.fill{padding:1px}
   #slotRow .slotArt{width:min(${MOBILE_SHOWDOWN_CARD_WIDTH}px,calc(100% - 2px));height:auto;aspect-ratio:100/148;margin:0 auto}
 
+  #statusTop{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px}
+  #statusTop .midStat{display:none!important}
+  #statusTop.has-showdown-advantage{grid-template-columns:minmax(0,1fr) minmax(72px,88px) minmax(0,1fr)}
+  #statusTop.has-showdown-advantage .midStat{display:block!important;padding:4px 2px;font-size:7px;line-height:1.2}
+  #statusTop.has-showdown-advantage .midStat b{font-size:8px;margin-top:2px;white-space:normal}
+  #statusTop .hpPanel{padding:5px 6px}
+  #statusTop .hpHead{font-size:10px}
+  #statusTop .hpBar{height:7px;margin-top:3px}
+  #battleScreen .arenaMeta{position:relative;top:auto;right:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;width:100%;justify-content:stretch}
+  #battleScreen .arenaMeta .badge{justify-content:space-between;min-width:0;padding:4px 6px;font-size:10px;border-width:1px;box-shadow:0 0 0 1px #2e3850 inset}
+  #battleScreen .arenaMeta .badge:nth-child(2){background:#102126;box-shadow:0 0 0 1px #31545c inset}
+  #battleScreen .forecastRow{display:none}
+  #battleScreen .forecastRow.is-active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
+  #battleScreen .forecastRow.has-player-forecast:not(.has-enemy-forecast),#battleScreen .forecastRow.has-enemy-forecast:not(.has-player-forecast){grid-template-columns:minmax(0,1fr)}
+  #battleScreen .forecastRow:not(.has-player-forecast)>:first-child{display:none}
+  #battleScreen .forecastRow:not(.has-enemy-forecast)>:last-child{display:none}
+  #battleScreen .forecastRow .badge{justify-content:space-between;min-width:0;padding:3px 5px;font-size:9px;border-width:1px;box-shadow:0 0 0 1px #29354a inset}
+  #statuses.is-empty{display:none}
+  #statuses:not(.is-empty){display:flex;gap:3px;flex-wrap:wrap;max-height:42px;overflow:auto}
+  #battleScreen>.topbar .pixelBtn{background:#171d28;box-shadow:0 0 0 1px #3b465c inset;opacity:.9}
+
   #mapScreen{padding-bottom:max(6px,env(safe-area-inset-bottom))}
   #mapScreen>.topbar{padding:6px 8px 4px;gap:4px;align-items:center}
   #mapScreen>.topbar .logo{font-size:14px}
@@ -63,12 +84,31 @@
   function loadChipBuildCompendiumBridge(doc=root.document){return appendScript(doc,'chip-builds-9-e-compendium-bridge.js',CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET,()=>!!root.ChipBuilds9ECompendiumBridge)}
   function loadCompendium(doc=root.document){return appendScript(doc,'compendium-8-h.js',COMPENDIUM_DATASET,()=>!!root.Compendium8H)}
   function loadCompendiumBridge(doc=root.document){return appendScript(doc,'compendium-8-h-runtime-bridge.js',COMPENDIUM_BRIDGE_DATASET,()=>!!root.Compendium8HRuntimeBridge)}
+  function activeBattle(runtimeRoot=root){try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}return runtimeRoot?.battle||null}
+  function battleHudState(state=activeBattle(root)){
+    const advantage=!!(state?.advantageState?.player||state?.advantageState?.enemy);
+    const playerForecast=Number(state?.myForecast)>0,enemyForecast=Number(state?.enemyForecast)>0;
+    return{advantage,playerForecast,enemyForecast,forecastActive:playerForecast||enemyForecast};
+  }
+  function toggleClass(element,name,active){element?.classList?.toggle?.(name,!!active)}
+  function syncBattleHud(doc=root.document,state=activeBattle(root)){
+    if(!doc?.getElementById)return false;const hud=battleHudState(state),statusTop=doc.getElementById('statusTop'),forecast=doc.querySelector?.('.forecastRow'),statuses=doc.getElementById('statuses');
+    toggleClass(statusTop,'has-showdown-advantage',hud.advantage);
+    toggleClass(forecast,'is-active',hud.forecastActive);toggleClass(forecast,'has-player-forecast',hud.playerForecast);toggleClass(forecast,'has-enemy-forecast',hud.enemyForecast);
+    if(statuses)toggleClass(statuses,'is-empty',String(statuses.textContent||'').trim()==='상태 없음'||!String(statuses.textContent||'').trim());
+    return true;
+  }
+  function wrapRenderBattle(runtimeRoot=root){
+    const original=runtimeRoot?.renderBattle;if(typeof original!=='function')return false;if(original.__tricklogMobileHudM3)return true;
+    function wrapped(...args){const result=original.apply(this,args);syncBattleHud(runtimeRoot.document,activeBattle(runtimeRoot));return result}
+    wrapped.__tricklogMobileHudM3=true;wrapped.__original=original;runtimeRoot.renderBattle=wrapped;return true;
+  }
   function install(doc=root.document){
     if(!doc||typeof doc.createElement!=='function')return false;
-    loadEnemyContent(doc);loadContentExpansion(doc);loadPureSynergies(doc);loadChipBuilds(doc);loadChipBuildCompendiumBridge(doc);loadCompendium(doc);loadCompendiumBridge(doc);
+    loadEnemyContent(doc);loadContentExpansion(doc);loadPureSynergies(doc);loadChipBuilds(doc);loadChipBuildCompendiumBridge(doc);loadCompendium(doc);loadCompendiumBridge(doc);wrapRenderBattle(root);syncBattleHud(doc,activeBattle(root));
     if(doc.getElementById?.(STYLE_ID))return true;
     const style=doc.createElement('style');style.id=STYLE_ID;style.textContent=STYLE_TEXT;(doc.head||doc.documentElement)?.appendChild(style);return true;
   }
 
-  return{STYLE_ID,ENEMY_CONTENT_DATASET,CONTENT_EXPANSION_DATASET,PURE_SYNERGY_DATASET,CHIP_BUILD_DATASET,CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET,COMPENDIUM_DATASET,COMPENDIUM_BRIDGE_DATASET,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,MOBILE_MAP_NODE_WIDTH,MOBILE_MAP_NODE_HEIGHT,MOBILE_MAP_DECK_COLUMNS,STYLE_TEXT,appendScript,loadEnemyContent,loadContentExpansion,loadPureSynergies,loadChipBuilds,loadChipBuildCompendiumBridge,loadCompendium,loadCompendiumBridge,install};
+  return{STYLE_ID,ENEMY_CONTENT_DATASET,CONTENT_EXPANSION_DATASET,PURE_SYNERGY_DATASET,CHIP_BUILD_DATASET,CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET,COMPENDIUM_DATASET,COMPENDIUM_BRIDGE_DATASET,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,MOBILE_MAP_NODE_WIDTH,MOBILE_MAP_NODE_HEIGHT,MOBILE_MAP_DECK_COLUMNS,STYLE_TEXT,appendScript,loadEnemyContent,loadContentExpansion,loadPureSynergies,loadChipBuilds,loadChipBuildCompendiumBridge,loadCompendium,loadCompendiumBridge,activeBattle,battleHudState,toggleClass,syncBattleHud,wrapRenderBattle,install};
 });
