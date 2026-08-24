@@ -67,10 +67,11 @@ test('7.5-P 명시적 우세는 N 일반 배율 풀에 +25% 한 번만 등록된
   assert.equal(model.enemy.finalMultiplier,1);
 });
 
-test('7.5-P 카드 재설계는 더블다운=3승, 기본에 충실/무첨가=순수 카드 조건을 고정한다',()=>{
+test('7.5-P 카드 재설계는 더블다운=3승, 기본에 충실/무첨가=선행 순수 쇼다운 조건을 고정한다',()=>{
   assert.equal(Migration.BY_ID.double.proposedEffects[0].condition,'set_wins_at_least');
   assert.equal(Migration.BY_ID.double.proposedEffects[0].conditionValue,3);
-  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].condition,'pure_card_in_hand');
+  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].condition,'pure_card_in_showdown');
+  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].value,3);
   assert.equal(Migration.BY_ID.clean.proposedEffects[0].condition,'pure_card_in_showdown');
 });
 

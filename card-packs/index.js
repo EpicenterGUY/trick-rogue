@@ -34,3 +34,9 @@
 
   return{CARD_PACK_LIST,CARD_PACKS,defaultEnabledPacks,validateEnabledPacks,createRunPackState};
 });
+
+(function(root){
+  if(typeof document==='undefined'||root.MigratedTacticCards||document.querySelector('script[data-trick-common-card-bootstrap]'))return;
+  if(document.readyState!=='loading')return;
+  document.write('<script src="tactic-card-migration.js" data-trick-common-card-bootstrap="migration"><\/script><script src="migrated-tactic-cards.js" data-trick-common-card-bootstrap="definitions"><\/script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
