@@ -70,7 +70,7 @@
     effects:[{trigger:'after_card_slotted',action:'increase_enemy_forecast',value:2,condition:'slot_is',conditionValue:3,duration:'set'}]
   },
   {
-    id:'pack01.battery_1pct',name:'잔량 1%',short:'잔량 1%',suit:'S',rank:14,
+    id:'pack01.battery_1pct',name:'배터리 1%',short:'배터리 1%',suit:'S',rank:14,
     description:'손에 있는 동안 각 트릭 종료 시 20% 확률로 소진. 소진되지 않고 정확히 5번 쇼다운 슬롯에 들어가면 쇼다운 위력 +12.',
     terms:['트릭','소진','전투','쇼다운 슬롯','최종 위력'],image:'assets/cards/pack01/battery_1pct.png',packId:'pack01',art:'battery',
     effects:[
