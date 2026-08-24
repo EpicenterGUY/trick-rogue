@@ -15,15 +15,16 @@ function runState(overrides={}){return{runSeed:123,actId:'region_theater',gold:2
 function regionNode(id='r1',type='battle',regionId='region_theater'){return{id,type,regionPlan:{regionId,rewardWeights:{neutral:.65,theme:.35}}}}
 function runtime(run){return{run,RunStartV2:RunStart,RunFlowV2:RunFlow,RelicSystem:Relics,...Cards,newUid:(()=>{let n=0;return()=>`u${++n}`})()}}
 
-test('8-C 전체 카드 카탈로그는 순수 52장 + 공용 효과 12장 + pack 20장을 독립 보관한다',()=>{
+test('8-C 전체 카드 카탈로그는 순수 52장 + 공용 효과 12장 + pack 30장을 독립 보관한다',()=>{
   const catalog=Economy.candidateCatalog(Cards);
   const paint=catalog.find(item=>item.definitionId==='core.paint');
   const bullet=catalog.find(item=>item.definitionId==='pack01.black_bullet');
+  const cross=catalog.find(item=>item.definitionId==='pack03.cross_signal');
   const pureCard=catalog.find(item=>item.kind==='pure');
-  assert.equal(catalog.length,84);
+  assert.equal(catalog.length,94);
   assert.equal(catalog.filter(item=>item.kind==='pure').length,52);
-  assert.equal(catalog.filter(item=>item.kind==='definition').length,32);
-  assert.ok(paint);assert.ok(bullet);assert.ok(pureCard);
+  assert.equal(catalog.filter(item=>item.kind==='definition').length,42);
+  assert.ok(paint);assert.ok(bullet);assert.ok(cross);assert.ok(pureCard);
   assert.ok(paint.gameplayTags.includes('trump'));
   assert.ok(bullet.gameplayTags.includes('damage'));
   assert.deepEqual(pureCard.gameplayTags,['pure']);
