@@ -109,6 +109,33 @@
       terms:['인쇄값','트릭값','트릭','피해'],
       image:'assets/cards/pack01/ambush_observer.png',packId:'pack02',art:'placeholder_original',
       effects:[{trigger:'on_trick_win',action:'damage_enemy',value:6,condition:'unmodified_trick_value',duration:'trick'}]
+    },
+    {
+      id:'pack02.advance_payment',
+      name:'선지급',short:'선지급',suit:'S',rank:7,
+      description:'발동: 이 카드로 트릭 승리 시 적에게 피해 6. 추가: 이 카드가 쇼다운 5장에 포함되면 쇼다운 최종 위력 -5.',
+      terms:['트릭','피해','쇼다운','최종 위력'],
+      image:'assets/cards/pack01/black_bullet.png',packId:'pack02',art:'placeholder_advance_payment',
+      effects:[
+        {trigger:'on_trick_win',action:'damage_enemy',value:6,duration:'trick'},
+        {trigger:'on_showdown_score',action:'showdown_power',value:-5,duration:'set'}
+      ]
+    },
+    {
+      id:'pack02.consolation_prize',
+      name:'위로금',short:'위로금',suit:'H',rank:4,
+      description:'발동: 이 카드로 트릭 패배 시. 효과: 칩 +2.',
+      terms:['트릭','패배','칩'],
+      image:'assets/cards/pack01/golden_hand.png',packId:'pack02',art:'placeholder_consolation_prize',
+      effects:[{trigger:'on_trick_loss',action:'gain_chips',value:2,duration:'trick'}]
+    },
+    {
+      id:'pack02.last_word',
+      name:'마지막 한 수',short:'마지막 한 수',suit:'D',rank:8,
+      description:'조건: 이 카드가 5번 쇼다운 슬롯에 위치. 효과: 쇼다운 최종 위력 +9.',
+      terms:['쇼다운 슬롯','쇼다운','최종 위력'],
+      image:'assets/cards/pack01/ambush_observer.png',packId:'pack02',art:'placeholder_last_word',
+      effects:[{trigger:'on_showdown_score',action:'showdown_power',value:9,condition:'slot_is',conditionValue:5,duration:'set'}]
     }
   ];
 });

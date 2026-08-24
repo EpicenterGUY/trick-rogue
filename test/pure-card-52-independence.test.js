@@ -8,6 +8,7 @@ const Persistence=require('../run-persistence.js');
 const Showdown=require('../showdown-resolution.js');
 
 function pure(suit,rank,uid=`pure-${suit}${rank}`){return Cards.createCardRecord({suit,rank,metadata:{uid}})}
+function effectPackCount(packId){return Cards.CARD_DEFINITIONS.filter(card=>card.packId===packId).length}
 
 test('순수 기본 카드 슬롯은 정확히 52장이고 전부 고유 효과가 없다',()=>{
   const cards=Cards.createBaseCardSlots();
@@ -67,13 +68,13 @@ test('보상 후보는 순수 52장을 모두 포함하고 효과/네임드 카�
   assert.ok(catalog.some(item=>item.key==='def:pack01.black_bullet'));
 });
 
-test('도감 순수 필터는 정확히 52장이고 공용 효과/pack 카드와 별도 항목이다',()=>{
+test('도감 순수 필터는 정확히 52장이고 공용 효과/활성 효과 카드와 별도 항목이다',()=>{
   const catalog=Compendium.cardCatalog();
   assert.equal(catalog.filter(item=>item.category==='pure').length,52);
-  assert.equal(catalog.filter(item=>item.category==='general').length,12);
-  assert.equal(catalog.filter(item=>item.packId==='pack01').length,10);
-  assert.equal(catalog.filter(item=>item.packId==='pack02').length,10);
-  assert.equal(catalog.length,84);
+  assert.equal(catalog.filter(item=>item.category==='general').length,Cards.GENERAL_EFFECT_CARD_DEFINITIONS.length);
+  assert.equal(catalog.filter(item=>item.packId==='pack01').length,effectPackCount('pack01'));
+  assert.equal(catalog.filter(item=>item.packId==='pack02').length,effectPackCount('pack02'));
+  assert.equal(catalog.length,Cards.createBaseCardSlots().length+Cards.GENERAL_EFFECT_CARD_DEFINITIONS.length+Cards.CARD_DEFINITIONS.length);
   assert.ok(catalog.some(item=>item.id==='pure.S3'));
   assert.ok(catalog.some(item=>item.id==='core.plus2'));
 });

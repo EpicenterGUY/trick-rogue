@@ -19,25 +19,25 @@ function runCard(id,trigger,context={}){
   return{card,count,calls:log.calls};
 }
 
-test('효과 카드 20장은 하나의 공용 카탈로그로 평탄화된다',()=>{
-  assert.equal(Catalog.EFFECT_CARD_DEFINITIONS.length,20);
-  assert.equal(new Set(Catalog.EFFECT_CARD_IDS).size,20);
-  assert.equal(Cards.CARD_DEFINITIONS.length,20);
+test('효과 카드 23장은 하나의 공용 카탈로그로 평탄화된다',()=>{
+  assert.equal(Catalog.EFFECT_CARD_DEFINITIONS.length,23);
+  assert.equal(new Set(Catalog.EFFECT_CARD_IDS).size,23);
+  assert.equal(Cards.CARD_DEFINITIONS.length,23);
   assert.deepEqual(Cards.defaultEnabledPacks(),['all-effects']);
   assert.deepEqual(Object.keys(Cards.CARD_PACKS),['all-effects']);
-  assert.equal(Cards.CARD_PACKS['all-effects'].cards.length,20);
+  assert.equal(Cards.CARD_PACKS['all-effects'].cards.length,23);
 });
 
 test('예전 pack 선택값은 저장 호환만 하고 보상 풀을 더 이상 분리하지 않는다',()=>{
   const all=Cards.rewardCardIds();
-  assert.equal(all.length,20);
+  assert.equal(all.length,23);
   assert.deepEqual(Cards.rewardCardIds(['pack01']),all);
   assert.deepEqual(Cards.rewardCardIds(['pack02']),all);
   assert.deepEqual(Cards.rewardCardIds(['pack01','pack02']),all);
   assert.throws(()=>Cards.rewardCardIds(['unknown-pack']),/Unknown legacy card collection reference/);
 });
 
-test('기존 효과 카드 20장은 표준 52장 숫자와 무늬를 사용한다',()=>{
+test('효과 카드 23장은 표준 52장 숫자와 무늬를 사용한다',()=>{
   const cards=Catalog.EFFECT_CARD_DEFINITIONS;
   assert.ok(cards.every(card=>['S','H','D','C'].includes(card.suit)));
   assert.ok(cards.every(card=>Number.isInteger(card.rank)&&card.rank>=2&&card.rank<=14));
@@ -124,6 +124,27 @@ test('우세 청산과 누적 이자는 기존 명시 조건에서만 발동한�
   assert.equal(noAdvantage.calls.length,0);
   assert.deepEqual(runCard('pack02.long_game','on_showdown_score',{setHistory:{wins:4}}).calls.map(x=>[x.action,x.value]),[['showdown_power',12]]);
   assert.equal(runCard('pack02.long_game','on_showdown_score',{setHistory:{wins:3}}).calls.length,0);
+});
+
+test('M4 선지급은 트릭 승리의 즉시 피해와 쇼다운 손해를 동시에 가진다',()=>{
+  const win=runCard('pack02.advance_payment','on_trick_win');
+  const showdown=runCard('pack02.advance_payment','on_showdown_score');
+  assert.deepEqual(win.calls.map(x=>[x.action,x.value]),[['damage_enemy',6]]);
+  assert.deepEqual(showdown.calls.map(x=>[x.action,x.value]),[['showdown_power',-5]]);
+});
+
+test('M4 위로금은 이 카드로 트릭을 패배했을 때만 칩 2를 회수한다',()=>{
+  const loss=runCard('pack02.consolation_prize','on_trick_loss');
+  const win=runCard('pack02.consolation_prize','on_trick_win');
+  assert.deepEqual(loss.calls.map(x=>[x.action,x.value]),[['gain_chips',2]]);
+  assert.equal(win.calls.length,0);
+});
+
+test('M4 마지막 한 수는 정확히 5번 쇼다운 슬롯에서만 위력 9를 얻는다',()=>{
+  const fifth=runCard('pack02.last_word','on_showdown_score',{slotIndex:4});
+  const fourth=runCard('pack02.last_word','on_showdown_score',{slotIndex:3});
+  assert.deepEqual(fifth.calls.map(x=>[x.action,x.value]),[['showdown_power',9]]);
+  assert.equal(fourth.calls.length,0);
 });
 
 test('기존 효과 카드 소스는 폐기 규칙을 다시 만들지 않는다',()=>{
