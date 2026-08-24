@@ -74,10 +74,10 @@
     }),
     Object.freeze({
       legacyId:'pureboost',name:'기본에 충실',printedSuit:'D',printedRank:5,status:'redesign',activationStage:ACTIVATION_STAGE,
-      cardText:'이 카드를 낼 때 손패에 순수 카드가 1장 이상 있으면 트릭 숫자 +2.',
-      proposedEffects:Object.freeze([{trigger:'on_play',action:'increase_next_trick_rank',value:2,condition:'pure_card_in_hand',duration:'trick'}]),
-      requires:Object.freeze(['pure_card_in_hand_condition']),
-      note:'효과 없는 일반 카드를 정식 순수 카드 자원으로 보상해 네임드/효과 카드 일변도 덱을 견제한다.'
+      cardText:'이 카드를 낼 때 이미 쇼다운 슬롯에 순수 카드가 1장 이상 있으면 트릭 숫자 +3.',
+      proposedEffects:Object.freeze([{trigger:'on_play',action:'increase_next_trick_rank',value:3,condition:'pure_card_in_showdown',duration:'trick'}]),
+      requires:Object.freeze(['pure_card_in_showdown_condition']),
+      note:'무조건 숫자 +2 카드와 역할을 분리해, 순수 카드를 먼저 쇼다운에 쌓았을 때 더 높은 트릭 보정을 얻는 연계 카드로 재설계했다.'
     }),
     Object.freeze({
       legacyId:'clean',name:'무첨가',printedSuit:'S',printedRank:4,status:'redesign',activationStage:ACTIVATION_STAGE,
