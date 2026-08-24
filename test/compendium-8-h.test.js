@@ -13,14 +13,15 @@ const BuildSynergies=require('../build-synergies.js');
 const PureSynergies=require('../pure-synergies-9-d.js');
 const Compendium=require('../compendium-8-h.js');
 
-test('8-H 통합 도감은 순수 52 + 공용 효과 12 + pack 20을 독립 집계한다',()=>{
+test('8-H 통합 도감은 순수 52 + 공용 효과 12 + pack 30을 독립 집계한다',()=>{
   assert.equal(Compendium.STAGE,'8-H');
   const counts=Compendium.catalogCounts(null);
-  assert.equal(counts.cards,84);
+  assert.equal(counts.cards,94);
   assert.equal(counts.pure,52);
   assert.equal(counts.general,12);
   assert.equal(counts.pack01,10);
   assert.equal(counts.pack02,10);
+  assert.equal(Compendium.cardCatalog().filter(item=>item.packId==='pack03').length,10);
   assert.equal(counts.relics,Object.keys(Relics.RELIC_DEFINITIONS).length);
   assert.equal(counts.clauses,Object.keys(Contracts.CONTRACT_DEFINITIONS).length+Object.keys(Contracts.TABOO_DEFINITIONS).length);
   assert.equal(counts.traits,RunStart.RUN_TRAITS.length);
@@ -29,7 +30,7 @@ test('8-H 통합 도감은 순수 52 + 공용 효과 12 + pack 20을 독립 집�
   assert.equal(counts.synergies,Object.keys(BuildSynergies.SYNERGY_DEFINITIONS).length+Object.keys(PureSynergies.PURE_SYNERGY_DEFINITIONS).length);
 });
 
-test('카드 도감은 순수 52장, 공용 효과 12장, 활성 네임드 20장을 모두 노출하고 중복 id가 없다',()=>{
+test('카드 도감은 순수 52장, 공용 효과 12장, 활성 네임드 30장을 모두 노출하고 중복 id가 없다',()=>{
   const items=Compendium.cardCatalog();
   assert.equal(items.length,Cards.createBaseCardSlots().length+Cards.GENERAL_EFFECT_CARD_DEFINITIONS.length+Cards.CARD_DEFINITIONS.length);
   assert.equal(new Set(items.map(item=>item.id)).size,items.length);
@@ -37,6 +38,7 @@ test('카드 도감은 순수 52장, 공용 효과 12장, 활성 네임드 20장
   assert.equal(items.filter(item=>item.category==='general').length,12);
   assert.equal(items.filter(item=>item.packId==='pack01').length,10);
   assert.equal(items.filter(item=>item.packId==='pack02').length,10);
+  assert.equal(items.filter(item=>item.packId==='pack03').length,10);
 });
 
 test('같은 인쇄값의 순수 카드와 효과 카드는 도감에서 서로 다른 항목으로 동시에 존재한다',()=>{
@@ -70,10 +72,11 @@ test('도감의 보상 후보 표시는 8-C 실제 candidateCatalog와 같은 �
     assert.equal(item.rewardEligible,actual.has(key));
   }
   assert(cards.filter(item=>item.packId==='pack02').every(item=>item.rewardEligible));
+  assert(cards.filter(item=>item.packId==='pack03').every(item=>item.rewardEligible));
   assert(cards.filter(item=>item.category==='pure').every(item=>item.rewardEligible));
 });
 
-test('카드 필터는 순수/공용 효과/pack01/pack02를 분리한다',()=>{
+test('카드 필터는 순수/공용 효과/기존 pack 필터를 분리한다',()=>{
   const cards=Compendium.cardCatalog();
   for(const filter of Compendium.CARD_FILTERS){
     const filtered=cards.filter(item=>Compendium.cardFilterMatch(item,filter));
@@ -82,6 +85,7 @@ test('카드 필터는 순수/공용 효과/pack01/pack02를 분리한다',()=>{
   }
   assert.equal(cards.filter(item=>Compendium.cardFilterMatch(item,'pure')).length,52);
   assert.equal(cards.filter(item=>Compendium.cardFilterMatch(item,'general')).length,12);
+  assert.equal(cards.filter(item=>Compendium.cardFilterMatch(item,'pack03')).length,10);
   assert(cards.filter(item=>Compendium.cardFilterMatch(item,'pure')).every(item=>item.category==='pure'));
   assert(cards.filter(item=>Compendium.cardFilterMatch(item,'general')).every(item=>item.category==='general'));
 });
@@ -91,6 +95,8 @@ test('도감 검색은 이름·효과·팩 id·인쇄 숫자/무늬를 함께 �
   assert(river.length>0);
   const pack02=Compendium.filteredCatalog('cards',{cardFilter:'all',query:'pack02',runState:null});
   assert.equal(pack02.length,10);
+  const pack03=Compendium.filteredCatalog('cards',{cardFilter:'all',query:'pack03',runState:null});
+  assert.equal(pack03.length,10);
   const pureS3=Compendium.filteredCatalog('cards',{cardFilter:'pure',query:'♠3',runState:null});
   assert.equal(pureS3.length,1);assert.equal(pureS3[0].id,'pure.S3');
   const bleed=Compendium.filteredCatalog('relics',{query:'출혈',runState:null});
