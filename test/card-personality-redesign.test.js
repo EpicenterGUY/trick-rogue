@@ -79,9 +79,11 @@ test('저장/불러오기 후 카드 ID와 최신 effect 정의가 복원된다'
   assert.equal(restored.effects[0].action,'copy_previous_showdown_rank');
 });
 
-test('도감/카드 앞면 설명에는 변경 전 핵심 수치가 남지 않는다',()=>{
+test('도감/카드 앞면 설명에는 변경 전 핵심 수치와 옛 배터리 이름이 남지 않는다',()=>{
   assert.match(Cards.CARD_DEFINITION_BY_ID['pack01.black_bullet'].description,/피해 4/);assert.doesNotMatch(Cards.CARD_DEFINITION_BY_ID['pack01.black_bullet'].description,/위력 \+3/);
   assert.match(Cards.CARD_DETAIL_BY_ID['pack01.scheduled_delivery'].effect,/피해 8/);
   assert.match(CardTextMode.COMPACT_TEXT['core.plus2'].summary,/\+3/);assert.match(CardTextMode.COMPACT_TEXT['core.double'].summary,/칩 1/);
   assert.match(Cards.CARD_DEFINITION_BY_ID['core.fakeid'].description,/이전 쇼다운 카드의 숫자를 복사/);
+  assert.equal(Cards.CARD_DEFINITION_BY_ID['pack01.battery_1pct'].name,'배터리 1%');
+  assert.equal(Cards.CARD_DEFINITION_BY_ID['pack01.battery_1pct'].short,'배터리 1%');
 });
