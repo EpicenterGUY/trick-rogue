@@ -189,15 +189,33 @@
     return{catalog,theme,neutral,regionId,weights:rewardWeightsFor(runState,node,runtimeRoot),openingCommon:false};
   }
   function chooseFromPool(pool,used,rng){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;return available[Math.floor(safeRngValue(rng)*available.length)]||available[0]}
+  function decorateOfferCandidate(candidate,pools){
+    const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
+    return{...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags};
+  }
+  function generateCommonOpeningOffer(pools,count,rng){
+    const used=new Set(),offer=[];
+    const pure=pools.catalog.filter(candidate=>candidate.kind==='pure');
+    const effects=pools.catalog.filter(candidate=>candidate.kind==='definition');
+    const take=pool=>{
+      let candidate=chooseFromPool(pool,used,rng);
+      if(!candidate)candidate=chooseFromPool(pools.catalog,used,rng);
+      if(!candidate)return false;
+      used.add(candidate.key);offer.push(decorateOfferCandidate(candidate,pools));return true;
+    };
+    if(count>=2&&pure.length&&effects.length){take(effects);if(offer.length<count)take(pure)}
+    while(offer.length<count&&take(pools.catalog)){}
+    return shuffleCopy(offer,rng);
+  }
   function generateCardOffer(runState,node,{count=CARD_OFFER_COUNT,rng=Math.random,runtimeRoot=root}={}){
     const pools=rewardPools(runState,node,runtimeRoot),used=new Set(),offer=[];
+    if(pools.openingCommon)return generateCommonOpeningOffer(pools,count,rng);
     for(let i=0;i<count;i++){
       const wantsTheme=pools.theme.length>0&&safeRngValue(rng)>=pools.weights.neutral;
       let candidate=chooseFromPool(wantsTheme?pools.theme:pools.neutral,used,rng);
       if(!candidate)candidate=chooseFromPool(wantsTheme?pools.neutral:pools.theme,used,rng);
       if(!candidate)break;
-      const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
-      used.add(candidate.key);offer.push({...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags});
+      used.add(candidate.key);offer.push(decorateOfferCandidate(candidate,pools));
     }
     return offer;
   }
@@ -283,7 +301,7 @@
   function showBattleCardReward(runtimeRoot=root,node){
     const runState=activeRun(runtimeRoot);if(!runState||!node)return false;if(rewardClaim(runState,node.id))return false;
     const offer=ensureRewardOffer(runState,node,runtimeRoot),gold=BATTLE_GOLD_BY_TYPE[node.type]||0,pools=rewardPools(runState,node,runtimeRoot),weights=pools.weights,regionId=pools.regionId;
-    const mix=pools.openingCommon?'공통지역 · 순수 카드 + 공용 효과 카드만 등장':regionId?`지역 경향 ${Math.round(weights.theme*100)}% · 공용/무소속 ${Math.round(weights.neutral*100)}%`:'공용 카드 보상';
+    const mix=pools.openingCommon?'공통지역 · 순수 카드와 공용 효과 카드 최소 1장씩 제시':regionId?`지역 경향 ${Math.round(weights.theme*100)}% · 공용/무소속 ${Math.round(weights.neutral*100)}%`:'공용 카드 보상';
     const html=`<h2>전투 보상</h2><p>골드 +${gold} 지급 완료. 카드 3장 중 1장을 고르거나 건너뛸 수 있다.<br><span class="tiny">${escapeHtml(mix)} · 건너뛰어도 추가 골드는 없다.</span></p><div class="rewardGrid">${offer.map(candidate=>candidateHtml(candidate,runtimeRoot)).join('')}</div><div class="choiceList"><button class="choice" onclick="RunEconomyV2.skipRewardFromUi()"><b>카드 보상 건너뛰기</b><span>덱에 카드를 추가하지 않는다.</span></button></div>`;
     if(typeof runtimeRoot?.showModal==='function'){runtimeRoot.showModal(html);return offer}
     return false;
@@ -302,7 +320,7 @@
     const runState=activeRun(runtimeRoot),node=runState?.map?.find(item=>item.id===nodeId);if(!runState||!node)return false;
     const options=runState.deck.map((card,index)=>({card,index})).filter(item=>canUpgradeCard(item.card));
     const body=options.length?options.map(({card,index})=>`<button class="choice" onclick="RunEconomyV2.upgradeCampCardFromUi('${escapeHtml(nodeId)}',${index})"><b>${escapeHtml(cardName(card))}</b><span>강화 후 트릭 적용 숫자 +${UPGRADE_TRICK_BONUS} · 인쇄값/쇼다운값 유지</span></button>`).join(''):`<div class="choice"><b>강화 가능한 카드 없음</b><span>모든 카드가 이미 1단계 강화되었다.</span></div>`;
-    const html=`<h2>카드 강화</h2><p>이번 캠프에서 카드 1장을 선택한다.</p><div class="choiceList">${body}<button class="choice" onclick="RunEconomyV2.showCampFromUi('${escapeHtml(nodeId)}')"><b>뒤로</b></button></div>`;
+    const html=`<h2>카드 강화</h2><p>이번 캠프에서 카드 1장을 선택한다.</p><div class="choiceList">${body}<button class="choice" onclick="RunEconomyV2.showCampFromUi('${escapeHtml(node.id)}')"><b>뒤로</b></button></div>`;
     runtimeRoot.showModal?.(html);return true;
   }
   function upgradeCampCardFromUi(nodeId,index,runtimeRoot=root){const runState=activeRun(runtimeRoot),node=runState?.map?.find(item=>item.id===nodeId);if(!runState||!node)return false;const result=upgradeCampCard(runState,index);if(!result.ok)return false;if(typeof runtimeRoot?.sfx==='function')runtimeRoot.sfx('reward');return finishNode(runtimeRoot,node)}
@@ -340,5 +358,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25);else console.warn('[run-economy-v2] 보상/캠프/상점 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false;originalShowReward=null;originalShowCamp=null;originalShowShop=null;uidCounter=0}
 
-  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
 });
