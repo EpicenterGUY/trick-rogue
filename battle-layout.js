@@ -19,6 +19,14 @@
   const MOBILE_MAP_NODE_HEIGHT=48;
   const MOBILE_MAP_DECK_COLUMNS=7;
   const STYLE_TEXT=`
+#overlay .rewardGrid{align-items:stretch}
+#overlay .rewardBox{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+#overlay .rewardBox>.cardArt{height:auto!important;aspect-ratio:100/148;margin:0;flex:0 0 auto;overflow:hidden}
+#overlay .rewardBox>.cardArt svg,#overlay .rewardBox>.cardArt img{width:100%;height:100%;display:block}
+#overlay .rewardBox>h3{min-height:24px}
+#overlay .rewardBox>p{min-height:0}
+#overlay .rewardBox>.tiny{display:block;margin-top:auto;padding-top:4px}
+#overlay .rewardBox>.rewardBtns{margin-top:4px}
 @media (max-width:899px){
   #versus{min-height:${MOBILE_STAGE_HEIGHT}px}
   .stageCard{height:${MOBILE_STAGE_HEIGHT}px;min-height:${MOBILE_STAGE_HEIGHT}px}
