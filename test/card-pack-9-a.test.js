@@ -18,12 +18,14 @@ function runCard(id,trigger,context={}){
   return{card,count,calls:log.calls};
 }
 
-test('9-A pack02는 기본 활성 10장 카드팩으로 등록되고 pack01을 그대로 보존한다',()=>{
+test('9-A pack01/pack02와 신규 pack03은 기본 활성 10장 카드팩으로 함께 등록된다',()=>{
   assert.equal(Cards.CARD_PACKS.pack01.cards.length,10);
   assert.equal(Cards.CARD_PACKS.pack02.cards.length,10);
-  assert.deepEqual(Cards.defaultEnabledPacks(),['pack01','pack02']);
-  assert.equal(Cards.CARD_DEFINITIONS.length,20);
+  assert.equal(Cards.CARD_PACKS.pack03.cards.length,10);
+  assert.deepEqual(Cards.defaultEnabledPacks(),['pack01','pack02','pack03']);
+  assert.equal(Cards.CARD_DEFINITIONS.length,30);
   assert.ok(Cards.CARD_PACKS.pack02.cards.every(card=>card.implemented&&card.effects.length>0));
+  assert.ok(Cards.CARD_PACKS.pack03.cards.every(card=>card.implemented&&card.effects.length>0));
 });
 
 test('pack02 10장은 표준 52장 숫자/무늬만 사용하고 팩 내부 인쇄 슬롯이 겹치지 않는다',()=>{
@@ -34,12 +36,14 @@ test('pack02 10장은 표준 52장 숫자/무늬만 사용하고 팩 내부 인�
   assert.ok(cards.every(card=>Number.isInteger(card.rank)&&card.rank>=2&&card.rank<=14));
 });
 
-test('활성 카드팩 선택에 따라 pack01/pack02 보상 풀이 독립적으로 열리고 기본은 20장이다',()=>{
+test('활성 카드팩 선택에 따라 각 팩 보상 풀이 독립적으로 열리고 기본은 30장이다',()=>{
   assert.equal(Cards.rewardCardIds(['pack01']).length,10);
   assert.ok(Cards.rewardCardIds(['pack01']).every(id=>id.startsWith('pack01.')));
   assert.equal(Cards.rewardCardIds(['pack02']).length,10);
   assert.ok(Cards.rewardCardIds(['pack02']).every(id=>id.startsWith('pack02.')));
-  assert.equal(Cards.rewardCardIds().length,20);
+  assert.equal(Cards.rewardCardIds(['pack03']).length,10);
+  assert.ok(Cards.rewardCardIds(['pack03']).every(id=>id.startsWith('pack03.')));
+  assert.equal(Cards.rewardCardIds().length,30);
 });
 
 test('pack02 정의 카드는 인쇄값과 고유 effects를 그대로 가진 실제 카드 레코드로 생성된다',()=>{
@@ -141,11 +145,16 @@ test('pack02는 폐기된 전술 덱·트럼프 자동 승리·상시 무늬 우
   assert.doesNotMatch(source,/advantageMargin|showdownAdvantagePower|우세\s*무늬\s*개수/);
 });
 
-test('브라우저 부트스트랩은 pack02를 카드팩 레지스트리보다 먼저 불러오도록 연결한다',()=>{
+test('브라우저 부트스트랩은 pack01 → pack02 → pack03 순서로 카드팩 레지스트리보다 먼저 불러온다',()=>{
   const pack01=fs.readFileSync(path.join(__dirname,'..','card-packs','pack01.js'),'utf8');
+  const pack02=fs.readFileSync(path.join(__dirname,'..','card-packs','pack02.js'),'utf8');
   const registry=fs.readFileSync(path.join(__dirname,'..','card-packs','index.js'),'utf8');
   assert.match(pack01,/card-packs\/pack02\.js/);
   assert.match(pack01,/data-trick-pack02-bootstrap/);
+  assert.match(pack02,/card-packs\/pack03\.js/);
+  assert.match(pack02,/data-trick-pack03-bootstrap/);
   assert.match(registry,/root\.PACK02_CARDS/);
+  assert.match(registry,/root\.PACK03_CARDS/);
   assert.match(registry,/id:'pack02'/);
+  assert.match(registry,/id:'pack03'/);
 });
