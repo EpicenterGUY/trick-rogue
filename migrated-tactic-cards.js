@@ -15,7 +15,7 @@
     barrier:Object.freeze({id:'core.barrier',activation:'이 카드를 낼 때',terms:Object.freeze(['보호막'])}),
     burn:Object.freeze({id:'core.burn',activation:'이 카드를 낼 때',terms:Object.freeze(['손패','버림','칩','드로우']),targeting:Object.freeze({zone:'hand',count:1,excludeSelf:true})}),
     reverse:Object.freeze({id:'core.reverse',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','트릭값'])}),
-    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['순수 카드','손패','트릭값'])}),
+    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['순수 카드','쇼다운','트릭값'])}),
     clean:Object.freeze({id:'core.clean',activation:'이 카드로 트릭 승리 시',terms:Object.freeze(['순수 카드','쇼다운','트릭','칩'])}),
     recolor:Object.freeze({id:'core.recolor',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값','트럼프'])}),
     fakeid:Object.freeze({id:'core.fakeid',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값'])})
