@@ -112,3 +112,9 @@
     }
   ];
 });
+
+(function(root){
+  if(typeof document==='undefined'||root.PACK03_CARDS||document.querySelector('script[data-trick-pack03-bootstrap]'))return;
+  if(document.readyState!=='loading')return;
+  document.write('<script src="card-packs/pack03.js" data-trick-pack03-bootstrap="true"></script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
