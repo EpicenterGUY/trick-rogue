@@ -191,7 +191,7 @@
     const neutral=catalog.filter(candidate=>!isThemeCandidate(candidate,regionId));
     return{catalog,theme,neutral,regionId,weights:rewardWeightsFor(runState,node,runtimeRoot),openingCommon:false};
   }
-  function chooseFromPool(pool,used,rng){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;return available[Math.floor(safeRngValue(rng)*(i+1))]||available[0]}
+  function chooseFromPool(pool,used,rng){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;return available[Math.floor(safeRngValue(rng)*available.length)]||available[0]}
   function decorateOfferCandidate(candidate,pools){
     const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
     return{...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags};
