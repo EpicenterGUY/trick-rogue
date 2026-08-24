@@ -1,4 +1,4 @@
-(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.BattleFeedback=api;if(typeof document!=='undefined')api.loadRuleGlossaryRuntime(document)})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.BattleFeedback=api;if(typeof document!=='undefined'){api.loadRuleGlossaryRuntime(document);api.loadDeveloperToolsRuntime(document,root.location)}})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const SHAKE_PROFILES=Object.freeze({small:Object.freeze({amplitude:1,duration:80}),normal:Object.freeze({amplitude:3,duration:110}),large:Object.freeze({amplitude:4,duration:135}),showdown:Object.freeze({amplitude:6,duration:150})});
   function damageTier(amount){if(amount<=2)return'small';if(amount>=8)return'large';return'normal'}
   function shakeFrames(amplitude){return[{transform:'translate(0, 0)'},{transform:`translate(${-amplitude}px, ${Math.ceil(amplitude/2)}px)`},{transform:`translate(${amplitude}px, ${-Math.floor(amplitude/2)}px)`},{transform:`translate(${-Math.ceil(amplitude/2)}px, 0)`},{transform:'translate(0, 0)'}]}
@@ -12,5 +12,18 @@
     (doc.head||doc.documentElement)?.appendChild(script);
     return true;
   }
-  return{SHAKE_PROFILES,damageTier,shakeFrames,createController,loadRuleGlossaryRuntime};
+  function isDeveloperMode(locationLike){
+    const search=typeof locationLike==='string'?locationLike:(locationLike?.search||'');
+    try{return new URLSearchParams(search).get('dev')==='1'}catch(_){return false}
+  }
+  function loadDeveloperToolsRuntime(doc,locationLike){
+    if(!doc?.createElement||!isDeveloperMode(locationLike))return false;
+    if(doc.querySelector?.('script[data-trick-dev-tools]'))return false;
+    const script=doc.createElement('script');
+    script.src='dev-tools.js';
+    script.dataset.trickDevTools='true';
+    (doc.head||doc.documentElement)?.appendChild(script);
+    return true;
+  }
+  return{SHAKE_PROFILES,damageTier,shakeFrames,createController,loadRuleGlossaryRuntime,isDeveloperMode,loadDeveloperToolsRuntime};
 });
