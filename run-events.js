@@ -59,7 +59,7 @@
   function eventDefinition(id){return EVENT_DEFINITIONS[id]||null}
   function ensureEventState(runState){
     if(!runState||typeof runState!=='object')throw new TypeError('runState is required');const current=runState.eventState&&typeof runState.eventState==='object'?runState.eventState:{};
-    runState.eventState={...current,version:STAGE,history:array(current.history),oneShotSeen:[...new Set(array(current.oneShotSeen))],storedCards:array(current.storedCards),routeReveals:array(current.routeReveals),pendingEffects:array(current.pendingEffects),activeEvent:current.activeEvent&&typeof current.activeEvent==='object'?current.activeEvent:null};
+    runState.eventState=Object.assign(current,{...current,version:STAGE,history:array(current.history),oneShotSeen:[...new Set(array(current.oneShotSeen))],storedCards:array(current.storedCards),routeReveals:array(current.routeReveals),pendingEffects:array(current.pendingEffects),activeEvent:current.activeEvent&&typeof current.activeEvent==='object'?current.activeEvent:null});
     return runState.eventState;
   }
   function contextRegionIds(runState,node){
