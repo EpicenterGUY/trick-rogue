@@ -16,14 +16,25 @@
     const search=typeof locationLike==='string'?locationLike:(locationLike?.search||'');
     try{return new URLSearchParams(search).get('dev')==='1'}catch(_){return false}
   }
+  function loadDeveloperM2Runtime(doc,locationLike){
+    if(!doc?.createElement||!isDeveloperMode(locationLike))return false;
+    if(doc.querySelector?.('script[data-trick-dev-m2]'))return false;
+    const script=doc.createElement('script');
+    script.src='dev-m2-runtime.js';
+    script.dataset.trickDevM2='true';
+    (doc.head||doc.documentElement)?.appendChild(script);
+    return true;
+  }
   function loadDeveloperToolsRuntime(doc,locationLike){
     if(!doc?.createElement||!isDeveloperMode(locationLike))return false;
     if(doc.querySelector?.('script[data-trick-dev-tools]'))return false;
     const script=doc.createElement('script');
     script.src='dev-tools.js';
     script.dataset.trickDevTools='true';
+    const loadFinal=()=>loadDeveloperM2Runtime(doc,locationLike);
+    if(typeof script.addEventListener==='function')script.addEventListener('load',loadFinal,{once:true});else script.onload=loadFinal;
     (doc.head||doc.documentElement)?.appendChild(script);
     return true;
   }
-  return{SHAKE_PROFILES,damageTier,shakeFrames,createController,loadRuleGlossaryRuntime,isDeveloperMode,loadDeveloperToolsRuntime};
+  return{SHAKE_PROFILES,damageTier,shakeFrames,createController,loadRuleGlossaryRuntime,isDeveloperMode,loadDeveloperM2Runtime,loadDeveloperToolsRuntime};
 });
