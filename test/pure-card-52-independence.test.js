@@ -65,6 +65,7 @@ test('보상 후보는 순수 52장을 모두 포함하고 효과/네임드 카�
   assert.ok(catalog.some(item=>item.key==='def:core.plus2'));
   assert.ok(pureCandidates.some(item=>item.key==='pure:S7'));
   assert.ok(catalog.some(item=>item.key==='def:pack01.black_bullet'));
+  assert.ok(catalog.some(item=>item.key==='def:pack03.cross_signal'));
 });
 
 test('도감 순수 필터는 정확히 52장이고 공용 효과/pack 카드와 별도 항목이다',()=>{
@@ -73,9 +74,11 @@ test('도감 순수 필터는 정확히 52장이고 공용 효과/pack 카드와
   assert.equal(catalog.filter(item=>item.category==='general').length,12);
   assert.equal(catalog.filter(item=>item.packId==='pack01').length,10);
   assert.equal(catalog.filter(item=>item.packId==='pack02').length,10);
-  assert.equal(catalog.length,84);
+  assert.equal(catalog.filter(item=>item.packId==='pack03').length,10);
+  assert.equal(catalog.length,94);
   assert.ok(catalog.some(item=>item.id==='pure.S3'));
   assert.ok(catalog.some(item=>item.id==='core.plus2'));
+  assert.ok(catalog.some(item=>item.id==='pack03.finale_spotlight'));
 });
 
 test('순수 카드에 캠프식 트릭 숫자 강화 메타데이터를 붙여도 순수 판정을 유지한다',()=>{
