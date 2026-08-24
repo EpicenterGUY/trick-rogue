@@ -6,33 +6,49 @@
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
 })(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS){
-  const makePack=(metadata,cards)=>Object.freeze({
-    ...metadata,
-    cards:Object.freeze(cards),
-    cardIds:Object.freeze(cards.map(card=>card.id))
-  });
+  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[])]);
+  const EFFECT_CARD_IDS=Object.freeze(EFFECT_CARD_DEFINITIONS.map(card=>card.id));
 
-  // Extension point: import a pack module above and add one metadata entry here.
-  const CARD_PACK_LIST=Object.freeze([
-    makePack({id:'pack01',name:'신규 1팩',version:'1.0.0',enabledByDefault:true,rewardWeight:1},PACK01_CARDS),
-    makePack({id:'pack02',name:'조건부 고점팩',version:'1.0.0',enabledByDefault:true,rewardWeight:1},PACK02_CARDS)
-  ]);
-  const CARD_PACKS=Object.freeze(Object.fromEntries(CARD_PACK_LIST.map(pack=>[pack.id,pack])));
+  // 프로토타입 규칙: 효과 카드는 팩/지역으로 활성화하거나 제한하지 않는다.
+  // 아래 CARD_PACK_* 이름은 기존 cards.js와 저장 데이터 호환을 위한 임시 어댑터일 뿐,
+  // 게임 규칙상의 팩을 의미하지 않는다. 새 카드는 EFFECT_CARD_DEFINITIONS에 합류한다.
+  const LEGACY_COLLECTION_ID='all-effects';
+  const legacyCollection=Object.freeze({
+    id:LEGACY_COLLECTION_ID,
+    name:'전체 효과 카드',
+    version:'prototype',
+    enabledByDefault:true,
+    rewardWeight:1,
+    cards:EFFECT_CARD_DEFINITIONS,
+    cardIds:EFFECT_CARD_IDS
+  });
+  const CARD_PACK_LIST=Object.freeze([legacyCollection]);
+  const CARD_PACKS=Object.freeze({[LEGACY_COLLECTION_ID]:legacyCollection});
 
   function validateEnabledPacks(enabledPacks){
     if(!Array.isArray(enabledPacks))throw new TypeError('enabledPacks must be an array');
-    const unknown=enabledPacks.filter(id=>!Object.hasOwn(CARD_PACKS,id));
-    if(unknown.length)throw new RangeError(`Unknown enabledPacks reference: ${unknown.join(', ')}`);
-    return [...new Set(enabledPacks)];
+    const accepted=new Set([LEGACY_COLLECTION_ID,'pack01','pack02']);
+    const unknown=enabledPacks.filter(id=>!accepted.has(id));
+    if(unknown.length)throw new RangeError(`Unknown legacy card collection reference: ${unknown.join(', ')}`);
+    return [LEGACY_COLLECTION_ID];
   }
   function defaultEnabledPacks(){
-    return CARD_PACK_LIST.filter(pack=>pack.enabledByDefault).map(pack=>pack.id);
+    return [LEGACY_COLLECTION_ID];
   }
   function createRunPackState(enabledPacks=defaultEnabledPacks()){
-    return {enabledPacks:validateEnabledPacks(enabledPacks)};
+    validateEnabledPacks(enabledPacks);
+    return {enabledPacks:[LEGACY_COLLECTION_ID]};
   }
 
-  return{CARD_PACK_LIST,CARD_PACKS,defaultEnabledPacks,validateEnabledPacks,createRunPackState};
+  return{
+    EFFECT_CARD_DEFINITIONS,
+    EFFECT_CARD_IDS,
+    CARD_PACK_LIST,
+    CARD_PACKS,
+    defaultEnabledPacks,
+    validateEnabledPacks,
+    createRunPackState
+  };
 });
 
 (function(root){
