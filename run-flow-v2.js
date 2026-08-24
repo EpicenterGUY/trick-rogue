@@ -50,7 +50,7 @@
   function runMapGeneration(runtimeRoot=root){return runtimeRoot?.RunMapGeneration||(typeof require==='function'?require('./run-map-generation.js'):null)}
   function runEvents(runtimeRoot=root){return runtimeRoot?.RunEvents||(typeof require==='function'?(()=>{try{return require('./run-events.js')}catch(_error){return null}})():null)}
   function activeRun(runtimeRoot=root){if(runtimeRoot?.run)return runtimeRoot.run;try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return null}
-  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]))}
   function toSet(value){return value instanceof Set?value:new Set(Array.isArray(value)?value:[])}
   function weightTotal(weights){return Object.values(weights||{}).reduce((sum,value)=>sum+(Number(value)||0),0)}
   function weightedPick(weights,rng=Math.random){
@@ -90,7 +90,7 @@
   }
   function ensureFlowState(runState){
     if(!runState||typeof runState!=='object')throw new TypeError('runState is required');const previous=runState.runFlow&&typeof runState.runFlow==='object'?runState.runFlow:{},defaults=createFlowState();
-    const flow=runState.runFlow={...defaults,...previous,version:STAGE};
+    const flow=runState.runFlow=Object.assign(previous,{...defaults,...previous,version:STAGE});
     for(const key of ['pendingRegionOfferIds','visitedRegionIds','completedRegionIds','visitedRegionBranches','journeyHistory','hookHistory','history'])if(!Array.isArray(flow[key]))flow[key]=[];
     flow.pendingRegionOfferIds=[...new Set(flow.pendingRegionOfferIds.filter(regionProfile))];flow.visitedRegionIds=[...new Set(flow.visitedRegionIds.filter(regionProfile))];flow.completedRegionIds=[...new Set(flow.completedRegionIds.filter(regionProfile))];
     if(!Number.isInteger(Number(runState.runStage)))setRunStage(runState,inferRunStage(runState,flow),{reason:'migration'});else setRunStage(runState,runState.runStage,{reason:'restore'});return flow;
