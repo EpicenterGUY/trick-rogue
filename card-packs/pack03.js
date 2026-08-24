@@ -41,7 +41,7 @@
       id:'pack03.first_scene_preview',
       name:'첫 장면 예고',short:'첫 장면 예고',suit:'C',rank:8,
       description:'조건: 이 카드가 1번 쇼다운 슬롯에 놓임. 효과: 다음 적 카드를 미리 공개하고 다음 트릭의 손패 한도와 보충 드로우 +1.',
-      terms:['쇼다운 슬롯','예측','손패','드로우'],
+      terms:['쇼다운 슬롯','손패'],
       image:'assets/cards/pack01/ambush_observer.png',packId:'pack03',art:'placeholder_preview',
       effects:[
         {trigger:'after_card_slotted',action:'reveal_next_enemy_card',condition:'slot_is',conditionValue:1,duration:'trick'},
@@ -52,7 +52,7 @@
       id:'pack03.delayed_delivery',
       name:'시차 배송',short:'시차 배송',suit:'D',rank:5,
       description:'조건: 이 카드가 2번 쇼다운 슬롯에 놓임. 효과: 바로 다음 트릭에서 승리하면 적에게 추가 피해 8을 주는 예약을 생성.',
-      terms:['쇼다운 슬롯','예약','트릭','피해'],
+      terms:['쇼다운 슬롯','트릭','피해'],
       image:'assets/cards/pack01/scheduled_delivery.png',packId:'pack03',art:'placeholder_delay',
       effects:[
         {trigger:'after_card_slotted',action:'reserve_next_win_damage',value:8,condition:'slot_is',conditionValue:2,duration:'trick'}
@@ -62,7 +62,7 @@
       id:'pack03.river_archivist',
       name:'리버 기록관',short:'리버 기록관',suit:'H',rank:7,
       description:'조건: 4번째 트릭 종료 때 고정한 리버 후보를 5번째 카드로 실제 적중. 효과: 쇼다운 최종 위력 +4, 칩 +1.',
-      terms:['리버','쇼다운','최종 위력','칩'],
+      terms:['쇼다운','최종 위력','칩'],
       image:'assets/cards/pack01/scheduled_delivery.png',packId:'pack03',art:'placeholder_archive',
       effects:[
         {trigger:'on_showdown_score',action:'showdown_power',value:4,condition:'river_hit',duration:'set'},
@@ -73,7 +73,7 @@
       id:'pack03.blood_dividend',
       name:'피의 배당',short:'피의 배당',suit:'S',rank:5,
       description:'조건: 이 카드의 최종 트릭 숫자가 5 이하인 상태로 트릭 승리. 효과: 적에게 출혈 2 부여, 칩 +1.',
-      terms:['적용 숫자','트릭','출혈','칩'],
+      terms:['트릭','피해','칩'],
       image:'assets/cards/pack01/sharp_glass.png',packId:'pack03',art:'placeholder_dividend',
       effects:[
         {trigger:'on_trick_win',action:'apply_enemy_bleed',value:2,condition:'effective_rank_at_most',conditionValue:5,duration:'battle'},
@@ -106,7 +106,7 @@
       id:'pack03.cross_signal',
       name:'교차 신호',short:'교차 신호',suit:'D',rank:9,
       description:'조건: 이번 트릭에 칩을 소비해 손패 교환을 사용함. 발동: 이 카드를 낼 때. 효과: 이 카드의 트릭 무늬를 현재 트럼프로 바꾸고 다음 적 카드를 미리 공개.',
-      terms:['트릭','칩','손패','트럼프','예측'],
+      terms:['트릭','칩','손패','트럼프'],
       image:'assets/cards/pack01/ambush_observer.png',packId:'pack03',art:'placeholder_cross',
       effects:[
         {trigger:'on_play',action:'set_next_trick_suit_to_trump',condition:'chips_spent',duration:'trick'},
