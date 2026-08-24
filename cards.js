@@ -16,7 +16,7 @@ const IMPLEMENTED_CARD_EFFECTS = {
   'pack01.emergency_guard': [{trigger:'on_play',action:'gain_shield',value:5,duration:'battle'}],
   'pack01.sharp_glass': [{trigger:'on_trick_win',action:'apply_enemy_bleed',value:2,duration:'battle'}],
   'pack01.ambush_observer': [{trigger:'after_card_slotted',action:'increase_enemy_forecast',value:2,condition:'slot_is',conditionValue:3,duration:'set'}],
-  'pack01.battery_1pct': [{trigger:'on_trick_end',handler:'deplete_battery_in_hand',chance:0.2,duration:'battle'},{trigger:'on_showdown_score',action:'showdown_power',value:15,duration:'set'}]
+  'pack01.battery_1pct': [{trigger:'on_trick_end',handler:'deplete_battery_in_hand',chance:0.2,duration:'battle'},{trigger:'on_showdown_score',action:'showdown_power',value:10,duration:'set'}]
 };
 const PLAYER_EFFECT_LABELS=Object.freeze({
   triggers:{on_play:'이 카드를 낼 때',on_set_start:'세트 시작 시',before_compare:'트릭 승패 비교 전',after_compare:'트릭 승패 비교 후',on_trick_win:'이 카드로 트릭 승리 시',on_trick_loss:'이 카드로 트릭 패배 시',on_trick_draw:'이 카드로 트릭 무승부 시',after_card_slotted:'쇼다운 슬롯에 놓인 후',on_trick_end:'트릭 종료 시',before_showdown:'쇼다운 계산 전',on_showdown_score:'쇼다운 위력 계산 시',after_showdown_result:'쇼다운 결과 판정 후',on_set_end:'세트 종료 시',before_damage:'피해를 받기 전',after_damage:'피해를 받은 후'},
@@ -34,7 +34,7 @@ const CARD_DETAIL_BY_ID=Object.freeze({
   'pack01.emergency_guard':{activation:'이 카드를 낼 때',effect:'보호막 5 획득.',terms:['보호막']},
   'pack01.sharp_glass':{activation:'이 카드로 트릭 승리 시',effect:'적에게 출혈 2 부여.',extra:'출혈은 트릭 종료 시 피해를 주고 1 감소한다.',duration:'해당 전투가 끝나거나 출혈이 모두 감소할 때까지',terms:['트릭','출혈','피해']},
   'pack01.ambush_observer':{activation:'쇼다운 슬롯에 놓인 후',condition:'현재 세트의 3번 쇼다운 슬롯에 위치.',effect:'적 카드 예측 단계 +2.',duration:'현재 세트',terms:['세트','쇼다운 슬롯','예측']},
-  'pack01.battery_1pct':{activation:'손에 들고 있는 동안 각 트릭 종료 시',condition:'20% 확률.',effect:'소진되어 이번 전투 동안 사용할 수 없다.',extra:'소진되지 않고 쇼다운 5장에 포함되면 쇼다운 최종 위력 +15. 손에 없으면 소진을 판정하지 않는다.',duration:'현재 전투',terms:['트릭','소진','전투','쇼다운','최종 위력']}
+  'pack01.battery_1pct':{activation:'손에 들고 있는 동안 각 트릭 종료 시',condition:'20% 확률.',effect:'소진되어 이번 전투 동안 사용할 수 없다.',extra:'소진되지 않고 쇼다운 5장에 포함되면 쇼다운 최종 위력 +10. 손에 없으면 소진을 판정하지 않는다.',duration:'현재 전투',terms:['트릭','소진','전투','쇼다운','최종 위력']}
 });
 const {CARD_PACK_LIST,CARD_PACKS,defaultEnabledPacks,validateEnabledPacks,createRunPackState}=packRegistry;
 
