@@ -27,7 +27,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-output
-          path: test-output.txt
+          path: |
+            test-output.txt
+            run-economy-v2.js
       - name: Propagate test failure
         shell: bash
         run: exit "${TEST_STATUS:-1}"
