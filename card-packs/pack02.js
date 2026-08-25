@@ -221,7 +221,7 @@
       effects:[{trigger:'on_play',action:'copy_previous_showdown_suit',condition:'previous_showdown_slot_exists',duration:'set'}]
     },
     {
-      id:'pack02.loaded_die',name:'사기 주사위',short:'사기 주사위',suit:'C',rank:6,
+      id:'pack02.loaded_die',name:'사기 주사위',short:'사기 주사위',suit:'D',rank:6,
       description:'낼 때 — 이번 트릭에서 트럼프 보너스 적용 전 숫자를 2~12 중 무작위 하나로 바꾼다. 쇼다운에서는 인쇄 숫자 6으로 계산한다.',
       terms:['트릭','적용 숫자','무작위','쇼다운','인쇄값'],image:'assets/cards/pack01/dirty_gambler.png',packId:'pack02',art:'placeholder_loaded_die',
       effects:[{trigger:'on_play',action:'randomize_trick_rank',minRank:2,maxRank:12,memoryKey:'loaded_die_roll',duration:'trick'}]
