@@ -260,6 +260,7 @@
   function createRewardMarketState(runState,node,{runtimeRoot=root}={}){
     const economy=ensureEconomyState(runState),id=node?.id;if(!id)throw new TypeError('reward node id is required');
     if(economy.rewardMarkets[id])return economy.rewardMarkets[id];
+    ensureRewardOffer(runState,node,runtimeRoot);
     const rng=deterministicRng(runState,`8-C:reward-market:${runState.actId||'act'}:${id}`,runtimeRoot);
     const offers=generateCardOffer(runState,node,{count:BATTLE_MARKET_OFFER_COUNT,rng,runtimeRoot});
     economy.rewardMarkets[id]={offers,purchased:{},finished:!!economy.rewardClaims[id]};
