@@ -1,0 +1,87 @@
+/* Battle / hand feel polish. Loaded after the core inline styles on purpose. */
+.hpFill{transition:width 340ms cubic-bezier(.12,.78,.18,1)!important}
+
+#handRow{
+  padding-top:12px!important;
+  padding-bottom:12px!important;
+  position:relative;
+  isolation:isolate;
+}
+#handRow.has-selection .card:not(.sel):not(.is-selected):not(.exchange-selected):not([data-exchange-selected="true"]):not([aria-pressed="true"]){
+  transform:translateY(3px) scale(.985);
+  filter:brightness(.83) saturate(.82);
+}
+#handRow .card.sel,
+#handRow .card.is-selected,
+#handRow .card.exchange-selected,
+#handRow .card[data-exchange-selected="true"],
+#handRow .card[aria-pressed="true"]{
+  transform:translateY(-11px) scale(1.05)!important;
+  filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 12px #63d3d5bb)!important;
+  z-index:4!important;
+  animation:handSelectSnap 190ms cubic-bezier(.16,.86,.25,1);
+}
+#handRow .card.sel::before,
+#handRow .card.is-selected::before,
+#handRow .card.exchange-selected::before,
+#handRow .card[data-exchange-selected="true"]::before,
+#handRow .card[aria-pressed="true"]::before{
+  content:'✓';
+  position:absolute;
+  right:-3px;
+  top:-5px;
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  z-index:6;
+  color:#071013;
+  background:#72ddd8;
+  box-shadow:0 0 0 2px #071013,0 0 12px #67d3d099;
+  font-size:13px;
+  font-weight:900;
+  pointer-events:none;
+}
+@keyframes handSelectSnap{
+  0%{transform:translateY(-3px) scale(.98)}
+  55%{transform:translateY(-13px) scale(1.065)}
+  100%{transform:translateY(-11px) scale(1.05)}
+}
+
+/* Transient cards must never sit above action / exchange controls. */
+.flyingCard{z-index:14!important}
+.handDiscardGhost{position:fixed!important;z-index:13!important;pointer-events:none!important;transform-origin:center;will-change:transform,opacity}
+#inspect,
+#handPanel .panelTitle,
+#handPanel button:not(.card),
+#battleScreen .handExchangeAction{position:relative;z-index:16!important}
+
+#versus.cardImpact .vsText{animation:versusImpact 180ms cubic-bezier(.16,.86,.25,1)}
+@keyframes versusImpact{
+  0%{transform:scale(1)}
+  38%{transform:scale(1.28);filter:brightness(1.65)}
+  100%{transform:scale(1);filter:none}
+}
+
+.damageNumber{animation:damagePopPolish .82s cubic-bezier(.12,.72,.18,1) forwards!important}
+@keyframes damagePopPolish{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.72)}
+  10%{opacity:1;transform:translate(-50%,-50%) scale(1.38)}
+  24%{opacity:1;transform:translate(-50%,-50%) scale(.94)}
+  40%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  68%{opacity:1;transform:translate(-50%,-58%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-92%) scale(.96)}
+}
+
+.showdownSequence.preImpact .sequenceValue{animation:calcTension 240ms cubic-bezier(.16,.86,.25,1)}
+@keyframes calcTension{
+  0%{transform:scale(1);filter:none}
+  55%{transform:scale(1.08);filter:brightness(1.35)}
+  100%{transform:scale(1);filter:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #handRow .card.sel,#handRow .card.is-selected,#handRow .card.exchange-selected,#handRow .card[data-exchange-selected="true"],#handRow .card[aria-pressed="true"]{animation:none}
+  #versus.cardImpact .vsText,.showdownSequence.preImpact .sequenceValue{animation:none}
+}

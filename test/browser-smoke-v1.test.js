@@ -141,7 +141,7 @@ if(!ENABLED){
     await clickElement(cdp,"document.querySelector('#handRow .card')",'첫 손패 카드');
     await waitFor(cdp,"!document.getElementById('playBtn').disabled",{label:'enabled play button'});
     const trickBefore=await evaluate(cdp,'battle.trick');
-    await clickElement(cdp,"document.getElementById('playBtn')",'내기');
+    await clickElement(cdp,"document.getElementById('playBtn')",'내기',{hitTest:true});
     await waitFor(cdp,`battle.trick>${Number(trickBefore)} || battle.slots.length>0`,{timeout:8000,label:'played trick'});
     await waitFor(cdp,"battle.animating===false && !document.getElementById('battleScreen').classList.contains('inputLocked')",{timeout:8000,label:'battle input unlock'});
 
