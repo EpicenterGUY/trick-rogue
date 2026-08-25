@@ -1,13 +1,20 @@
+(function(root){
+  if(typeof module!=='undefined'||typeof document==='undefined'||root.PACK03_CARDS||document.querySelector('script[data-trick-pack03-bootstrap]'))return;
+  if(document.readyState!=='loading')return;
+  document.write('<script src="card-packs/pack03.js" data-trick-pack03-bootstrap="true"><\/script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
+
 (function(root,factory){
   const api=factory(
     typeof module!=='undefined'?require('./pack01.js'):root.PACK01_CARDS,
-    typeof module!=='undefined'?require('./pack02.js'):root.PACK02_CARDS
+    typeof module!=='undefined'?require('./pack02.js'):root.PACK02_CARDS,
+    typeof module!=='undefined'?require('./pack03.js'):root.PACK03_CARDS
   );
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
   if(typeof module!=='undefined')require('../card-personality-runtime.js');
-})(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS){
-  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[])]);
+})(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS,PACK03_CARDS){
+  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[]),...(PACK03_CARDS||[])]);
   const EFFECT_CARD_IDS=Object.freeze(EFFECT_CARD_DEFINITIONS.map(card=>card.id));
 
   // 프로토타입 규칙: 효과 카드는 팩/지역으로 활성화하거나 제한하지 않는다.
@@ -28,7 +35,7 @@
 
   function validateEnabledPacks(enabledPacks){
     if(!Array.isArray(enabledPacks))throw new TypeError('enabledPacks must be an array');
-    const accepted=new Set([LEGACY_COLLECTION_ID,'pack01','pack02']);
+    const accepted=new Set([LEGACY_COLLECTION_ID,'pack01','pack02','pack03']);
     const unknown=enabledPacks.filter(id=>!accepted.has(id));
     if(unknown.length)throw new RangeError(`Unknown legacy card collection reference: ${unknown.join(', ')}`);
     return [LEGACY_COLLECTION_ID];
