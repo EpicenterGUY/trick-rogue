@@ -37,3 +37,30 @@ test('브라우저 로더는 BattleLayout 완료 뒤 GameUI를 설치한다',()=
   assert.match(source,/loadScript\('battle-layout\.js','trick-battle-layout-runtime'\)/);
   assert.match(source,/addEventListener\?\.\('load',loadGameUi/);
 });
+
+
+test('전역 UI 동기화는 같은 덱 숫자를 다시 쓰지 않아 감시기 재귀 갱신을 만들지 않는다',()=>{
+  const writes={deck:0,discard:0,exchange:0};
+  function tracked(key,initial){let text=String(initial);return{get textContent(){return text},set textContent(value){writes[key]++;text=String(value)}}}
+  const nodes={handPanel:{parentNode:{}},battlePileHud:{dataset:{}},drawInfo:{textContent:'덱 3 · 버림 4'},battleDeckCount:tracked('deck','3'),battleDiscardCount:tracked('discard','4'),battleExchangeCount:tracked('exchange','전투 덱')};
+  const doc={getElementById(id){return nodes[id]||null}};
+  UI.syncPileHud(doc,{deck:[1,2,3],discard:[1,2,3,4]},{});
+  UI.syncPileHud(doc,{deck:[1,2,3],discard:[1,2,3,4]},{});
+  assert.deepEqual(writes,{deck:0,discard:0,exchange:0});
+});
+
+test('전역 UI 감시기는 childList를 감시하지 않아 HUD 내부 쓰기를 다시 감지하지 않는다',()=>{
+  const Original=global.MutationObserver;let options=null;
+  global.MutationObserver=class{constructor(callback){this.callback=callback}observe(_target,next){options=next}};
+  const app={},doc={getElementById(id){return id==='app'?app:null},body:{}};
+  try{
+    assert.equal(UI.observe({document:doc}),true);
+    assert.equal(options.attributes,true);
+    assert.equal(Object.prototype.hasOwnProperty.call(options,'childList'),false);
+  }finally{global.MutationObserver=Original}
+});
+
+test('시작 화면은 최신 시작 런타임 준비 전부터 숨겨 구버전 화면 플래시를 막는다',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  assert.match(source,/<section class="screen active" id="startScreen" style="visibility:hidden">/);
+});
