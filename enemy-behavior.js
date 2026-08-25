@@ -18,9 +18,14 @@
     script.addEventListener('load',()=>{script.dataset.loaded='true';if(typeof onload==='function')onload()},{once:true});
     document.head.appendChild(script);return script;
   }
+  function loadGameUi(){
+    if(root.GameUI)return;
+    loadScript('game-ui.js','trick-game-ui-runtime');
+  }
   function loadBattleLayoutFinal(){
-    if(root.BattleLayout)return;
-    loadScript('battle-layout.js','trick-battle-layout-runtime');
+    if(root.BattleLayout){loadGameUi();return;}
+    const script=loadScript('battle-layout.js','trick-battle-layout-runtime');
+    if(script?.dataset?.loaded==='true')loadGameUi();else script?.addEventListener?.('load',loadGameUi,{once:true});
   }
   function finishRunPersistence(){
     root.RelicSystem?.wrapShowReward?.(root);
