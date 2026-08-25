@@ -14,9 +14,9 @@ test('배터리 1%는 소진 위험 20%와 5번 슬롯 보너스 +12를 사용�
   assert.equal(score.condition,'slot_is');
   assert.equal(score.conditionValue,5);
   assert.match(battery.description,/5번 쇼다운 슬롯/);
-  assert.match(battery.description,/최종 쇼다운 위력 \+12/);
+  assert.match(battery.description,/쇼다운 위력 \+12/);
   assert.match(Cards.CARD_DETAIL_BY_ID['pack01.battery_1pct'].extra,/5번 쇼다운 슬롯/);
-  assert.match(Cards.CARD_DETAIL_BY_ID['pack01.battery_1pct'].extra,/최종 위력 \+12/);
+  assert.match(Cards.CARD_DETAIL_BY_ID['pack01.battery_1pct'].extra,/쇼다운 위력 \+12/);
 });
 
 test('pack01 개성화 재설계 수치와 표시명을 유지한다',()=>{
