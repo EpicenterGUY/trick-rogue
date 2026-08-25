@@ -105,10 +105,11 @@ test('CardEffects 이동 액션은 공용 버튼 없이 effect context의 battle
   assert.deepEqual(slotUids(b),['b','a','c']);
 });
 
-test('8-D는 8-C 경제 뒤에 로드되고 8-E 폴드 실험으로 이어지며 공용 슬롯 조작 버튼은 추가하지 않는다',()=>{
+test('8-D는 8-C 경제 이후 마켓 어댑터를 거쳐 로드되고 8-E 폴드 실험으로 이어지며 공용 슬롯 조작 버튼은 추가하지 않는다',()=>{
   const loader=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-  assert.match(loader,/function finishRunEconomyV2\(\)\{\s*loadShowdownSlotManipulation\(\);\s*\}/);
+  assert.match(loader,/function finishRunEconomyV2\(\)\{\s*loadBattleRewardMarket\(\);\s*\}/);
+  assert.match(loader,/function finishBattleRewardMarket\(\)\{\s*loadShowdownSlotManipulation\(\);\s*\}/);
   assert.match(loader,/if\(root\.ShowdownSlotManipulation\)\{finishShowdownSlotManipulation\(\);return;\}/);
   assert.match(loader,/showdown-slot-manipulation\.js/);
   assert.match(loader,/function finishShowdownSlotManipulation\(\)\{\s*loadFoldExperiment\(\);\s*\}/);
