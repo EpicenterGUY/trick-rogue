@@ -4,22 +4,30 @@
   document.write('<script src="card-packs/pack03.js" data-trick-pack03-bootstrap="true"><\/script>');
 })(typeof globalThis!=='undefined'?globalThis:this);
 
+(function(root){
+  if(typeof module!=='undefined'||typeof document==='undefined'||root.BOSS_SIGNATURE_CARDS||document.querySelector('script[data-trick-boss-signature-bootstrap]'))return;
+  if(document.readyState!=='loading')return;
+  document.write('<script src="card-packs/boss-signatures.js" data-trick-boss-signature-bootstrap="true"><\/script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
+
 (function(root,factory){
   const api=factory(
     typeof module!=='undefined'?require('./pack01.js'):root.PACK01_CARDS,
     typeof module!=='undefined'?require('./pack02.js'):root.PACK02_CARDS,
-    typeof module!=='undefined'?require('./pack03.js'):root.PACK03_CARDS
+    typeof module!=='undefined'?require('./pack03.js'):root.PACK03_CARDS,
+    typeof module!=='undefined'?require('./boss-signatures.js'):root.BOSS_SIGNATURE_CARDS
   );
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
   if(typeof module!=='undefined')require('../card-personality-runtime.js');
-})(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS,PACK03_CARDS){
-  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[]),...(PACK03_CARDS||[])]);
+})(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS,PACK03_CARDS,BOSS_SIGNATURE_CARDS){
+  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[]),...(PACK03_CARDS||[]),...(BOSS_SIGNATURE_CARDS||[])]);
   const EFFECT_CARD_IDS=Object.freeze(EFFECT_CARD_DEFINITIONS.map(card=>card.id));
 
   // 프로토타입 규칙: 효과 카드는 팩/지역으로 활성화하거나 제한하지 않는다.
   // 아래 CARD_PACK_* 이름은 기존 cards.js와 저장 데이터 호환을 위한 임시 어댑터일 뿐,
-  // 게임 규칙상의 팩을 의미하지 않는다. 새 카드는 EFFECT_CARD_DEFINITIONS에 합류한다.
+  // 게임 규칙상의 팩을 의미하지 않는다. 보스 시그니처 카드는 카탈로그에는 포함되지만
+  // 실제 보상 후보에서는 해당 보스를 처치한 뒤에만 해금된다.
   const LEGACY_COLLECTION_ID='all-effects';
   const legacyCollection=Object.freeze({
     id:LEGACY_COLLECTION_ID,
