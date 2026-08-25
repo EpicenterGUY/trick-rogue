@@ -8,9 +8,9 @@ const EnemyBehavior=require('../enemy-behavior-core.js');
 function regionNode(type,regionId,enemyTag='standard'){return{id:`${regionId}-${type}`,type,regionPlan:{regionId,enemyTag}}}
 function battleState(contentId,type='battle',hp=60,maxHp=60){return{node:{type,enemyContentId:contentId},type,enemy:{hp,maxHp,name:'기존 적',aiMemory:EnemyBehavior.createEnemyMemory()},setIndex:1,trick:1,trump:'H',slots:[],enemySlots:[],setHistory:{wins:0,losses:0,draws:0},bossRules:[{id:'legacy-managed',encounterManaged:true,effects:[]}],encounterRules:[{id:'legacy-managed'}],encounterRulesInitialized:true,field:null,fieldSource:null,fieldHistory:[],rulesOverride:{}}}
 
-test('9-B는 일반 적 2종, 엘리트 1종, 지역 보스 1종을 추가한다',()=>{
-  assert.deepEqual(Object.values(EnemyContent.CONTENT).map(x=>x.type).sort(),['battle','battle','boss','elite']);
-  assert.deepEqual(Object.keys(EnemyContent.CONTENT).sort(),['fog_archivist','frontier_bailiff','masked_croupier','three_face_dealer']);
+test('9-B는 일반 적 2종, 엘리트 1종, 지역 보스 3종을 제공한다',()=>{
+  assert.deepEqual(Object.values(EnemyContent.CONTENT).map(x=>x.type).sort(),['battle','battle','boss','boss','boss','elite']);
+  assert.deepEqual(Object.keys(EnemyContent.CONTENT).sort(),['fog_archivist','fog_curator','frontier_bailiff','frontier_marshal','masked_croupier','three_face_dealer']);
 });
 
 test('9-B 적 콘텐츠 정의와 AI 패턴/상태 효과는 전부 유효하다',()=>{
@@ -25,9 +25,11 @@ test('유랑극장 변칙 일반전은 가면 딜러, 관측소 관측·방해 �
   assert.equal(EnemyContent.contentIdForNode(regionNode('battle','region_frontier','standard')),null);
 });
 
-test('지역 엘리트는 전선 집행관, 지역 보스는 삼면 딜러가 되지만 최종 보스는 기존 탑의 감시자를 유지한다',()=>{
+test('지역별 보스는 서로 다르고 최종 보스는 기존 탑의 감시자를 유지한다',()=>{
   assert.equal(EnemyContent.contentIdForNode(regionNode('elite','region_frontier','armored')),'frontier_bailiff');
   assert.equal(EnemyContent.contentIdForNode(regionNode('boss','region_theater','trickster')),'three_face_dealer');
+  assert.equal(EnemyContent.contentIdForNode(regionNode('boss','region_observatory','observer')),'fog_curator');
+  assert.equal(EnemyContent.contentIdForNode(regionNode('boss','region_frontier','aggressive')),'frontier_marshal');
   assert.equal(EnemyContent.contentIdForNode({id:'final-boss',type:'boss'},{actId:'final'}),null);
 });
 

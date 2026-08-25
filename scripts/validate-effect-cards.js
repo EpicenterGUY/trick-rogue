@@ -23,7 +23,7 @@ const errors=[];
 const duplicates=values=>[...new Set(values.filter((value,index)=>values.indexOf(value)!==index))];
 
 // 프로토타입에서는 효과 카드를 팩/지역으로 분리하지 않는다.
-if(CARD_DEFINITIONS.length!==32)errors.push(`현재 공용 효과 카드 카탈로그는 32장이어야 함 (${CARD_DEFINITIONS.length}장)`);
+if(CARD_DEFINITIONS.length!==38)errors.push(`현재 공용 효과 카드 카탈로그는 38장이어야 함 (${CARD_DEFINITIONS.length}장)`);
 if(CARD_PACK_LIST.length!==1||CARD_PACK_LIST[0]?.id!=='all-effects')errors.push('레거시 호환 컬렉션은 all-effects 하나만 존재해야 함');
 if(Object.keys(CARD_PACKS).length!==1||!CARD_PACKS['all-effects'])errors.push('CARD_PACKS 호환 어댑터는 all-effects 하나만 노출해야 함');
 try{

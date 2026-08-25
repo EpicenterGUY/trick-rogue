@@ -60,6 +60,29 @@
     return runState.economyState;
   }
   function record(runState,entry){const state=ensureEconomyState(runState),item={step:state.history.length+1,...entry};state.history.push(item);return item}
+  function ensureBossSignatureState(runState){
+    if(!runState||typeof runState!=='object')throw new TypeError('runState is required');
+    const current=runState.bossSignatureState&&typeof runState.bossSignatureState==='object'?runState.bossSignatureState:{};
+    runState.bossSignatureState={
+      unlockedDefinitionIds:Array.isArray(current.unlockedDefinitionIds)?current.unlockedDefinitionIds:[],
+      defeatedBossIds:Array.isArray(current.defeatedBossIds)?current.defeatedBossIds:[],
+      boostedDefinitionIds:Array.isArray(current.boostedDefinitionIds)?current.boostedDefinitionIds:[],
+      lastDefeatedBossId:current.lastDefeatedBossId||null
+    };
+    return runState.bossSignatureState;
+  }
+  function signatureDefinitions(api=Cards,bossId=null){return definitionList(api).filter(def=>def?.signatureBossId&&(!bossId||def.signatureBossId===bossId))}
+  function unlockBossSignatures(runState,bossId,api=Cards){
+    if(!runState||!bossId)return[];const state=ensureBossSignatureState(runState),defs=signatureDefinitions(api,bossId);
+    if(!state.defeatedBossIds.includes(bossId))state.defeatedBossIds.push(bossId);state.lastDefeatedBossId=bossId;
+    for(const def of defs){if(!state.unlockedDefinitionIds.includes(def.id))state.unlockedDefinitionIds.push(def.id);if(!state.boostedDefinitionIds.includes(def.id))state.boostedDefinitionIds.push(def.id)}
+    if(defs.length)record(runState,{action:'boss_signature_unlock',bossId,definitionIds:defs.map(def=>def.id)});return defs;
+  }
+  function isSignatureUnlocked(runState,definitionId){return ensureBossSignatureState(runState).unlockedDefinitionIds.includes(definitionId)}
+  function candidateRewardWeight(candidate,runState){
+    if(!candidate?.signatureBossId)return 1;const state=ensureBossSignatureState(runState);
+    return state.boostedDefinitionIds.includes(candidate.definitionId)?Math.max(1,finite(candidate.signatureWeight,2.5)):1;
+  }
 
   function addTagsForAction(tags,action){
     switch(action){
@@ -147,7 +170,7 @@
 
   function definitionList(api=Cards){return Array.isArray(api?.ALL_CARD_DEFINITIONS)?api.ALL_CARD_DEFINITIONS:[]}
   function candidateFromDefinition(definition){
-    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',gameplayTags:gameplayTagsForDefinition(definition)};
+    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',gameplayTags:gameplayTagsForDefinition(definition),signatureBossId:definition.signatureBossId||null,signatureRegionId:definition.signatureRegionId||null,signatureWeight:finite(definition.signatureWeight,1)};
   }
   function candidateFromPure(card){return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common',gameplayTags:['pure']}}
   function candidateCatalog(api=Cards){
@@ -183,12 +206,12 @@
       const catalog=commonOpeningCatalog(api,runtimeRoot);
       return{catalog,theme:[],neutral:catalog,regionId:null,weights:{neutral:1,theme:0},openingCommon:true};
     }
-    const catalog=candidateCatalog(api),regionId=regionIdFor(runState,node,runtimeRoot);
+    const catalog=candidateCatalog(api).filter(candidate=>!candidate.signatureBossId||isSignatureUnlocked(runState,candidate.definitionId)),regionId=regionIdFor(runState,node,runtimeRoot);
     const theme=catalog.filter(candidate=>isThemeCandidate(candidate,regionId));
     const neutral=catalog.filter(candidate=>!isThemeCandidate(candidate,regionId));
     return{catalog,theme,neutral,regionId,weights:rewardWeightsFor(runState,node,runtimeRoot),openingCommon:false};
   }
-  function chooseFromPool(pool,used,rng){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;return available[Math.floor(safeRngValue(rng)*available.length)]||available[0]}
+  function chooseFromPool(pool,used,rng,runState=null){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;if(!runState)return available[Math.floor(safeRngValue(rng)*available.length)]||available[0];const weighted=available.map(item=>({item,weight:candidateRewardWeight(item,runState)})),total=weighted.reduce((sum,entry)=>sum+entry.weight,0);let cursor=safeRngValue(rng)*total;for(const entry of weighted){cursor-=entry.weight;if(cursor<0)return entry.item}return weighted.at(-1)?.item||available[0]}
   function decorateOfferCandidate(candidate,pools){
     const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
     return{...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags};
@@ -210,10 +233,13 @@
   function generateCardOffer(runState,node,{count=CARD_OFFER_COUNT,rng=Math.random,runtimeRoot=root}={}){
     const pools=rewardPools(runState,node,runtimeRoot),used=new Set(),offer=[];
     if(pools.openingCommon)return generateCommonOpeningOffer(pools,count,rng);
-    for(let i=0;i<count;i++){
+    const bossId=node?.type==='boss'?node?.enemyContentId:null;
+    const immediate=bossId?pools.catalog.filter(candidate=>candidate.signatureBossId===bossId):[];
+    if(immediate.length&&offer.length<count){const candidate=chooseFromPool(immediate,used,rng,runState);if(candidate){used.add(candidate.key);offer.push(decorateOfferCandidate(candidate,pools))}}
+    while(offer.length<count){
       const wantsTheme=pools.theme.length>0&&safeRngValue(rng)>=pools.weights.neutral;
-      let candidate=chooseFromPool(wantsTheme?pools.theme:pools.neutral,used,rng);
-      if(!candidate)candidate=chooseFromPool(wantsTheme?pools.neutral:pools.theme,used,rng);
+      let candidate=chooseFromPool(wantsTheme?pools.theme:pools.neutral,used,rng,runState);
+      if(!candidate)candidate=chooseFromPool(wantsTheme?pools.neutral:pools.theme,used,rng,runState);
       if(!candidate)break;
       used.add(candidate.key);offer.push(decorateOfferCandidate(candidate,pools));
     }
@@ -295,7 +321,7 @@
   function previewCard(candidate,runtimeRoot=root){try{return instantiateCandidate({...candidate},Object.assign({},runtimeRoot,{newUid:()=>`preview-${candidate.key}`}))}catch(_error){return null}}
   function candidateHtml(candidate,runtimeRoot=root){
     const preview=previewCard(candidate,runtimeRoot),art=preview&&typeof runtimeRoot?.artHtml==='function'?`<div class="cardArt">${runtimeRoot.artHtml(preview)}</div>`:'';
-    const source=candidate.sourceCategory==='theme'?'지역 경향':'공용/무소속';return`<div class="rewardBox">${art}<h3>${escapeHtml(candidateName(candidate))}</h3><p>${escapeHtml(candidate.description||'')}</p><span class="tiny">${escapeHtml(source)}</span><div class="rewardBtns"><button onclick="RunEconomyV2.takeRewardFromUi('${escapeHtml(candidate.key)}')">받기</button></div></div>`;
+    const source=candidate.signatureBossId?'보스 시그니처':candidate.sourceCategory==='theme'?'지역 경향':'공용/무소속';return`<div class="rewardBox">${art}<h3>${escapeHtml(candidateName(candidate))}</h3><p>${escapeHtml(candidate.description||'')}</p><span class="tiny">${escapeHtml(source)}</span><div class="rewardBtns"><button onclick="RunEconomyV2.takeRewardFromUi('${escapeHtml(candidate.key)}')">받기</button></div></div>`;
   }
   function finishNode(runtimeRoot,node){if(typeof runtimeRoot?.closeOverlay==='function')runtimeRoot.closeOverlay();if(typeof runtimeRoot?.completeNode==='function')runtimeRoot.completeNode(node);return true}
   function showBattleCardReward(runtimeRoot=root,node){
@@ -345,11 +371,11 @@
   function showShopFromUi(nodeId,runtimeRoot=root){const runState=activeRun(runtimeRoot),node=runState?.map?.find(item=>item.id===nodeId);return node?showShopV2(runtimeRoot,node):false}
   function leaveShopFromUi(nodeId,runtimeRoot=root){const runState=activeRun(runtimeRoot),node=runState?.map?.find(item=>item.id===nodeId);return runState&&node?finishNode(runtimeRoot,node):false}
 
-  function wrapBeginRun(runtimeRoot=root){const original=runtimeRoot?.beginRun;if(typeof original!=='function')return false;if(original.__runEconomyV2)return true;const wrapped=function(){const result=original.apply(this,arguments),runState=activeRun(runtimeRoot);if(runState){delete runState.economyState;ensureEconomyState(runState)}return result};wrapped.__runEconomyV2=true;wrapped.__legacyBeginRun=original;runtimeRoot.beginRun=wrapped;return true}
+  function wrapBeginRun(runtimeRoot=root){const original=runtimeRoot?.beginRun;if(typeof original!=='function')return false;if(original.__runEconomyV2)return true;const wrapped=function(){const result=original.apply(this,arguments),runState=activeRun(runtimeRoot);if(runState){delete runState.economyState;delete runState.bossSignatureState;ensureEconomyState(runState);ensureBossSignatureState(runState)}return result};wrapped.__runEconomyV2=true;wrapped.__legacyBeginRun=original;runtimeRoot.beginRun=wrapped;return true}
   function wrapShowReward(runtimeRoot=root){
     const original=runtimeRoot?.showReward;if(typeof original!=='function')return false;if(original.__runEconomyV2)return true;
     const legacyOriginal=original.__runStartV2CommonPool&&typeof original.__original==='function'?original.__original:original;originalShowReward=legacyOriginal;
-    const wrapped=function(node){const runState=activeRun(runtimeRoot),relics=relicApi(runtimeRoot);if(runState&&relics?.isRelicRewardNode?.(node)&&!relics.rewardClaimed?.(runState,node.id))return legacyOriginal.apply(this,arguments);return showBattleCardReward(runtimeRoot,node)};
+    const wrapped=function(node){const runState=activeRun(runtimeRoot),relics=relicApi(runtimeRoot);if(runState&&node?.type==='boss'&&node?.enemyContentId)unlockBossSignatures(runState,node.enemyContentId,cardsApi(runtimeRoot));if(runState&&relics?.isRelicRewardNode?.(node)&&!relics.rewardClaimed?.(runState,node.id))return legacyOriginal.apply(this,arguments);return showBattleCardReward(runtimeRoot,node)};
     wrapped.__runEconomyV2=true;wrapped.__legacyShowReward=legacyOriginal;runtimeRoot.showReward=wrapped;return true;
   }
   function wrapShowCamp(runtimeRoot=root){const original=runtimeRoot?.showCamp;if(typeof original!=='function')return false;if(original.__runEconomyV2)return true;originalShowCamp=original;const wrapped=function(node){return showCampV2(runtimeRoot,node)};wrapped.__runEconomyV2=true;wrapped.__legacyShowCamp=original;runtimeRoot.showCamp=wrapped;return true}
@@ -358,5 +384,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25);else console.warn('[run-economy-v2] 보상/캠프/상점 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false;originalShowReward=null;originalShowCamp=null;originalShowShop=null;uidCounter=0}
 
-  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,ensureBossSignatureState,signatureDefinitions,unlockBossSignatures,isSignatureUnlocked,candidateRewardWeight,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
 });
