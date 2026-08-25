@@ -124,6 +124,12 @@
     try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}
     return runtimeRoot?.battle||null;
   }
+  function resolveRewardNode(runtimeRoot=root,nodeOrId=null){
+    const runState=activeRun(runtimeRoot),id=typeof nodeOrId==='string'?nodeOrId:nodeOrId?.id||null;if(!runState)return null;
+    const direct=nodeOrId&&typeof nodeOrId==='object'?nodeOrId:null,battleNode=activeBattle(runtimeRoot)?.node||null,mapNode=Array.isArray(runState.map)?runState.map.find(entry=>entry.id===id):null;
+    for(const node of [battleNode,direct,mapNode])if(node&&(!id||node.id===id)&&isRelicRewardNode(node))return node;
+    return null;
+  }
   function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
   function rarityLabel(rarity){return rarity==='uncommon'?'고급':rarity==='rare'?'희귀':'일반'}
   function relicSummary(runState){
@@ -148,21 +154,23 @@
     const runState=activeRun(runtimeRoot);if(!runState||!isRelicRewardNode(node)||rewardClaimed(runState,node.id))return false;
     const random=typeof runtimeRoot?.random==='function'?runtimeRoot.random:Math.random,options=rewardOptions(runState,3,random);
     if(!options.length){markRewardClaimed(runState,node.id);return continueCardReward(runtimeRoot,node)}
-    const boxes=options.map(id=>{const relic=relicDefinition(id);return `<button class="choice" data-relic-reward="${escapeHtml(id)}"><b>◆ ${escapeHtml(relic.name)}</b><span>${escapeHtml(relic.description)} · ${rarityLabel(relic.rarity)} 유물</span></button>`}).join('');
+    const boxes=options.map(id=>{const relic=relicDefinition(id);return `<button class="choice" data-relic-reward="${escapeHtml(id)}" onclick="RelicSystem.takeRelicRewardFromUi('${escapeHtml(id)}','${escapeHtml(node.id)}')"><b>◆ ${escapeHtml(relic.name)}</b><span>${escapeHtml(relic.description)} · ${rarityLabel(relic.rarity)} 유물</span></button>`}).join('');
     const html=`<h2>유물 보상 · ${node.type==='boss'?'보스':'엘리트'}</h2><p>하나를 선택한다. 획득한 유물은 이번 런 동안 계속 발동하며, 선택 뒤 기존 카드 보상도 이어진다.</p><div class="choiceList">${boxes}</div>`;
     if(!showModal(runtimeRoot,html))return false;
-    const doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null);
-    doc?.querySelectorAll?.('[data-relic-reward]')?.forEach(button=>{button.onclick=()=>takeRelicReward(runtimeRoot,button.dataset.relicReward,node.id)});
     return options;
   }
-  function takeRelicReward(runtimeRoot=root,id,nodeId){
+  function takeRelicReward(runtimeRoot=root,id,nodeOrId){
     const runState=activeRun(runtimeRoot);if(!runState)return{ok:false,reason:'no_run'};
-    const node=Array.isArray(runState.map)?runState.map.find(entry=>entry.id===nodeId):null;
-    if(!node||!isRelicRewardNode(node))return{ok:false,reason:'invalid_node'};
+    const node=resolveRewardNode(runtimeRoot,nodeOrId),nodeId=node?.id||null;
+    if(!node||!nodeId)return{ok:false,reason:'invalid_node'};
     if(rewardClaimed(runState,nodeId))return{ok:false,reason:'claimed'};
     const result=acquireRelic(runState,id,{source:`reward:${nodeId}`});markRewardClaimed(runState,nodeId);
     if(typeof runtimeRoot?.sfx==='function')runtimeRoot.sfx('reward');
     continueCardReward(runtimeRoot,node);return{ok:true,...result};
+  }
+  function takeRelicRewardFromUi(id,nodeId,runtimeRoot=root){
+    const result=takeRelicReward(runtimeRoot,id,nodeId);if(result.ok)return true;
+    if(typeof runtimeRoot?.sfx==='function')runtimeRoot.sfx('lose');return false;
   }
   function renderMapRelicSummary(runtimeRoot=root){
     const runState=activeRun(runtimeRoot),doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null);if(!runState||!doc)return null;
@@ -208,5 +216,5 @@
     const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;if(attempts++<40)setTimeout(attempt,25);else console.warn('[relics] 런타임을 찾지 못했습니다.')};
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true;
   }
-  return{STAGE,RELIC_REWARD_TYPES,RELIC_DEFINITIONS,relicDefinition,validateRelicDefinition,validateRelicRegistry,makeRelic,ensureRelicState,ownedRelicIds,acquireRelic,rewardPool,rewardOptions,isRelicRewardNode,rewardClaimed,markRewardClaimed,relicSummary,showRelicCollection,showRelicReward,takeRelicReward,renderMapRelicSummary,renderBattleRelicButton,wrapBeginRun,wrapShowReward,wrapRenderMap,wrapRenderBattle,installBrowserRuntime,installWhenReady,activeRun,activeBattle};
+  return{STAGE,RELIC_REWARD_TYPES,RELIC_DEFINITIONS,relicDefinition,validateRelicDefinition,validateRelicRegistry,makeRelic,ensureRelicState,ownedRelicIds,acquireRelic,rewardPool,rewardOptions,isRelicRewardNode,rewardClaimed,markRewardClaimed,relicSummary,showRelicCollection,showRelicReward,resolveRewardNode,takeRelicReward,takeRelicRewardFromUi,renderMapRelicSummary,renderBattleRelicButton,wrapBeginRun,wrapShowReward,wrapRenderMap,wrapRenderBattle,installBrowserRuntime,installWhenReady,activeRun,activeBattle};
 });
