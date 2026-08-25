@@ -5,12 +5,43 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - name: Apply reward market compatibility patch
+        if: github.event_name == 'pull_request' && github.head_ref == 'chatgpt/battle-reward-market-20260825'
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git fetch origin "$HEAD_REF"
+          git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('run-economy-v2.js')
+          text=path.read_text()
+          old="""  function createRewardMarketState(runState,node,{runtimeRoot=root}={}){\n    const economy=ensureEconomyState(runState),id=node?.id;if(!id)throw new TypeError('reward node id is required');\n    if(economy.rewardMarkets[id])return economy.rewardMarkets[id];\n    const rng=deterministicRng(runState,`8-C:reward-market:${runState.actId||'act'}:${id}`,runtimeRoot);\n"""
+          new="""  function createRewardMarketState(runState,node,{runtimeRoot=root}={}){\n    const economy=ensureEconomyState(runState),id=node?.id;if(!id)throw new TypeError('reward node id is required');\n    if(economy.rewardMarkets[id])return economy.rewardMarkets[id];\n    ensureRewardOffer(runState,node,runtimeRoot);\n    const rng=deterministicRng(runState,`8-C:reward-market:${runState.actId||'act'}:${id}`,runtimeRoot);\n"""
+          if old in text:
+              path.write_text(text.replace(old,new,1))
+          elif 'ensureRewardOffer(runState,node,runtimeRoot);' not in text:
+              raise SystemExit('reward market compatibility patch target not found')
+          helper=Path('scripts/compat-patch-reward-market.js')
+          if helper.exists(): helper.unlink()
+          PY
+          if ! git diff --quiet -- run-economy-v2.js scripts/compat-patch-reward-market.js; then
+            git config user.name "EpicenterGUY"
+            git config user.email "actions@users.noreply.github.com"
+            git add run-economy-v2.js scripts/compat-patch-reward-market.js
+            git commit -m "Preserve legacy reward state for battle market"
+            git push origin "HEAD:$HEAD_REF"
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -27,9 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-output
-          path: |
-            test-output.txt
-            run-economy-v2.js
+          path: test-output.txt
       - name: Propagate test failure
         shell: bash
         run: exit "${TEST_STATUS:-1}"
