@@ -47,8 +47,16 @@
     const script=loadScript('showdown-slot-manipulation.js','trick-showdown-slot-manipulation-runtime');
     if(script?.dataset?.loaded==='true')finishShowdownSlotManipulation();else script?.addEventListener?.('load',finishShowdownSlotManipulation,{once:true});
   }
-  function finishRunEconomyV2(){
+  function finishBattleRewardMarket(){
     loadShowdownSlotManipulation();
+  }
+  function loadBattleRewardMarket(){
+    if(root.BattleRewardMarket){finishBattleRewardMarket();return;}
+    const script=loadScript('battle-reward-market.js','trick-battle-reward-market-runtime');
+    if(script?.dataset?.loaded==='true')finishBattleRewardMarket();else script?.addEventListener?.('load',finishBattleRewardMarket,{once:true});
+  }
+  function finishRunEconomyV2(){
+    loadBattleRewardMarket();
   }
   function loadRunEconomyV2(){
     if(root.RunEconomyV2){finishRunEconomyV2();return;}
