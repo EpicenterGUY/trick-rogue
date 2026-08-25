@@ -1,0 +1,22 @@
+name: Browser Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Chrome
+        run: google-chrome --version || google-chrome-stable --version || chromium --version
+      - name: Run mobile browser smoke
+        env:
+          TRICK_BROWSER_SMOKE: '1'
+        run: node --test test/browser-smoke-v1.test.js
