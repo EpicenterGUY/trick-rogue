@@ -5,6 +5,41 @@
   if(typeof module!=='undefined')module.exports=value;
   root.PACK02_CARDS=value;
 })(typeof globalThis!=='undefined'?globalThis:this,function(root,effectApi,personality){
+  const MEMORY_KEY='cardEffectMemory';
+
+  function activeBattle(context={}){
+    if(context?.battle)return context.battle;
+    try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}
+    return root?.battle||null;
+  }
+  function currentSet(context={}){return Number(context.setIndex??context.set??context.battle?.setIndex??context.battle?.set??1)}
+  function memoryFor(card){
+    if(!card||typeof card!=='object')return null;
+    if(!card[MEMORY_KEY]||typeof card[MEMORY_KEY]!=='object')card[MEMORY_KEY]={};
+    return card[MEMORY_KEY];
+  }
+  function setMemory(card,key,value,context={}){
+    if(!key)return null;
+    const memory=memoryFor(card);if(!memory)return null;
+    memory[key]={value:Number(value)||0,setIndex:currentSet(context)};
+    return memory[key];
+  }
+  function getMemory(card,key,context={}){
+    const entry=card?.[MEMORY_KEY]?.[key];if(!entry)return null;
+    if(entry.setIndex!==undefined&&Number.isFinite(currentSet(context))&&entry.setIndex!==currentSet(context))return null;
+    return entry;
+  }
+  function previousSlot(context={}){
+    const index=Number(context.slotIndex);if(!Number.isInteger(index)||index<1)return null;
+    const slots=Array.isArray(context.slots)?context.slots:context.battle?.slots;
+    return Array.isArray(slots)?slots[index-1]||null:null;
+  }
+  function showdownSuit(entry){const card=entry?.card||entry;return card?.showdownSuit??card?.printedSuit??card?.suit??null}
+  function ensureAction(api,name,handler){
+    if(!api?.ACTIONS||!api?.registerActionHandler)return false;
+    if(!api.ACTIONS.includes(name))api.ACTIONS.push(name);
+    api.registerActionHandler(name,handler);return true;
+  }
   function installConditions(api){
     if(!api?.conditions)return false;
     api.conditions.effective_suit_is_trump=context=>{
@@ -24,6 +59,40 @@
       },0);
       return count>=needed;
     };
+    if(typeof api.conditions.previous_showdown_slot_exists!=='function')api.conditions.previous_showdown_slot_exists=context=>!!previousSlot(context);
+    return true;
+  }
+  function installActions(api){
+    if(!api?.registerActionHandler)return false;
+    ensureAction(api,'spend_all_chips',(context,_value,effect)=>{
+      const state=activeBattle(context);if(!state)return null;
+      const balance=Math.max(0,Number(state.chipEconomy?.balance??state.chip)||0);
+      state.chip=0;if(state.chipEconomy)state.chipEconomy.balance=0;
+      if(context.history&&typeof context.history==='object')context.history.chipsSpent=(Number(context.history.chipsSpent)||0)+balance;
+      setMemory(context.card,effect.memoryKey||'spent_chips',balance,context);
+      return balance;
+    });
+    ensureAction(api,'showdown_power_from_memory_multiplier',(context,value,effect)=>{
+      const stored=getMemory(context.card,effect.memoryKey||'spent_chips',context)?.value??0;
+      const bonus=stored*(Number(value)||0);
+      if(bonus&&typeof context.perform==='function')context.perform('showdown_power',bonus,effect);
+      return bonus;
+    });
+    ensureAction(api,'copy_previous_showdown_suit',(context)=>{
+      const suit=showdownSuit(previousSlot(context));if(!suit||!context.card)return null;
+      context.card.showdownSuit=suit;return suit;
+    });
+    ensureAction(api,'randomize_trick_rank',(context,_value,effect)=>{
+      const state=activeBattle(context),card=context.card;if(!state||!card)return null;
+      const min=Math.max(2,Math.floor(Number(effect.minRank)||2)),max=Math.max(min,Math.floor(Number(effect.maxRank)||12));
+      const rng=typeof context.random==='function'?context.random:Math.random;
+      const roll=Math.min(max,min+Math.floor(Math.max(0,Math.min(.999999999999,Number(rng())||0))*(max-min+1)));
+      const printed=Number(card.printedRank??card.rank);if(!Number.isFinite(printed))return null;
+      if(!state.mods||typeof state.mods!=='object')state.mods={};
+      state.mods.plus=(Number(state.mods.plus)||0)+(roll-printed);
+      setMemory(card,effect.memoryKey||'random_rank',roll,context);
+      return roll;
+    });
     return true;
   }
   function ensurePersonalityRuntime(){
@@ -32,9 +101,10 @@
   }
 
   installConditions(effectApi);
+  installActions(effectApi);
   personality?.installEffects?.(effectApi,root);
   if(typeof document!=='undefined'){
-    if(!effectApi)document.addEventListener('DOMContentLoaded',()=>installConditions(root.CardEffects),{once:true});
+    if(!effectApi)document.addEventListener('DOMContentLoaded',()=>{installConditions(root.CardEffects);installActions(root.CardEffects)},{once:true});
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensurePersonalityRuntime,{once:true});else ensurePersonalityRuntime();
   }
 
@@ -134,6 +204,27 @@
       description:'5번 쇼다운 슬롯 — 쇼다운 위력 +9.',
       terms:['쇼다운 슬롯','쇼다운','최종 위력'],image:'assets/cards/pack01/ambush_observer.png',packId:'pack02',art:'placeholder_last_word',
       effects:[{trigger:'on_showdown_score',action:'showdown_power',value:9,condition:'slot_is',conditionValue:5,duration:'set'}]
+    },
+    {
+      id:'pack02.receipt',name:'영수증',short:'영수증',suit:'D',rank:2,
+      description:'낼 때 — 보유 칩을 전부 소비하고 소비량을 기록. 쇼다운 — 기록한 칩 1개당 쇼다운 위력 +3. 칩이 0이면 보너스가 없다.',
+      terms:['칩','쇼다운','최종 위력'],image:'assets/cards/pack01/golden_hand.png',packId:'pack02',art:'placeholder_receipt',
+      effects:[
+        {trigger:'on_play',action:'spend_all_chips',memoryKey:'receipt_spent',duration:'set'},
+        {trigger:'on_showdown_score',action:'showdown_power_from_memory_multiplier',value:3,memoryKey:'receipt_spent',duration:'set'}
+      ]
+    },
+    {
+      id:'pack02.mirror',name:'거울',short:'거울',suit:'H',rank:5,
+      description:'낼 때 — 바로 이전 쇼다운 카드의 무늬를 복사한다. 숫자는 5 그대로이며 1번 슬롯에서는 효과가 없다.',
+      terms:['쇼다운','쇼다운 슬롯','무늬','족보'],image:'assets/cards/pack01/recursive_function.png',packId:'pack02',art:'placeholder_mirror',
+      effects:[{trigger:'on_play',action:'copy_previous_showdown_suit',condition:'previous_showdown_slot_exists',duration:'set'}]
+    },
+    {
+      id:'pack02.loaded_die',name:'사기 주사위',short:'사기 주사위',suit:'D',rank:6,
+      description:'낼 때 — 이번 트릭에서 트럼프 보너스 적용 전 숫자를 2~12 중 무작위 하나로 바꾼다. 쇼다운에서는 인쇄 숫자 6으로 계산한다.',
+      terms:['트릭','적용 숫자','쇼다운','인쇄값'],image:'assets/cards/pack01/dirty_gambler.png',packId:'pack02',art:'placeholder_loaded_die',
+      effects:[{trigger:'on_play',action:'randomize_trick_rank',minRank:2,maxRank:12,memoryKey:'loaded_die_roll',duration:'trick'}]
     }
   ];
 });
