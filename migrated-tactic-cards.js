@@ -24,7 +24,11 @@
   function createDefinition(legacyId){
     const plan=Migration?.BY_ID?.[legacyId];const meta=META[legacyId];
     if(!plan||!Array.isArray(plan.proposedEffects)||!plan.proposedEffects.length||!meta)throw new TypeError(`Unknown active tactic migration: ${legacyId}`);
-    const effects=plan.proposedEffects.map(effect=>Object.freeze({...effect,conditions:Array.isArray(effect.conditions)?Object.freeze(effect.conditions.map(item=>Object.freeze({...item}))):effect.conditions,tiers:Array.isArray(effect.tiers)?Object.freeze(effect.tiers.map(item=>Object.freeze({...item}))):effect.tiers}));
+    const effects=plan.proposedEffects.map(effect=>Object.freeze({
+      ...effect,
+      ...(Array.isArray(effect.conditions)?{conditions:Object.freeze(effect.conditions.map(item=>Object.freeze({...item})))}:{}),
+      ...(Array.isArray(effect.tiers)?{tiers:Object.freeze(effect.tiers.map(item=>Object.freeze({...item})))}:{})
+    }));
     const targeting=meta.targeting||plan.targeting||null;
     return Object.freeze({
       id:meta.id,name:plan.name,short:plan.name,suit:plan.printedSuit,rank:plan.printedRank,printedSuit:plan.printedSuit,printedRank:plan.printedRank,
