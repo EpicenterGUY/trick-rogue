@@ -42,7 +42,7 @@ test('예약 사격은 바로 다음 트릭 승리 피해를 8로 예약한다',
 test('비상 방패는 보호막 6과 쇼다운 잔존 보호막 +6을 연결한다',()=>{
   assert.deepEqual(pairs(runCard('pack01.emergency_guard','on_play',{battle:{statuses:{player:{shield:0}}}})),[['gain_shield',6]]);
   assert.deepEqual(pairs(runCard('pack01.emergency_guard','on_showdown_score',{battle:{statuses:{player:{shield:1}}}})),[['showdown_power',6]]);
-  assert.equal(runCard('pack01.emergency_guard','on_showdown_score',{battle:{statuses:{player:{shield:0}}}})).calls.length,0);
+  assert.equal(runCard('pack01.emergency_guard','on_showdown_score',{battle:{statuses:{player:{shield:0}}}}).calls.length,0);
 });
 test('유리 칼날은 기존 출혈이 있으면 피해 3을 먼저 주고 이후 출혈 3을 부여한다',()=>{
   assert.deepEqual(pairs(runCard('pack01.sharp_glass','on_trick_win',{battle:{statuses:{enemy:{bleed:2}}}})),[['damage_enemy',3],['apply_enemy_bleed',3]]);
