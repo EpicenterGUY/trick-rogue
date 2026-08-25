@@ -5,66 +5,13 @@ on:
     branches: [main]
   pull_request:
 
-permissions:
-  contents: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: chatgpt/m4-weird-cards-batch2-20260825
-      - name: Apply M4 batch 2 regression updates
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          pack = Path('card-packs/pack02.js')
-          text = pack.read_text()
-          text = text.replace("id:'pack02.loaded_die',name:'사기 주사위',short:'사기 주사위',suit:'C',rank:6,", "id:'pack02.loaded_die',name:'사기 주사위',short:'사기 주사위',suit:'D',rank:6,", 1)
-          text = text.replace("terms:['칩','소비','쇼다운','최종 위력']", "terms:['칩','쇼다운','최종 위력']", 1)
-          text = text.replace("terms:['트릭','적용 숫자','무작위','쇼다운','인쇄값']", "terms:['트릭','적용 숫자','쇼다운','인쇄값']", 1)
-          pack.write_text(text)
-
-          catalog_test = Path('test/effect-card-catalog.test.js')
-          text = catalog_test.read_text()
-          text = text.replace('효과 카드 23장은 하나의 공용 카탈로그로 평탄화된다', '효과 카드 26장은 하나의 공용 카탈로그로 평탄화된다')
-          text = text.replace('assert.equal(Catalog.EFFECT_CARD_DEFINITIONS.length,23);assert.equal(new Set(Catalog.EFFECT_CARD_IDS).size,23);assert.equal(Cards.CARD_DEFINITIONS.length,23);', 'assert.equal(Catalog.EFFECT_CARD_DEFINITIONS.length,26);assert.equal(new Set(Catalog.EFFECT_CARD_IDS).size,26);assert.equal(Cards.CARD_DEFINITIONS.length,26);')
-          text = text.replace("assert.equal(Cards.CARD_PACKS['all-effects'].cards.length,23);", "assert.equal(Cards.CARD_PACKS['all-effects'].cards.length,26);")
-          text = text.replace('assert.equal(all.length,23);', 'assert.equal(all.length,26);')
-          text = text.replace('효과 카드 23장은 표준 52장 숫자와 무늬를 사용하고 ID가 중복되지 않는다', '효과 카드 26장은 표준 52장 숫자와 무늬를 사용하고 ID가 중복되지 않는다')
-          catalog_test.write_text(text)
-
-          validator = Path('scripts/validate-effect-cards.js')
-          text = validator.read_text()
-          text = text.replace("if(CARD_DEFINITIONS.length!==23)errors.push(`현재 공용 효과 카드 카탈로그는 23장이어야 함 (${CARD_DEFINITIONS.length}장)`);", "if(CARD_DEFINITIONS.length!==26)errors.push(`현재 공용 효과 카드 카탈로그는 26장이어야 함 (${CARD_DEFINITIONS.length}장)`);")
-          validator.write_text(text)
-          PY
-          if ! git diff --quiet; then
-            git config user.name actions
-            git config user.email actions@github.com
-            git add card-packs/pack02.js test/effect-card-catalog.test.js scripts/validate-effect-cards.js
-            git commit -m "M4 2차 카드 검증 기준 갱신"
-            git push origin HEAD:chatgpt/m4-weird-cards-batch2-20260825
-          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run tests and capture output
-        shell: bash
-        run: |
-          set +e
-          npm test 2>&1 | tee test-output.txt
-          echo "TEST_STATUS=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
-          exit 0
-      - name: Upload test diagnostics
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-output
-          path: test-output.txt
-      - name: Propagate test failure
-        shell: bash
-        run: exit "${TEST_STATUS:-1}"
+      - run: npm test
