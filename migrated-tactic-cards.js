@@ -10,40 +10,30 @@
     paint:Object.freeze({id:'core.paint',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','트럼프','인쇄값','쇼다운값'])}),
     plus2:Object.freeze({id:'core.plus2',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭값','인쇄값'])}),
     draw:Object.freeze({id:'core.draw',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','손패','드로우'])}),
-    scout:Object.freeze({id:'core.scout',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','예측'])}),
-    double:Object.freeze({id:'core.double',activation:'쇼다운 위력 계산 시',terms:Object.freeze(['쇼다운','트릭','최종 위력'])}),
-    barrier:Object.freeze({id:'core.barrier',activation:'이 카드를 낼 때',terms:Object.freeze(['보호막'])}),
+    scout:Object.freeze({id:'core.scout',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','예측','칩','인쇄값'])}),
+    double:Object.freeze({id:'core.double',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','칩','적용 숫자'])}),
+    barrier:Object.freeze({id:'core.barrier',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','보호막'])}),
     burn:Object.freeze({id:'core.burn',activation:'이 카드를 낼 때',terms:Object.freeze(['손패','버림','칩','드로우']),targeting:Object.freeze({zone:'hand',count:1,excludeSelf:true})}),
     reverse:Object.freeze({id:'core.reverse',activation:'이 카드를 낼 때',terms:Object.freeze(['트릭','트릭값'])}),
-    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['순수 카드','쇼다운','트릭값'])}),
+    pureboost:Object.freeze({id:'core.pureboost',activation:'이 카드를 낼 때',terms:Object.freeze(['순수 카드','쇼다운','쇼다운 슬롯','트릭값'])}),
     clean:Object.freeze({id:'core.clean',activation:'이 카드로 트릭 승리 시',terms:Object.freeze(['순수 카드','쇼다운','트릭','칩'])}),
     recolor:Object.freeze({id:'core.recolor',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값','트럼프'])}),
-    fakeid:Object.freeze({id:'core.fakeid',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값'])})
+    fakeid:Object.freeze({id:'core.fakeid',activation:'이 카드를 낼 때',terms:Object.freeze(['쇼다운값','쇼다운 슬롯'])})
   });
 
   function createDefinition(legacyId){
-    const plan=Migration?.BY_ID?.[legacyId];
-    const meta=META[legacyId];
+    const plan=Migration?.BY_ID?.[legacyId];const meta=META[legacyId];
     if(!plan||!Array.isArray(plan.proposedEffects)||!plan.proposedEffects.length||!meta)throw new TypeError(`Unknown active tactic migration: ${legacyId}`);
-    const effects=plan.proposedEffects.map(effect=>Object.freeze({...effect}));
+    const effects=plan.proposedEffects.map(effect=>Object.freeze({
+      ...effect,
+      ...(Array.isArray(effect.conditions)?{conditions:Object.freeze(effect.conditions.map(item=>Object.freeze({...item})))}:{}),
+      ...(Array.isArray(effect.tiers)?{tiers:Object.freeze(effect.tiers.map(item=>Object.freeze({...item})))}:{})
+    }));
     const targeting=meta.targeting||plan.targeting||null;
     return Object.freeze({
-      id:meta.id,
-      name:plan.name,
-      short:plan.name,
-      suit:plan.printedSuit,
-      rank:plan.printedRank,
-      printedSuit:plan.printedSuit,
-      printedRank:plan.printedRank,
-      description:`발동: ${meta.activation}. 효과: ${plan.cardText}`,
-      terms:meta.terms,
-      effects:Object.freeze(effects),
-      targeting:targeting?Object.freeze({...targeting}):null,
-      implemented:true,
-      category:'general',
-      rarity:'common',
-      legacyTacticId:legacyId,
-      migrationStage:plan.activationStage||'7.5-P'
+      id:meta.id,name:plan.name,short:plan.name,suit:plan.printedSuit,rank:plan.printedRank,printedSuit:plan.printedSuit,printedRank:plan.printedRank,
+      description:plan.cardText,activation:meta.activation,terms:meta.terms,effects:Object.freeze(effects),targeting:targeting?Object.freeze({...targeting}):null,
+      implemented:true,category:'general',rarity:'common',legacyTacticId:legacyId,migrationStage:plan.activationStage||'7.5-P'
     });
   }
 
@@ -57,12 +47,10 @@
   const DIRECT_CARD_BY_BASE=Object.freeze(Object.fromEntries(DIRECT_CARD_DEFINITIONS.map(card=>[`${card.suit}${card.rank}`,card])));
 
   function validateDefinitions(){
-    const errors=[];
-    const ids=new Set(),slots=new Set();
+    const errors=[];const ids=new Set(),slots=new Set();
     for(const card of ACTIVE_CARD_DEFINITIONS){
       if(ids.has(card.id))errors.push(`duplicate id: ${card.id}`);else ids.add(card.id);
-      const slot=`${card.suit}${card.rank}`;
-      if(slots.has(slot))errors.push(`duplicate slot: ${slot}`);else slots.add(slot);
+      const slot=`${card.suit}${card.rank}`;if(slots.has(slot))errors.push(`duplicate slot: ${slot}`);else slots.add(slot);
       if(!Migration.SUITS.includes(card.suit))errors.push(`${card.id}: invalid suit ${card.suit}`);
       if(!Migration.RANKS.includes(card.rank))errors.push(`${card.id}: invalid rank ${card.rank}`);
       if(!Array.isArray(card.effects)||!card.effects.length)errors.push(`${card.id}: missing effects`);

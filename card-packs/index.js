@@ -5,6 +5,7 @@
   );
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
+  if(typeof module!=='undefined')require('../card-personality-runtime.js');
 })(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS){
   const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[])]);
   const EFFECT_CARD_IDS=Object.freeze(EFFECT_CARD_DEFINITIONS.map(card=>card.id));
@@ -55,4 +56,17 @@
   if(typeof document==='undefined'||root.MigratedTacticCards||document.querySelector('script[data-trick-common-card-bootstrap]'))return;
   if(document.readyState!=='loading')return;
   document.write('<script src="tactic-card-migration.js" data-trick-common-card-bootstrap="migration"><\/script><script src="migrated-tactic-cards.js" data-trick-common-card-bootstrap="definitions"><\/script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+(function(root){
+  if(typeof document==='undefined'||root.CardPersonalityRuntime||document.querySelector('script[data-trick-card-personality-runtime]'))return;
+  if(document.readyState==='loading'){
+    document.write('<script src="card-personality-runtime.js" data-trick-card-personality-runtime="true"><\/script>');
+    return;
+  }
+  const script=document.createElement('script');
+  script.src='card-personality-runtime.js';
+  script.async=false;
+  script.dataset.trickCardPersonalityRuntime='true';
+  document.head.appendChild(script);
 })(typeof globalThis!=='undefined'?globalThis:this);
