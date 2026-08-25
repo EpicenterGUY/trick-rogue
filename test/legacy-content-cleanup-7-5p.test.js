@@ -67,12 +67,19 @@ test('7.5-P 명시적 우세는 N 일반 배율 풀에 +25% 한 번만 등록된
   assert.equal(model.enemy.finalMultiplier,1);
 });
 
-test('7.5-P 카드 재설계는 더블다운=3승, 기본에 충실/무첨가=선행 순수 쇼다운 조건을 고정한다',()=>{
-  assert.equal(Migration.BY_ID.double.proposedEffects[0].condition,'set_wins_at_least');
-  assert.equal(Migration.BY_ID.double.proposedEffects[0].conditionValue,3);
-  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].condition,'pure_card_in_showdown');
-  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].value,3);
+test('7.5-P 카드 재설계는 더블다운=칩 베팅, 정공법=직전 순수 슬롯, 무첨가=순수 쇼다운 조건을 고정한다',()=>{
+  const double=Migration.BY_ID.double.proposedEffects;
+  assert.equal(double[0].action,'spend_chips');
+  assert.equal(double[0].condition,'chips_at_least');
+  assert.equal(double[0].conditionValue,1);
+  assert.equal(double[0].value,1);
+  assert.equal(double[1].action,'increase_next_trick_rank');
+  assert.equal(double[1].value,5);
+  assert.equal(double[1].condition,'card_memory_at_least');
+  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].condition,'previous_showdown_slot_is_pure');
+  assert.equal(Migration.BY_ID.pureboost.proposedEffects[0].value,4);
   assert.equal(Migration.BY_ID.clean.proposedEffects[0].condition,'pure_card_in_showdown');
+  assert.equal(Migration.BY_ID.clean.proposedEffects[0].value,2);
 });
 
 test('7.5-P 활성 계산 파일에는 복수 우세 무늬 런타임 식별자가 남지 않는다',()=>{
