@@ -16,12 +16,12 @@ function runCard(id,trigger,context={}){
 function pure(suit='S',rank=2){return Cards.createCardRecord({suit,rank,metadata:{uid:`pure-${suit}${rank}`}})}
 const pairs=result=>result.calls.map(x=>[x.action,x.value]);
 
-test('효과 카드 29장은 하나의 공용 카탈로그로 평탄화된다',()=>{
-  assert.equal(Catalog.EFFECT_CARD_DEFINITIONS.length,29);assert.equal(new Set(Catalog.EFFECT_CARD_IDS).size,29);assert.equal(Cards.CARD_DEFINITIONS.length,29);
-  assert.deepEqual(Cards.defaultEnabledPacks(),['all-effects']);assert.deepEqual(Object.keys(Cards.CARD_PACKS),['all-effects']);assert.equal(Cards.CARD_PACKS['all-effects'].cards.length,29);
+test('효과 카드 32장은 하나의 공용 카탈로그로 평탄화된다',()=>{
+  assert.equal(Catalog.EFFECT_CARD_DEFINITIONS.length,32);assert.equal(new Set(Catalog.EFFECT_CARD_IDS).size,32);assert.equal(Cards.CARD_DEFINITIONS.length,32);
+  assert.deepEqual(Cards.defaultEnabledPacks(),['all-effects']);assert.deepEqual(Object.keys(Cards.CARD_PACKS),['all-effects']);assert.equal(Cards.CARD_PACKS['all-effects'].cards.length,32);
 });
-test('예전 pack 선택값은 저장 호환만 하고 보상 풀을 분리하지 않는다',()=>{const all=Cards.rewardCardIds();assert.equal(all.length,29);assert.deepEqual(Cards.rewardCardIds(['pack01']),all);assert.deepEqual(Cards.rewardCardIds(['pack02']),all);assert.deepEqual(Cards.rewardCardIds(['pack03']),all);assert.deepEqual(Cards.rewardCardIds(['pack01','pack02','pack03']),all);assert.throws(()=>Cards.rewardCardIds(['unknown-pack']),/Unknown legacy card collection reference/)});
-test('효과 카드 29장은 표준 52장 숫자와 무늬를 사용하고 ID가 중복되지 않는다',()=>{const cards=Catalog.EFFECT_CARD_DEFINITIONS;assert.ok(cards.every(card=>['S','H','D','C'].includes(card.suit)));assert.ok(cards.every(card=>Number.isInteger(card.rank)&&card.rank>=2&&card.rank<=14));assert.equal(new Set(cards.map(card=>card.id)).size,cards.length)});
+test('예전 pack 선택값은 저장 호환만 하고 보상 풀을 분리하지 않는다',()=>{const all=Cards.rewardCardIds();assert.equal(all.length,32);assert.deepEqual(Cards.rewardCardIds(['pack01']),all);assert.deepEqual(Cards.rewardCardIds(['pack02']),all);assert.deepEqual(Cards.rewardCardIds(['pack03']),all);assert.deepEqual(Cards.rewardCardIds(['pack01','pack02','pack03']),all);assert.throws(()=>Cards.rewardCardIds(['unknown-pack']),/Unknown legacy card collection reference/)});
+test('효과 카드 32장은 표준 52장 숫자와 무늬를 사용하고 ID가 중복되지 않는다',()=>{const cards=Catalog.EFFECT_CARD_DEFINITIONS;assert.ok(cards.every(card=>['S','H','D','C'].includes(card.suit)));assert.ok(cards.every(card=>Number.isInteger(card.rank)&&card.rank>=2&&card.rank<=14));assert.equal(new Set(cards.map(card=>card.id)).size,cards.length)});
 test('현재 표시명과 저장용 ID는 그대로 유지한다',()=>{const expected={'pack02.trump_signal':'트럼프 시그널','pack02.river_ticket':'리버 콜','pack02.clean_cut':'클래식 핸드','pack02.afterburner':'라스트 스퍼트','pack02.first_strike':'선수필승','pack02.long_game':'복리','pack02.advantage_settlement':'캐시아웃','pack02.trump_forge':'트럼프 포지','pack02.insurance_exchange':'교환 보험','pack02.originalist':'있는 그대로','pack02.advance_payment':'선지급','pack02.consolation_prize':'위로금','pack02.last_word':'마지막 한 수'};for(const[id,name]of Object.entries(expected))assert.equal(Cards.CARD_DEFINITION_BY_ID[id].name,name,id)});
 
 test('검은 탄환은 일반 승리 피해 4, 정확히 5번 슬롯 승리면 총 8 피해다',()=>{
