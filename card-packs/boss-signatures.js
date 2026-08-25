@@ -26,7 +26,7 @@
       effects:[{trigger:'on_trick_draw',action:'gain_shield',value:6,duration:'battle'}]
     },
     {
-      id:'boss.observatory.redaction',name:'기록 말소',short:'기록 말소',suit:'C',rank:9,
+      id:'boss.observatory.redaction',name:'기록 말소',short:'기록 말소',suit:'C',rank:10,
       description:'승리 — 상대에게 피해 3, 자신은 보호막 2. 불리한 기록을 지우고 유리한 기록만 남긴다.',
       terms:['트릭','피해','보호막'],image:'assets/cards/pack01/recursive_function.png',packId:'boss-signature',art:'boss_observatory_redaction',
       category:'boss_signature',rarity:'boss',signatureBossId:'fog_curator',signatureRegionId:'region_observatory',signatureWeight:2.5,
