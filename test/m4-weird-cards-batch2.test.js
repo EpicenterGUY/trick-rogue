@@ -81,6 +81,6 @@ test('사기 주사위는 트럼프 보너스 전 트릭 숫자를 2~12로 바�
   const high=execute('pack02.loaded_die','on_play',{battle:highBattle,random:()=>0.999999});
   assert.equal(high.battle.mods.plus,6);
   assert.equal(high.card.cardEffectMemory.loaded_die_roll.value,12);
-  assert.equal(BattleCore.resolveTrickValue(high.card,'C',{cardRankModifier:high.battle.mods.plus}).finalValue,15,'트럼프 +3은 무작위 숫자 뒤에 별도 적용');
+  assert.equal(BattleCore.resolveTrickValue(high.card,'D',{cardRankModifier:high.battle.mods.plus}).finalValue,15,'트럼프 +3은 무작위 숫자 뒤에 별도 적용');
   assert.equal(BattleCore.showdownValue(high.card,'Rank'),6);
 });
