@@ -71,10 +71,11 @@
     const deckButton=hud.querySelector('#battleDeckPile');deckButton?.addEventListener?.('click',()=>{if(typeof runtimeRoot?.showDeck==='function')runtimeRoot.showDeck()});
     return hud;
   }
+  function setTextIfChanged(element,value){if(!element)return false;const next=String(value);if(element.textContent===next)return false;element.textContent=next;return true}
   function syncPileHud(doc=root.document,state=activeBattle(root),runtimeRoot=root){
     const hud=ensurePileHud(doc,runtimeRoot);if(!hud)return false;const counts=pileCounts(state,doc);
     const deck=doc.getElementById('battleDeckCount'),discard=doc.getElementById('battleDiscardCount'),exchange=doc.getElementById('battleExchangeCount');
-    if(deck)deck.textContent=String(counts.deck);if(discard)discard.textContent=String(counts.discard);if(exchange)exchange.textContent=counts.exchange===null?'전투 덱':`교환 ${counts.exchange}회`;
+    setTextIfChanged(deck,counts.deck);setTextIfChanged(discard,counts.discard);setTextIfChanged(exchange,counts.exchange===null?'전투 덱':`교환 ${counts.exchange}회`);
     hud.dataset.deckEmpty=counts.deck===0?'true':'false';hud.dataset.discardEmpty=counts.discard===0?'true':'false';return counts;
   }
   function syncTheme(doc=root.document,runtimeRoot=root,state=activeBattle(runtimeRoot)){
@@ -84,7 +85,7 @@
   function sync(runtimeRoot=root){const doc=runtimeRoot?.document||root.document;if(!doc)return false;syncTheme(doc,runtimeRoot,activeBattle(runtimeRoot));syncPileHud(doc,activeBattle(runtimeRoot),runtimeRoot);return true}
   function wrapRenderBattle(runtimeRoot=root){const original=runtimeRoot?.renderBattle;if(typeof original!=='function')return false;if(original.__trickGameUi)return true;function wrapped(...args){const result=original.apply(this,args);sync(runtimeRoot);return result}wrapped.__trickGameUi=true;wrapped.__original=original;runtimeRoot.renderBattle=wrapped;return true}
   function installStyle(doc=root.document){if(!doc?.createElement)return false;if(doc.getElementById(STYLE_ID))return true;const style=doc.createElement('style');style.id=STYLE_ID;style.textContent=STYLE_TEXT;(doc.head||doc.documentElement).appendChild(style);return true}
-  function observe(runtimeRoot=root){const doc=runtimeRoot?.document||root.document;if(!doc||typeof MutationObserver==='undefined'||doc.__trickGameUiObserver)return false;const observer=new MutationObserver(()=>sync(runtimeRoot));observer.observe(doc.getElementById('app')||doc.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});doc.__trickGameUiObserver=observer;return true}
+  function observe(runtimeRoot=root){const doc=runtimeRoot?.document||root.document;if(!doc||typeof MutationObserver==='undefined'||doc.__trickGameUiObserver)return false;const observer=new MutationObserver(()=>sync(runtimeRoot));observer.observe(doc.getElementById('app')||doc.body,{subtree:true,attributes:true,attributeFilter:['class']});doc.__trickGameUiObserver=observer;return true}
   function install(runtimeRoot=root){const doc=runtimeRoot?.document||root.document;if(!doc)return false;installStyle(doc);let attempts=0;const attempt=()=>{wrapRenderBattle(runtimeRoot);sync(runtimeRoot);observe(runtimeRoot);if(typeof runtimeRoot.renderBattle!=='function'&&attempts++<80)setTimeout(attempt,25)};if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
-  return{STYLE_ID,REGION_THEME,STYLE_TEXT,activeBattle,activeRun,parseCount,pileCounts,regionId,themeForRegion,ensurePileHud,syncPileHud,syncTheme,sync,wrapRenderBattle,installStyle,observe,install};
+  return{STYLE_ID,REGION_THEME,STYLE_TEXT,activeBattle,activeRun,parseCount,pileCounts,regionId,themeForRegion,ensurePileHud,setTextIfChanged,syncPileHud,syncTheme,sync,wrapRenderBattle,installStyle,observe,install};
 });
