@@ -102,13 +102,17 @@ async function pointFor(cdp,expression){
   return evaluate(cdp,`(()=>{const el=${expression};if(!el)return null;const r=el.getBoundingClientRect();const s=getComputedStyle(el);return{x:r.left+r.width/2,y:r.top+r.height/2,width:r.width,height:r.height,visible:r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',disabled:!!el.disabled}})()`);
 }
 
-async function clickElement(cdp,expression,label,{scroll=false}={}){
+async function clickElement(cdp,expression,label,{scroll=false,hitTest=false}={}){
   if(scroll){
     const found=await evaluate(cdp,`(()=>{const el=${expression};if(!el)return false;el.scrollIntoView({block:'center',inline:'center',behavior:'instant'});return true})()`);
     assert.equal(found,true,`${label} element should exist before scroll`);await sleep(80);
   }
   const point=await pointFor(cdp,expression);assert.ok(point,`${label} element should exist`);assert.equal(point.visible,true,`${label} should be visible`);assert.equal(point.disabled,false,`${label} should be enabled`);
   if(scroll)assert.ok(point.x>=0&&point.x<=390&&point.y>=0&&point.y<=844,`${label} should be inside mobile viewport after scroll`);
+  if(hitTest){
+    const receives=await evaluate(cdp,`(()=>{const el=${expression},hit=document.elementFromPoint(${point.x},${point.y});return !!(el&&hit&&(hit===el||el.contains(hit)))})()`);
+    assert.equal(receives,true,`${label} should be the topmost click target`);
+  }
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x,y:point.y});
   await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,button:'left',clickCount:1});
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,button:'left',clickCount:1});
@@ -139,8 +143,9 @@ if(!ENABLED){
     const trickBefore=await evaluate(cdp,'battle.trick');
     await clickElement(cdp,"document.getElementById('playBtn')",'내기');
     await waitFor(cdp,`battle.trick>${Number(trickBefore)} || battle.slots.length>0`,{timeout:8000,label:'played trick'});
+    await waitFor(cdp,"battle.animating===false && !document.getElementById('battleScreen').classList.contains('inputLocked')",{timeout:8000,label:'battle input unlock'});
 
-    await clickElement(cdp,"document.getElementById('battleDeckPile')",'전투 덱',{scroll:true});
+    await clickElement(cdp,"document.getElementById('battleDeckPile')",'전투 덱',{scroll:true,hitTest:true});
     await waitFor(cdp,"document.getElementById('overlay').classList.contains('show') && document.querySelector('#modal h2')",{label:'battle deck modal'});
     const modalTitle=await evaluate(cdp,"document.querySelector('#modal h2').textContent");
     assert.match(modalTitle,/남은 전투 덱/);
