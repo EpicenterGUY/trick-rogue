@@ -19,20 +19,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Patch battle and hand animation
-        run: python scripts/battle-hand-polish-patch.py
+      - name: Attach battle and hand polish modules
+        run: python scripts/attach-battle-hand-polish.py
       - name: Run tests
         run: npm test
       - name: Run mobile browser smoke
         env:
           TRICK_BROWSER_SMOKE: '1'
         run: node --test test/browser-smoke-v1.test.js
-      - name: Commit patch
+      - name: Commit attachment
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add index.html
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "feat: polish battle and hand animations"
+          git commit -m "feat: load battle and hand animation polish"
           git push origin HEAD:chatgpt/battle-hand-animation-polish-20260826
