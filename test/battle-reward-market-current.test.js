@@ -62,8 +62,10 @@ test('마켓 UI는 모바일 4x2 카드판, 선택 상세, 다중 구매와 나�
   const offer=Market.show(root,battle);assert.equal(offer.length,8);const html=shown.at(-1);assert.match(html,/카드 마켓/);assert.match(html,/8장 중 원하는 만큼 구매/);assert.match(html,/brmGrid/);assert.match(Market.marketCss(),/grid-template-columns:repeat\(4/);assert.match(html,/마켓 나가기/);
 });
 
-test('브라우저 부트스트랩은 RunEconomyV2 다음에 8장 마켓을 로드하고 최종 유물 래퍼를 유지한다',()=>{
+test('브라우저 부트스트랩은 RunEconomyV2 뒤에 8장 마켓을 연결하고 최종 유물 래퍼를 유지한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  const economy=source.indexOf("loadScript('run-economy-v2.js'");const market=source.indexOf("loadScript('battle-reward-market.js'");const persistence=source.indexOf('root.RelicSystem?.wrapShowReward?.(root)');
-  assert(economy>=0&&market>economy);assert(persistence>=0);assert.match(source,/loadBattleRewardMarket\(\)/);assert.match(source,/trick-battle-reward-market-runtime/);
+  assert.match(source,/function finishRunEconomyV2\(\)\{\s*loadBattleRewardMarket\(\);\s*\}/);
+  assert.match(source,/function finishBattleRewardMarket\(\)\{\s*loadShowdownSlotManipulation\(\);\s*\}/);
+  assert.match(source,/loadScript\('battle-reward-market\.js','trick-battle-reward-market-runtime'\)/);
+  assert.match(source,/root\.RelicSystem\?\.wrapShowReward\?\.\(root\)/);
 });
