@@ -20,15 +20,38 @@ jobs:
         with:
           node-version: 22
       - name: Repair selfpatch target
-        run: python scripts/fix-selfpatch-trait.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python scripts/fix-selfpatch-trait.py 2>&1 | tee repair-output.txt
       - name: Apply build identity overhaul
-        run: python scripts/build-identity-selfpatch.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python scripts/build-identity-selfpatch.py 2>&1 | tee selfpatch-output.txt
       - name: Run tests
-        run: npm test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.txt
       - name: Run mobile browser smoke
+        shell: bash
         env:
           TRICK_BROWSER_SMOKE: '1'
-        run: node --test test/browser-smoke-v1.test.js
+        run: |
+          set -o pipefail
+          node --test test/browser-smoke-v1.test.js 2>&1 | tee browser-output.txt
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-identity-diagnostics
+          path: |
+            repair-output.txt
+            selfpatch-output.txt
+            test-output.txt
+            browser-output.txt
+          if-no-files-found: ignore
       - name: Commit patch
         shell: bash
         run: |
