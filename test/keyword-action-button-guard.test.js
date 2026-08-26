@@ -17,6 +17,8 @@ test('키워드 설명 데코레이터는 실제 액션 컨트롤 내부를 건�
   assert.match(seen[0],/\[role="link"\]/);
   assert.match(seen[0],/a/);
   assert.match(seen[0],/label/);
+  assert.match(seen[0],/select/);
+  assert.match(seen[0],/option/);
 });
 
 test('공용 모달 키워드 처리에는 액션 컨트롤 차단 가드가 항상 적용된다',()=>{
