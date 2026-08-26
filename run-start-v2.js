@@ -24,11 +24,27 @@
 
   const STARTERS=Object.freeze([
     Object.freeze({
-      id:COMMON_STARTER_ID,name:'공용 스타터',icon:'◫',kind:'common',
-      desc:'순수 카드와 숫자·순환·칩·정보 기본기를 익히는 공용 시작 덱. 특정 카드군에 속하지 않는다.',
-      pureSlots:COMMON_STARTER_PURE_SLOTS,
-      effectCardIds:COMMON_STARTER_EFFECT_CARD_IDS,
-      exposed:true
+      id:COMMON_STARTER_ID,name:'정석',icon:'♠',kind:'balanced',buildTags:Object.freeze(['쇼다운 조작']),
+      desc:'무늬와 숫자 분포가 안정적이다. 정찰과 드로우를 통해 족보를 만들며 기본 규칙을 익힌다.',
+      pureSlots:COMMON_STARTER_PURE_SLOTS,effectCardIds:COMMON_STARTER_EFFECT_CARD_IDS,exposed:true
+    }),
+    Object.freeze({
+      id:'gambler',name:'승부사',icon:'◆',kind:'trick',buildTags:Object.freeze(['승부 조작','칩 경제']),
+      desc:'낮은 숫자와 반전 승부를 이용해 싸게 트릭을 따내고 칩을 굴리는 스타터.',
+      pureSlots:Object.freeze(['S2','S6','H6','H9','D3','D5','C4','C7']),
+      effectCardIds:Object.freeze(['core.double','core.reverse','core.burn','core.clean']),exposed:true
+    }),
+    Object.freeze({
+      id:'trickster',name:'변칙',icon:'◇',kind:'rule',buildTags:Object.freeze(['승부 조작','쇼다운 조작']),
+      desc:'트럼프와 쇼다운 무늬를 서로 다르게 다루며 카드 한 장의 두 얼굴을 활용한다.',
+      pureSlots:Object.freeze(['S4','S8','H5','H10','D2','D7','C4','C11']),
+      effectCardIds:Object.freeze(['core.paint','core.recolor','core.reverse','core.scout']),exposed:true
+    }),
+    Object.freeze({
+      id:'survivor',name:'생존자',icon:'♥',kind:'survival',buildTags:Object.freeze(['패배 활용','손패 조작']),
+      desc:'패배를 받아내고 손패를 갈아내며 다음 트릭과 쇼다운까지 버티는 스타터.',
+      pureSlots:Object.freeze(['S2','S9','H4','H8','D3','D10','C5','C10']),
+      effectCardIds:Object.freeze(['core.barrier','core.burn','core.draw','core.pureboost']),exposed:true
     })
   ]);
 
@@ -55,10 +71,19 @@
   const LEGACY_STARTER_ALIASES=Object.freeze({free:COMMON_STARTER_ID,sniper:COMMON_STARTER_ID,photographer:COMMON_STARTER_ID});
 
   const RUN_TRAITS=Object.freeze([
-    Object.freeze({id:'extra_gold',name:'여유 자금',desc:'런 시작 골드 +20.',run:Object.freeze({gold:20})}),
-    Object.freeze({id:'durable',name:'튼튼한 몸',desc:'최대 체력과 현재 체력 +6.',run:Object.freeze({maxHp:6,hp:6})}),
-    Object.freeze({id:'foresight',name:'선행 관측',desc:'매 전투 시작 시 예측 단계 +1.',battle:Object.freeze({forecast:1})}),
-    Object.freeze({id:'pocket_chip',name:'비상용 칩',desc:'매 전투 시작 시 칩 +1.',battle:Object.freeze({chips:1})})
+    Object.freeze({id:'foresight',name:'선행 관측',icon:'◎',desc:'매 전투 시작 시 적 카드 예측 단계 +1.',battle:Object.freeze({forecast:1}),buildTags:Object.freeze(['손패 조작'])}),
+    Object.freeze({id:'stubborn_loss',name:'악착같은 패배',icon:'↯',desc:'트릭 패배 시 칩 +1. 패배를 다음 선택의 자원으로 바꾼다.',buildTags:Object.freeze(['패배 활용','칩 경제']),effects:Object.freeze([{trigger:'on_trick_loss',action:'gain_chips',value:1,duration:'battle'}])}),
+    Object.freeze({id:'suit_collector',name:'수트 수집가',icon:'♣',desc:'쇼다운에 서로 다른 무늬 4종이 모두 있으면 쇼다운 위력 +8.',buildTags:Object.freeze(['쇼다운 조작']),effects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:8,condition:'showdown_distinct_suits_at_least',conditionValue:4,duration:'set'}])}),
+    Object.freeze({id:'empty_pocket',name:'빈손주의',icon:'0',desc:'쇼다운 순간 칩이 정확히 0이면 쇼다운 위력 +7.',buildTags:Object.freeze(['칩 경제','쇼다운 조작']),effects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:7,condition:'chips_empty',duration:'set'}])}),
+    Object.freeze({id:'imperfect',name:'불완전주의',icon:'?',desc:'완성 족보가 하이카드라면 쇼다운 위력 +10. 족보를 일부러 망치는 선택도 빌드가 된다.',buildTags:Object.freeze(['쇼다운 조작']),effects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:10,condition:'showdown_high_card',duration:'set'}])}),
+    Object.freeze({id:'comeback',name:'역경 축적',icon:'↺',desc:'한 세트에서 트릭을 2번 이상 졌다면 쇼다운 위력 +7.',buildTags:Object.freeze(['패배 활용','쇼다운 조작']),effects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:7,condition:'set_losses_at_least',conditionValue:2,duration:'set'}])}),
+    Object.freeze({id:'advantage_hunter',name:'우세 추종자',icon:'▲',desc:'쇼다운에서 명시적 우세가 활성화되어 있으면 쇼다운 위력 +5.',buildTags:Object.freeze(['쇼다운 조작']),effects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:5,condition:'player_has_advantage',duration:'set'}])}),
+    Object.freeze({id:'pure_mind',name:'순수주의',icon:'□',desc:'쇼다운에 순수 카드가 3장 이상이면 쇼다운 위력 +6.',buildTags:Object.freeze(['쇼다운 조작']),effects:Object.freeze([{trigger:'on_showdown_score',action:'showdown_power',value:6,condition:'pure_cards_at_least',conditionValue:3,duration:'set'}])})
+  ]);
+  const ARCHIVED_TRAITS=Object.freeze([
+    Object.freeze({id:'extra_gold',name:'여유 자금',hidden:true,archived:true,desc:'구버전 시작 특성. 시작 골드 +20.',run:Object.freeze({gold:20})}),
+    Object.freeze({id:'durable',name:'튼튼한 몸',hidden:true,archived:true,desc:'구버전 시작 특성. 최대 체력과 현재 체력 +6.',run:Object.freeze({maxHp:6,hp:6})}),
+    Object.freeze({id:'pocket_chip',name:'비상용 칩',hidden:true,archived:true,desc:'구버전 시작 특성. 전투 시작 칩 +1.',battle:Object.freeze({chips:1})})
   ]);
 
   let installed=false;
@@ -68,7 +93,7 @@
   function normalizeStarterId(id=COMMON_STARTER_ID){return LEGACY_STARTER_ALIASES[id]||id}
   function starterDefinition(id=COMMON_STARTER_ID){const normalized=normalizeStarterId(id);return STARTERS.find(starter=>starter.id===normalized)||null}
   function archivedStarterDefinition(id){return ARCHIVED_STARTERS.find(starter=>starter.id===id)||null}
-  function traitDefinition(id){return RUN_TRAITS.find(trait=>trait.id===id)||null}
+  function traitDefinition(id){return[...RUN_TRAITS,...ARCHIVED_TRAITS].find(trait=>trait.id===id)||null}
   function parseSlot(slot){
     const match=/^([SHDC])(\d{1,2})$/.exec(String(slot||''));
     if(!match)return null;
@@ -115,10 +140,10 @@
         else if(base.cardId||base.definition||(Array.isArray(base.effects)&&base.effects.length))errors.push(`${starter.id}: ${slot} is not a pure card`);
       }
     }
-    const commonPool=new Set(commonCardPoolIds(cardsApi));
     for(const id of starter?.effectCardIds||[]){
-      if(!cardsApi?.CARD_DEFINITION_BY_ID?.[id])errors.push(`${starter.id}: unknown card ${id}`);
-      else if(!commonPool.has(id))errors.push(`${starter.id}: ${id} is not in the common opening pool`);
+      const definition=cardsApi?.CARD_DEFINITION_BY_ID?.[id];
+      if(!definition)errors.push(`${starter.id}: unknown card ${id}`);
+      else if(definition.category!=='general'||definition.rarity!=='common')errors.push(`${starter.id}: ${id} is not a common general effect card`);
     }
     return errors;
   }
@@ -168,6 +193,11 @@
     if(Number(modifiers.maxHp)){runState.maxHp=(Number(runState.maxHp)||0)+Number(modifiers.maxHp);runState.hp=(Number(runState.hp)||0)+Number(modifiers.hp??modifiers.maxHp)}
     else if(Number(modifiers.hp))runState.hp=Math.min(Number(runState.maxHp)||Infinity,(Number(runState.hp)||0)+Number(modifiers.hp));
     runState.traitId=trait.id;runState.trait=trait;
+    if(runState.char&&typeof runState.char==='object'){
+      runState.char.passives=Array.isArray(trait.effects)&&trait.effects.length?[{
+        id:`trait.${trait.id}`,name:trait.name,description:trait.desc||'',effectOwnerType:'passive',buildTags:[...(trait.buildTags||[])],effects:trait.effects.map(effect=>({...effect}))
+      }]:[];
+    }
     return runState;
   }
   function applyTraitToBattle(battleState,traitOrId,runtimeRoot=root){
@@ -195,7 +225,7 @@
     runState.identity={starterId:starter.id,traitId:trait.id};
     runState.startingDeckSize=runState.deck.length;runState.startingDeckRule=STAGE;
     runState.char={id:'starter_identity',name:starter.name,hp:BASE_HP,named:[],remove:0,compatibilityOnly:true};
-    runState.pack={id:'starter_v2',name:'공용 시작 덱',desc:starter.name,compatibilityOnly:true};
+    runState.pack={id:'starter_v3',name:'스타터 덱',desc:starter.name,compatibilityOnly:true};
     applyTraitToRun(runState,trait);
     runState.char.hp=runState.maxHp;
     return runState;
@@ -213,11 +243,11 @@
   function starterIcon(starter){return starter?.icon||'◫'}
   function renderStart(runtimeRoot=root){
     const doc=runtimeRoot?.document;if(!doc)return false;const state=ensureSelection(),starter=selectedStarter(),trait=selectedTrait();
-    const titles=doc.querySelectorAll?.('#startScreen .sectionTitle')||[];if(titles[0])titles[0].textContent='공용 시작 덱';if(titles[1])titles[1].textContent='시작 특성';
+    const titles=doc.querySelectorAll?.('#startScreen .sectionTitle')||[];if(titles[0])titles[0].textContent='스타터 덱';if(titles[1])titles[1].textContent='특성 선택';
     const hero=doc.getElementById?.('heroSprite');if(hero)hero.innerHTML='<div style="font-size:28px;line-height:1.25;text-align:center;color:#e4bd62">♠ ♥<br>♦ ♣</div>';
     const starterGrid=doc.getElementById?.('charGrid');if(starterGrid)starterGrid.innerHTML=STARTERS.map(item=>`<button class="option pixel ${state.starterId===item.id?'sel':''}" onclick="RunStartV2.selectStarter('${item.id}')"><div class="optionSprite" style="font-size:28px">${starterIcon(item)}</div><h3>${item.name}</h3><p>${item.desc}<br><span class="cyan">12장 · 순수 ${item.pureSlots.length} / 공용 효과 ${item.effectCardIds.length}</span></p></button>`).join('');
-    const traitGrid=doc.getElementById?.('packGrid');if(traitGrid)traitGrid.innerHTML=state.traitOfferIds.map(id=>traitDefinition(id)).filter(Boolean).map(item=>`<button class="option pixel ${state.traitId===item.id?'sel':''}" onclick="RunStartV2.selectTrait('${item.id}')"><div class="optionSprite" style="font-size:26px">✦</div><h3>${item.name}</h3><p>${item.desc}</p></button>`).join('');
-    const heroText=doc.querySelector?.('#startScreen .hero p');if(heroText)heroText.textContent=`${starter.name} + ${trait.name} 특성으로 시작한다. 초반 공통지역은 같은 공용 카드풀을 사용하고 이후 지역에서 빌드 방향을 정한다.`;
+    const traitGrid=doc.getElementById?.('packGrid');if(traitGrid)traitGrid.innerHTML=state.traitOfferIds.map(id=>traitDefinition(id)).filter(Boolean).map(item=>`<button class="option pixel ${state.traitId===item.id?'sel':''}" onclick="RunStartV2.selectTrait('${item.id}')"><div class="optionSprite" style="font-size:26px">${item.icon||'✦'}</div><h3>${item.name}</h3><p>${item.desc}</p></button>`).join('');
+    const heroText=doc.querySelector?.('#startScreen .hero p');if(heroText)heroText.textContent=`${starter.name} 스타터 + ${trait.name}. 스타터는 출발점일 뿐이며 이후 보상으로 다른 빌드 계열을 자유롭게 섞을 수 있다.`;
     return true;
   }
   function selectStarter(id,runtimeRoot=root){const starter=starterDefinition(id);if(!starter)return false;ensureSelection().starterId=starter.id;if(typeof runtimeRoot?.sfx==='function')runtimeRoot.sfx('click');renderStart(runtimeRoot);return true}
@@ -227,7 +257,7 @@
     const doc=runtimeRoot?.document,runState=activeRun(runtimeRoot);if(!doc||!runState?.starter||!runState?.trait)return false;
     const build=doc.getElementById?.('mapBuild'),row=build?.parentElement?.parentElement||build?.parentElement;let badge=doc.getElementById?.('runIdentityBadge');
     if(row&&!badge){badge=doc.createElement('span');badge.id='runIdentityBadge';badge.className='badge';row.appendChild(badge)}
-    if(badge){badge.textContent=`${runState.starter.name} · ${runState.trait.name}`;badge.title='공용 시작 덱 · 시작 특성'}
+    if(badge){badge.textContent=`${runState.starter.name} · ${runState.trait.name}`;badge.title='스타터 덱 · 특성'}
     return !!badge;
   }
   function renderBattleIdentity(runtimeRoot=root){
@@ -318,5 +348,5 @@
   }
   function resetForTests(){installed=false;selection=null;uidCounter=0}
 
-  return{STAGE,BASE_HP,BASE_GOLD,STARTER_DECK_SIZE,TRAIT_OFFER_COUNT,SUITS,COMMON_STARTER_ID,COMMON_OPENING_ACT_ID,COMMON_CARD_POOL_IDS,COMMON_STARTER_EFFECT_CARD_IDS,COMMON_STARTER_PURE_SLOTS,STARTERS,ARCHIVED_STARTERS,LEGACY_STARTER_ALIASES,RUN_TRAITS,normalizeStarterId,starterDefinition,archivedStarterDefinition,traitDefinition,parseSlot,starterCardCount,commonCardPoolIds,validateCommonCardPool,validateStarterDefinition,validateStarterRegistry,buildStarterDeck,isCommonOpeningPhase,earlyCommonRewardIds,rewardPoolForRun,isOpeningRewardCard,offerTraits,createSelection,ensureSelection,resetSelection,selectedStarter,selectedTrait,applyTraitToRun,applyTraitToBattle,applyIdentityToRun,canAcquireCard,activeRun,activeBattle,cardsApiFor,renderStart,selectStarter,selectTrait,renderIdentityBadge,renderBattleIdentity,shuffleIds,openingRewardCard,openingRewardArt,showOpeningReward,takeOpeningReward,wrapShowReward,wrapBeginRun,wrapStartBattle,wrapRenderMap,wrapRenderBattle,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,BASE_HP,BASE_GOLD,STARTER_DECK_SIZE,TRAIT_OFFER_COUNT,SUITS,COMMON_STARTER_ID,COMMON_OPENING_ACT_ID,COMMON_CARD_POOL_IDS,COMMON_STARTER_EFFECT_CARD_IDS,COMMON_STARTER_PURE_SLOTS,STARTERS,ARCHIVED_STARTERS,LEGACY_STARTER_ALIASES,RUN_TRAITS,ARCHIVED_TRAITS,normalizeStarterId,starterDefinition,archivedStarterDefinition,traitDefinition,parseSlot,starterCardCount,commonCardPoolIds,validateCommonCardPool,validateStarterDefinition,validateStarterRegistry,buildStarterDeck,isCommonOpeningPhase,earlyCommonRewardIds,rewardPoolForRun,isOpeningRewardCard,offerTraits,createSelection,ensureSelection,resetSelection,selectedStarter,selectedTrait,applyTraitToRun,applyTraitToBattle,applyIdentityToRun,canAcquireCard,activeRun,activeBattle,cardsApiFor,renderStart,selectStarter,selectTrait,renderIdentityBadge,renderBattleIdentity,shuffleIds,openingRewardCard,openingRewardArt,showOpeningReward,takeOpeningReward,wrapShowReward,wrapBeginRun,wrapStartBattle,wrapRenderMap,wrapRenderBattle,installBrowser,installWhenReady,resetForTests};
 });

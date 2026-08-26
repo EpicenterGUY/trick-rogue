@@ -130,7 +130,7 @@ if(!ENABLED){
     await cdp.send('Page.navigate',{url});
     await waitFor(cdp,"document.readyState==='complete'",{label:'page load'});
     await waitFor(cdp,"typeof RunStartV2!=='undefined' && document.getElementById('startScreen').style.visibility!=='hidden'",{label:'new start UI'});
-    assert.equal(await evaluate(cdp,"document.querySelector('#startScreen .sectionTitle')?.textContent"),'공용 시작 덱');
+    assert.equal(await evaluate(cdp,"document.querySelector('#startScreen .sectionTitle')?.textContent"),'스타터 덱');
 
     await clickElement(cdp,"document.querySelector('#startScreen .startBottom button')",'런 시작');
     await waitFor(cdp,"document.getElementById('mapScreen').classList.contains('active') && typeof run!=='undefined' && !!run",{label:'map screen after run start'});

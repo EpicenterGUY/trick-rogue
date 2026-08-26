@@ -16,7 +16,7 @@ function battleState(){return{type:'battle',setIndex:1,trick:1,phase:'trick',ene
 test('9-C는 유물 4종·계약 묶음 3종·상태 2종·필드 2종을 기존 레지스트리에 추가한다',()=>{
   const summary=Content.catalogSummary();
   assert.deepEqual(summary.added,{relics:4,offerings:3,statuses:2,fields:2});
-  assert.deepEqual(summary.totals,{relics:12,contracts:6,taboos:6,offerings:6,statuses:7,fields:7});
+  assert.deepEqual(summary.totals,{relics:12,contracts:6,taboos:6,offerings:6,statuses:7,fields:8});
   assert.deepEqual(Content.validateContent(),[]);
 });
 

@@ -102,6 +102,10 @@ test('7.5-R 조우 기본 필드 정의도 최신 트럼프·손패·최종값 �
   assert.equal(EncounterRules.FIELD_DEFINITIONS.outlaw_zone.rulesOverride.trumpBonus,0);
   assert.equal(EncounterRules.FIELD_DEFINITIONS.narrow_table.rulesOverride.maxHandModifier,-1);
   assert.equal(EncounterRules.FIELD_DEFINITIONS.inversion_zone.rulesOverride.lowFinalValueWins,true);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.wide_table.rulesOverride.maxHandModifier,1);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.royal_signal.rulesOverride.trumpBonus,6);
+  assert.equal(EncounterRules.FIELD_DEFINITIONS.loaded_table.rulesOverride.trumpBonus,4);
+  assert.equal(Object.keys(EncounterRules.FIELD_DEFINITIONS).length,8);
   assert(EncounterRules.validateRulesOverride({advantageMargin:2}).some(error=>error.includes('unsupported rule override')));
 });
 

@@ -8,11 +8,18 @@
   const RUN_FIELD_STATE_VERSION='7.5-F';
   const EVENT_FIELD_ID='inversion_zone';
   const SHOP_FIELD_ID='resonance_floor';
+  const EVENT_FIELD_IDS=Object.freeze(['inversion_zone','thin_signal','wide_table','loaded_table']);
+  const SHOP_FIELD_IDS=Object.freeze(['resonance_floor','outlaw_zone','narrow_table','royal_signal']);
   const SHOP_FIELD_COST=45;
   let installed=false;
 
   function fieldRegistry(){return EncounterRules?.FIELD_DEFINITIONS||{}}
   function fieldDefinition(id){return EncounterRules?.fieldDefinition?EncounterRules.fieldDefinition(id):fieldRegistry()[id]||null}
+  function fieldOfferIdForNode(node,kind='event'){
+    const ids=kind==='shop'?SHOP_FIELD_IDS:EVENT_FIELD_IDS,text=String(node?.id??node??''),match=text.match(/(\d+)(?!.*\d)/);let seed;
+    if(match)seed=Number(match[1]);else seed=[...text].reduce((sum,char)=>sum+char.charCodeAt(0),0);
+    const index=kind==='shop'?Math.abs(seed)%ids.length:Math.abs(seed-1)%ids.length;return ids[index];
+  }
   function activeRun(runtimeRoot=root){try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return runtimeRoot?.run||null}
   function activeBattle(runtimeRoot=root){try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}return runtimeRoot?.battle||null}
   function sourceMeta(source='unknown'){
@@ -167,12 +174,12 @@
   }
   function appendEventFieldOffer(runtimeRoot=root,node){
     const doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null),modal=doc?.getElementById?.('modal'),list=modal?.querySelector?.('.choiceList');if(!list||list.querySelector('[data-run-field-event]'))return false;
-    const definition=fieldDefinition(EVENT_FIELD_ID),runState=activeRun(runtimeRoot);if(!definition||!runState)return false;const owned=ensureRunFieldState(runState).owned.includes(definition.id);
+    const definition=fieldDefinition(fieldOfferIdForNode(node,'event')),runState=activeRun(runtimeRoot);if(!definition||!runState)return false;const owned=ensureRunFieldState(runState).owned.includes(definition.id);
     const button=doc.createElement('button');button.className='choice';button.dataset.runFieldEvent='true';button.innerHTML=`<b>${owned?'다음 전투에 재지정':'특수 필드 획득'} · ${escapeHtml(definition.label)}</b><span>${escapeHtml(definition.description)} · 다음 전투 한 번에만 생성된다.</span>`;button.onclick=()=>eventFieldPick(runtimeRoot,node.id,definition.id);list.appendChild(button);return true;
   }
   function appendShopFieldOffer(runtimeRoot=root,node){
     const doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null),modal=doc?.getElementById?.('modal'),list=modal?.querySelector?.('.choiceList');if(!list||list.querySelector('[data-run-field-shop]'))return false;
-    const definition=fieldDefinition(SHOP_FIELD_ID),runState=activeRun(runtimeRoot);if(!definition||!runState)return false;const state=ensureRunFieldState(runState),owned=state.owned.includes(definition.id),queued=state.queuedFieldId===definition.id;
+    const definition=fieldDefinition(fieldOfferIdForNode(node,'shop')),runState=activeRun(runtimeRoot);if(!definition||!runState)return false;const state=ensureRunFieldState(runState),owned=state.owned.includes(definition.id),queued=state.queuedFieldId===definition.id;
     const button=doc.createElement('button');button.className='choice';button.dataset.runFieldShop='true';button.disabled=queued;button.innerHTML=`<b>${queued?'다음 전투 예약됨':owned?'다음 전투에 지정':`필드 설계 · ${SHOP_FIELD_COST}G`} · ${escapeHtml(definition.label)}</b><span>${escapeHtml(definition.description)}${owned?' · 설계 보유 중':''} · 전투 1회 적용</span>`;button.onclick=()=>shopFieldPick(runtimeRoot,node.id,definition.id,SHOP_FIELD_COST);
     const exit=list.lastElementChild;exit?list.insertBefore(button,exit):list.appendChild(button);return true;
   }
@@ -205,7 +212,7 @@
   }
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;attempts++;if(attempts<60)setTimeout(attempt,25);else console.warn('[run-fields] 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else setTimeout(attempt,0);return true}
   return{
-    RUN_FIELD_STATE_VERSION,EVENT_FIELD_ID,SHOP_FIELD_ID,SHOP_FIELD_COST,fieldRegistry,fieldDefinition,activeRun,activeBattle,sourceMeta,ensureRunFieldState,acquireField,queueField,activateField,queuedField,activeField,
+    RUN_FIELD_STATE_VERSION,EVENT_FIELD_ID,SHOP_FIELD_ID,EVENT_FIELD_IDS,SHOP_FIELD_IDS,SHOP_FIELD_COST,fieldRegistry,fieldDefinition,fieldOfferIdForNode,activeRun,activeBattle,sourceMeta,ensureRunFieldState,acquireField,queueField,activateField,queuedField,activeField,
     consumeQueuedFieldForBattle,applyRunFieldToBattle,applyActiveRunField,runFieldSummary,eventFieldPick,shopFieldPick,ruleInfoEntries,phaseTransitionModel,presentPhaseTransition,showRuleInfo,renderRuleInfoButton,renderMapFieldSummary,
     appendEventFieldOffer,appendShopFieldOffer,wrapBeginRun,wrapStartBattle,wrapDamageEnemy,wrapRenderBattle,wrapRenderMap,wrapShowEvent,wrapShowShop,installBrowserRuntime,installWhenReady
   };

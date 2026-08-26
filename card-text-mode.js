@@ -53,6 +53,10 @@
     if(condition==='previous_showdown_slot_exists')return'이전 슬롯 있으면';
     if(condition==='previous_showdown_slot_is_pure')return'이전 슬롯 순수면';
     if(condition==='pure_cards_at_least')return`순수 ${value}장+면`;
+    if(condition==='chips_empty')return'칩 0이면';
+    if(condition==='set_losses_at_least')return`${value}패+면`;
+    if(condition==='showdown_distinct_suits_at_least')return`서로 다른 무늬 ${value}종+면`;
+    if(condition==='showdown_high_card')return'하이카드면';
     if(condition==='in_hand')return'손패에 있으면';
     if(condition==='player_has_advantage')return'우세면';
     if(condition==='enemy_has_advantage')return'적 우세면';
