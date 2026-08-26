@@ -6,7 +6,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   const STYLE_ID='trick-battle-scene-v2';
   const ATTEMPTS=100;
-  const TIMING=Object.freeze({approach:160,impact:80,values:260,retreat:180,result:560,settle:90});
+  const TIMING=Object.freeze({approach:160,impact:80,values:260,retreat:180,result:560,slot:150,settle:70});
 
   function reduced(root){try{return !!root.matchMedia?.('(prefers-reduced-motion: reduce)').matches}catch(_){return false}}
   function wait(root,ms){return new Promise(resolve=>(root.setTimeout||setTimeout)(resolve,ms))}
@@ -16,6 +16,10 @@
     return{label:'동점',short:'무',className:'draw'};
   }
   function styleText(){return `
+.trickSlotGhost{position:fixed;z-index:15;pointer-events:none;transform-origin:center;filter:drop-shadow(0 7px 7px #000a);will-change:transform,opacity}
+.trickSlotGhost .stageLabel{display:none!important}
+#slotRow .slot.slotSettleFlash{animation:slotSettleFlash 180ms cubic-bezier(.16,.86,.25,1)}
+@keyframes slotSettleFlash{0%{transform:translateY(-2px) scale(.94);filter:brightness(1.55)}55%{transform:translateY(0) scale(1.04);filter:brightness(1.22)}100%{transform:none;filter:none}}
 @media(max-width:899px){
   #battleMain{gap:0!important}
   #arena.pixel{min-height:354px!important;padding:7px 8px 9px!important;gap:5px!important}
@@ -88,10 +92,37 @@
     if(!element)return;element.classList.remove('trickWinner','trickLoser');element.querySelectorAll?.('.trickValueBadge').forEach(el=>el.remove());
     if(typeof root.clearStageAnimationStyles==='function')root.clearStageAnimationStyles(element);else element.getAnimations?.().forEach(a=>a.cancel());
   }
+  function nextShowdownSlot(doc){return [...(doc?.querySelectorAll?.('#slotRow .slot')||[])].find(slot=>!slot.classList.contains('fill'))||null}
+  async function animateSlotSettle(root,player,isReduced=false){
+    const doc=root.document,slot=nextShowdownSlot(doc),source=player?.querySelector?.('.stageInner')||player;
+    if(!doc||!slot||!source){if(typeof root.renderBattle==='function')root.renderBattle();return false}
+    if(isReduced){
+      if(typeof root.renderBattle==='function')root.renderBattle();
+      const settled=doc.getElementById(slot.id);settled?.classList.add('slotSettleFlash');
+      (root.setTimeout||setTimeout)(()=>settled?.classList.remove('slotSettleFlash'),180);return true;
+    }
+    const sr=source.getBoundingClientRect(),dr=slot.getBoundingClientRect();
+    if(!sr.width||!sr.height||!dr.width||!dr.height){if(typeof root.renderBattle==='function')root.renderBattle();return false}
+    const ghost=source.cloneNode(true);ghost.querySelector?.('.stageLabel')?.remove();ghost.classList.add('trickSlotGhost');
+    Object.assign(ghost.style,{left:sr.left+'px',top:sr.top+'px',width:sr.width+'px',height:sr.height+'px',margin:'0'});doc.body.appendChild(ghost);
+    const sx=sr.left+sr.width/2,sy=sr.top+sr.height/2,dx=dr.left+dr.width/2-sx,dy=dr.top+dr.height/2-sy,scale=Math.min(dr.width/sr.width,dr.height/sr.height);
+    try{
+      await ghost.animate([
+        {opacity:1,transform:'translate(0,0) scale(1)'},
+        {opacity:1,transform:`translate(${dx*.72}px,${dy*.68}px) scale(${Math.max(scale,0.72)})`,offset:.72},
+        {opacity:.96,transform:`translate(${dx}px,${dy}px) scale(${scale})`}
+      ],{duration:TIMING.slot,easing:'cubic-bezier(.2,.78,.2,1)',fill:'forwards'}).finished.catch(()=>{});
+      if(typeof root.renderBattle==='function')root.renderBattle();
+      const settled=doc.getElementById(slot.id);settled?.classList.add('slotSettleFlash');
+      (root.setTimeout||setTimeout)(()=>settled?.classList.remove('slotSettleFlash'),180);
+      await wait(root,TIMING.settle);
+    }finally{ghost.remove()}
+    return true;
+  }
   async function animateTrickResult(root,result){
     const doc=root.document,enemy=doc.getElementById('enemyStage'),player=doc.getElementById('playerStage'),vs=doc.getElementById('versus'),arena=doc.getElementById('arena');
     if(!enemy?.classList.contains('show')||!player?.classList.contains('show'))return;
-    const isReduced=reduced(root),t=isReduced?{approach:0,impact:0,values:40,retreat:0,result:90,settle:0}:TIMING,values=finalValues(root),animations=[];
+    const isReduced=reduced(root),t=isReduced?{approach:0,impact:0,values:40,retreat:0,result:90,slot:0,settle:0}:TIMING,values=finalValues(root),animations=[];
     const eb=enemy.getBoundingClientRect(),pb=player.getBoundingClientRect(),vb=vs.getBoundingClientRect(),center=vb.left+vb.width/2,gap=16;
     const enemyMeet=center-gap-(eb.left+eb.width/2),playerMeet=center+gap-(pb.left+pb.width/2);
     let banner=null,enemyBadge=null,playerBadge=null;
@@ -110,7 +141,9 @@
         const playerEnd=result>0?'translateX(0) scale(1.08)':result<0?'translateX(6px) rotate(2deg) scale(.94)':'translateX(2px) scale(1)';
         const ea=enemy.animate([{transform:`translateX(${enemyMeet}px)`},{transform:enemyEnd}],{duration:t.retreat,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'}),pa=player.animate([{transform:`translateX(${playerMeet}px)`},{transform:playerEnd}],{duration:t.retreat,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'});animations.push(ea,pa);await Promise.all([ea.finished,pa.finished]);
       }
-      banner=showOutcome(root,result,values);await wait(root,t.result);await wait(root,t.settle);
+      banner=showOutcome(root,result,values);await wait(root,t.result);
+      banner?.remove();banner=null;enemyBadge?.remove();enemyBadge=null;playerBadge?.remove();playerBadge=null;
+      await animateSlotSettle(root,player,isReduced);
     }finally{
       vs?.classList.remove('cardImpact');banner?.remove();enemyBadge?.remove();playerBadge?.remove();animations.forEach(a=>a.cancel());clearStage(root,enemy);clearStage(root,player);
     }
@@ -122,5 +155,5 @@
     const wrapped=async function(result){return animateTrickResult(root,result)};wrapped.__battleSceneV2=true;wrapped.__original=root.animateTrickResult;root.animateTrickResult=wrapped;return true;
   }
   function installWhenReady(root){let attempts=0;const attempt=()=>{if(install(root))return true;if(attempts++<ATTEMPTS){(root.setTimeout||setTimeout)(attempt,25);return false}root.console?.warn?.('[battle-scene-v2] 전투씬 초기화 지연');return false};return attempt()}
-  return{STYLE_ID,TIMING,outcomeMeta,styleText,ensureStyles,finalValues,install,installWhenReady,animateTrickResult};
+  return{STYLE_ID,TIMING,outcomeMeta,styleText,ensureStyles,finalValues,nextShowdownSlot,animateSlotSettle,install,installWhenReady,animateTrickResult};
 });
