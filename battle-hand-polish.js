@@ -3,6 +3,7 @@
   const handRowEl=()=>document.getElementById('handRow');
   const arenaEl=()=>document.getElementById('arena');
   const versusEl=()=>document.getElementById('versus');
+  let pendingPlayedUid=null;
 
   function pileCenter(id,fallbackRect){
     const el=document.getElementById(id);
@@ -47,7 +48,10 @@
       fragment.appendChild(el);
       previous.delete(card.uid);
     }
-    for(const {el,rect} of previous.values())animateRemovedHandCard(el,rect);
+    for(const [uid,{el,rect}] of previous){
+      if(uid===pendingPlayedUid){pendingPlayedUid=null;continue}
+      animateRemovedHandCard(el,rect);
+    }
     row.replaceChildren(fragment);
     row.classList.toggle('has-selection',!!selectedUid||!!row.querySelector('.is-selected,.exchange-selected,[data-exchange-selected="true"],[aria-pressed="true"]'));
     if(reduced())return;
@@ -101,34 +105,23 @@
     if(r&&(r.bottom>innerHeight-8||r.top<0))panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   };
 
-  /* Play: short lift -> snap to clash point -> impact pulse -> settle into showdown slot. */
+  /* Play motion is intentionally minimal: hand -> player side. Trick clash owns the dramatic beat. */
   animateCardFlight=async function(card){
-    const src=document.getElementById(`card-${card.uid}`),slot=document.getElementById(`showdown-slot-${battle.slots.length}`);
-    const appEl=document.getElementById('app'),vs=versusEl();
-    if(!src||!slot||!appEl||!vs)return;
-    if(reduced())return;
-    const appRect=appEl.getBoundingClientRect(),start=src.getBoundingClientRect(),center=vs.getBoundingClientRect(),end=slot.getBoundingClientRect();
+    pendingPlayedUid=card?.uid||null;
+    const src=document.getElementById(`card-${card.uid}`),appEl=document.getElementById('app'),vs=versusEl();
+    if(!src||!appEl||!vs||reduced())return;
+    const appRect=appEl.getBoundingClientRect(),start=src.getBoundingClientRect(),field=vs.getBoundingClientRect();
+    const targetX=field.left+field.width*.76-start.width/2,targetY=field.top+field.height*.53-start.height/2;
     const clone=src.cloneNode(true);clone.removeAttribute('id');clone.className='flyingCard card '+(card.named?'named':'');
     Object.assign(clone.style,{left:(start.left-appRect.left)+'px',top:(start.top-appRect.top)+'px',width:start.width+'px',height:start.height+'px',margin:'0',animation:'none',transition:'none'});
     const originalVisibility=src.style.visibility;appEl.appendChild(clone);src.style.visibility='hidden';
     const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    const transition=(styles,duration,easing='cubic-bezier(.2,.8,.2,1)')=>new Promise(async resolve=>{clone.style.transition=`all ${duration}ms ${easing}`;await frame();Object.assign(clone.style,styles);setTimeout(resolve,duration)});
     try{
-      await transition({transform:'translateY(-10px) rotate(-1deg) scale(1.045)'},70);
-      await transition({left:(center.left-appRect.left+center.width/2-start.width/2)+'px',top:(center.top-appRect.top+center.height/2-start.height/2)+'px',transform:'translateY(0) rotate(-3deg) scale(1.065)'},175,'cubic-bezier(.16,.86,.2,1)');
-      vs.classList.add('cardImpact');
-      clone.style.transition='none';
-      await clone.animate([
-        {transform:'rotate(-3deg) scale(1.065)'},
-        {transform:'rotate(-3deg) scale(1.10)',offset:.34},
-        {transform:'rotate(1deg) scale(.97)',offset:.72},
-        {transform:'scale(1)'}
-      ],{duration:110,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'}).finished.catch(()=>{});
-      vs.classList.remove('cardImpact');
-      await wait(55);
-      await transition({left:(end.left-appRect.left)+'px',top:(end.top-appRect.top)+'px',width:end.width+'px',height:end.height+'px',transform:'scale(1)'},165,'cubic-bezier(.18,.82,.2,1)');
+      await frame();
+      clone.style.transition='left 145ms cubic-bezier(.18,.82,.2,1), top 145ms cubic-bezier(.18,.82,.2,1), opacity 145ms linear';
+      clone.style.left=(targetX-appRect.left)+'px';clone.style.top=(targetY-appRect.top)+'px';clone.style.opacity='.96';
+      await wait(145);
     }finally{
-      vs.classList.remove('cardImpact');
       clone.getAnimations().forEach(animation=>animation.cancel());
       src.style.visibility=originalVisibility;
       clone.remove();

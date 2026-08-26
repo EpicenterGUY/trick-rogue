@@ -110,8 +110,9 @@ async function clickElement(cdp,expression,label,{scroll=false,hitTest=false}={}
   const point=await pointFor(cdp,expression);assert.ok(point,`${label} element should exist`);assert.equal(point.visible,true,`${label} should be visible`);assert.equal(point.disabled,false,`${label} should be enabled`);
   if(scroll)assert.ok(point.x>=0&&point.x<=390&&point.y>=0&&point.y<=844,`${label} should be inside mobile viewport after scroll`);
   if(hitTest){
-    const receives=await evaluate(cdp,`(()=>{const el=${expression},hit=document.elementFromPoint(${point.x},${point.y});return !!(el&&hit&&(hit===el||el.contains(hit)))})()`);
-    assert.equal(receives,true,`${label} should be the topmost click target`);
+    const hitInfo=await evaluate(cdp,`(()=>{const el=${expression},hit=document.elementFromPoint(${point.x},${point.y});return{receives:!!(el&&hit&&(hit===el||el.contains(hit))),target:el?{tag:el.tagName,id:el.id,cls:el.className,rect:(()=>{const r=el.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}})()}:null,hit:hit?{tag:hit.tagName,id:hit.id,cls:hit.className,text:(hit.textContent||'').trim().slice(0,80),pointer:getComputedStyle(hit).pointerEvents,z:getComputedStyle(hit).zIndex,position:getComputedStyle(hit).position}:null}})()`);
+    if(!hitInfo.receives)console.error('HITTEST_DIAG',JSON.stringify({label,point,hitInfo}));
+    assert.equal(hitInfo.receives,true,`${label} should be the topmost click target`);
   }
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x,y:point.y});
   await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,button:'left',clickCount:1});
@@ -134,11 +135,12 @@ if(!ENABLED){
     await clickElement(cdp,"document.querySelector('#startScreen .startBottom button')",'런 시작');
     await waitFor(cdp,"document.getElementById('mapScreen').classList.contains('active') && typeof run!=='undefined' && !!run",{label:'map screen after run start'});
 
-    await clickElement(cdp,"document.querySelector('#mapGrid .node.current:not(:disabled)')",'첫 맵 노드');
+    await clickElement(cdp,"[...document.querySelectorAll('#mapGrid .node')].find(el=>!el.classList.contains('lock')&&!el.classList.contains('done'))",'첫 맵 노드');
     await waitFor(cdp,"document.getElementById('battleScreen').classList.contains('active') && typeof battle!=='undefined' && !!battle",{label:'battle screen'});
     await waitFor(cdp,"document.querySelectorAll('#handRow .card').length>0 && !!document.getElementById('battleDeckPile')",{label:'hand and pile HUD'});
 
-    await clickElement(cdp,"document.querySelector('#handRow .card')",'첫 손패 카드');
+    const playableCardExpr=`(()=>{const els=[...document.querySelectorAll('#handRow .card')];return els.find(el=>{const card=battle.hand.find(c=>c.uid===el.dataset.uid);return card&&!card.named&&!card.definition&&!card.cardId})||els.find(el=>{const card=battle.hand.find(c=>c.uid===el.dataset.uid),def=card?.definition||card?.named;return card&&!def?.targeting})||els[0]})()`;
+    await clickElement(cdp,playableCardExpr,'바로 낼 수 있는 손패 카드',{hitTest:true});
     await waitFor(cdp,"!document.getElementById('playBtn').disabled",{label:'enabled play button'});
     const trickBefore=await evaluate(cdp,'battle.trick');
     await clickElement(cdp,"document.getElementById('playBtn')",'내기',{hitTest:true});
