@@ -13,7 +13,7 @@ const PLAYER_EFFECT_LABELS=Object.freeze({
     printed_suit_is_trump:'인쇄 무늬가 현재 트럼프',printed_suit_is_not_trump:'인쇄 무늬가 현재 트럼프가 아님',river_hit:'고정한 리버 후보 적중',river_miss_with_candidates:'리버 후보가 있었지만 빗나감',
     slot_is:'지정된 쇼다운 슬롯',slot_at_least:'지정 슬롯 이후',previous_showdown_slot_exists:'바로 이전 쇼다운 카드가 있음',previous_showdown_slot_is_pure:'바로 이전 쇼다운 카드가 순수 카드',
     pure_cards_at_least:'쇼다운의 순수 카드가 지정 장수 이상',in_hand:'손패에 있음',player_has_advantage:'명시적 우세가 있음',enemy_has_advantage:'적의 명시적 우세가 있음',set_wins_at_least:'이번 세트 승리가 지정 횟수 이상',
-    pure_card_in_hand:'손패에 순수 카드가 있음',pure_card_in_showdown:'쇼다운에 순수 카드가 있음',printed_equals_trick:'인쇄값과 트릭값이 같음',unmodified_trick_value:'최종 트릭값이 인쇄값 그대로',
+    pure_card_in_hand:'손패에 순수 카드가 있음',pure_card_in_showdown:'쇼다운에 순수 카드가 있음',pure_cards_at_least:'쇼다운 순수 카드가 지정 장수 이상',chips_empty:'현재 칩이 0',set_losses_at_least:'이번 세트 패배가 지정 횟수 이상',showdown_distinct_suits_at_least:'쇼다운의 서로 다른 무늬가 지정 수 이상',showdown_high_card:'쇼다운 족보가 하이카드',printed_equals_trick:'인쇄값과 트릭값이 같음',unmodified_trick_value:'최종 트릭값이 인쇄값 그대로',
     card_memory_at_least:'이 카드가 기록한 값이 지정 수 이상',player_hp_ratio_at_most:'현재 체력 비율이 지정 비율 이하',enemy_has_status:'적이 지정 상태 보유',trick_is:'지정 번째 트릭',player_shield_at_least:'보호막이 지정 수 이상',all:'모든 조건 충족'
   },
   actions:{

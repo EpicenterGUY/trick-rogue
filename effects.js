@@ -33,6 +33,15 @@
     return context?.battle?.advantageState?.[side]===true;
   }
   function zoneCards(context,key){const direct=context?.[key];if(Array.isArray(direct))return direct;const battle=context?.battle?.[key];return Array.isArray(battle)?battle:[]}
+  function showdownRankOf(entry){const card=entry?.card||entry;return Number(card?.showdownRank??card?.printedRank??card?.rank)}
+  function showdownSuitOf(entry){const card=entry?.card||entry;return card?.showdownSuit??card?.printedSuit??card?.suit??null}
+  function showdownIsHighCard(context){
+    const slots=zoneCards(context,'slots');if(slots.length!==5)return false;
+    const ranks=slots.map(showdownRankOf);if(ranks.some(rank=>!Number.isFinite(rank)))return false;
+    const suits=slots.map(showdownSuitOf),counts=new Map();ranks.forEach(rank=>counts.set(rank,(counts.get(rank)||0)+1));if([...counts.values()].some(count=>count>1))return false;
+    const unique=[...new Set(ranks)].sort((a,b)=>a-b),flush=new Set(suits).size===1,straight=(unique.length===5&&unique[4]-unique[0]===4)||JSON.stringify(unique)===JSON.stringify([2,3,4,5,14]);
+    return!flush&&!straight;
+  }
   const conditions={
     chips_spent:c=>c.history.chipsSpent>0,
     effective_rank_at_most:(c,e)=>c.effectiveRank<=e.conditionValue,
@@ -44,6 +53,11 @@
     set_wins_at_least:(c,e)=>(Number(setHistory(c).wins)||0)>=(Number(e.conditionValue)||1),
     pure_card_in_hand:c=>zoneCards(c,'hand').some(isPureCard),
     pure_card_in_showdown:c=>zoneCards(c,'slots').some(isPureCard),
+    pure_cards_at_least:(c,e)=>zoneCards(c,'slots').filter(isPureCard).length>=(Number(e.conditionValue)||1),
+    chips_empty:c=>(Number(c?.battle?.chip??c?.chip??0)||0)===0,
+    set_losses_at_least:(c,e)=>(Number(setHistory(c).losses)||0)>=(Number(e.conditionValue)||1),
+    showdown_distinct_suits_at_least:(c,e)=>new Set(zoneCards(c,'slots').map(showdownSuitOf).filter(Boolean)).size>=(Number(e.conditionValue)||1),
+    showdown_high_card:c=>showdownIsHighCard(c),
     printed_equals_trick:c=>printedEqualsTrick(c),
     unmodified_trick_value:c=>printedEqualsTrick(c)
   };

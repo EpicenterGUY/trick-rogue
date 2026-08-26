@@ -48,7 +48,7 @@ test('빌드 특성 조건은 패배·빈 칩·4무늬·하이카드를 실제 �
 
 test('필드는 8종이며 이벤트/상점 노드가 서로 다른 필드를 순환 제공한다',()=>{
   assert.equal(Object.keys(EncounterRules.FIELD_DEFINITIONS).length,8);
-  assert.deepEqual(RunFields.EVENT_FIELD_IDS.map(id=>EncounterRules.FIELD_DEFINITIONS[id].label),['뒤집힌 세계','감쇠 지대','넓은 테이블','삐뚤어진 테이블']);
+  assert.deepEqual(RunFields.EVENT_FIELD_IDS.map(id=>EncounterRules.FIELD_DEFINITIONS[id].label),['뒤집힌 세계','감쇠 지대','넓은 테이블','과열 테이블']);
   assert.deepEqual(RunFields.SHOP_FIELD_IDS.map(id=>EncounterRules.FIELD_DEFINITIONS[id].label),['과충전 구역','무법지대','좁은 테이블','왕실 중계소']);
   assert.deepEqual([1,2,3,4].map(n=>RunFields.fieldOfferIdForNode({id:`n${n}`} ,'event')),RunFields.EVENT_FIELD_IDS);
   assert.deepEqual([4,5,6,7].map(n=>RunFields.fieldOfferIdForNode({id:`n${n}`} ,'shop')),RunFields.SHOP_FIELD_IDS);

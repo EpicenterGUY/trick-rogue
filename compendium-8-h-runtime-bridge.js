@@ -1,15 +1,16 @@
 (function(root,factory){
-  const api=factory(root,typeof module!=='undefined'?require('./compendium-8-h.js'):root.Compendium8H);
+  const api=factory(root,typeof module!=='undefined'?require('./compendium-8-h.js'):root.Compendium8H,typeof module!=='undefined'?require('./card-build-tags.js'):root.CardBuildTags);
   if(typeof module!=='undefined')module.exports=api;
   root.Compendium8HRuntimeBridge=api;
   if(typeof document!=='undefined')api.installWhenReady(root);
-})(typeof globalThis!=='undefined'?globalThis:this,function(root,Compendium){
+})(typeof globalThis!=='undefined'?globalThis:this,function(root,Compendium,CardBuildTags){
   const STAGE='8-H';
   const LAYOUT_FIX_STAGE='8-H-COMPLETE';
   const SECTION_ORDER=Object.freeze(['cards','relics','clauses','traits','fields','statuses','synergies','terms']);
   const SECTION_LABELS=Object.freeze({cards:'카드',relics:'유물',clauses:'계약·금기',traits:'특성',fields:'필드',statuses:'상태',synergies:'빌드 시너지',terms:'규칙·용어'});
-  const CARD_FILTERS=Object.freeze(['all','pure','effect','signature','owned','locked']);
-  const CARD_FILTER_LABELS=Object.freeze({all:'전체',pure:'순수',effect:'효과',signature:'보스 시그니처',owned:'이번 런 보유',locked:'잠김'});
+  const CARD_FILTERS=Object.freeze(['all','pure','effect','signature','trick','showdown','loss','chip','hand','chain','owned','locked']);
+  const CARD_FILTER_LABELS=Object.freeze({all:'전체',pure:'순수',effect:'효과',signature:'보스 시그니처',trick:'승부 조작',showdown:'쇼다운 조작',loss:'패배 활용',chip:'칩 경제',hand:'손패 조작',chain:'예약·연쇄',owned:'이번 런 보유',locked:'잠김'});
+  const BUILD_FILTER_TAG=Object.freeze({trick:'승부 조작',showdown:'쇼다운 조작',loss:'패배 활용',chip:'칩 경제',hand:'손패 조작',chain:'예약·연쇄'});
   const BOSS_LABELS=Object.freeze({three_face_dealer:'삼면 딜러',fog_curator:'안개 관장',frontier_marshal:'전선 총감'});
   let installed=false;
   let layoutObserver=null;
@@ -66,6 +67,7 @@
   }
 
   function cardDefinition(item){return item?.source?.definition||item?.source?.named||null}
+  function cardBuildTags(item){const def=cardDefinition(item);return CardBuildTags?.tagsForDefinition?.(def)||def?.buildTags||[]}
   function isSignatureCard(item){
     const def=cardDefinition(item);
     return !!(def?.signatureBossId||def?.category==='boss_signature'||item?.category==='boss_signature'||item?.packId==='boss-signature');
@@ -95,7 +97,7 @@
   function decorateCardItem(item,runState=activeRun()){
     const category=cardUiCategory(item),owned=cardOwnedInRun(item,runState),unlocked=signatureUnlocked(item,runState);
     const rewardEligible=category==='signature'?unlocked:!!item.rewardEligible;
-    return{...item,uiCategory:category,owned,unlocked,rewardEligible,signatureBossLabel:category==='signature'?signatureBossLabel(item):'',legacyPackId:item.packId||null};
+    return{...item,uiCategory:category,owned,unlocked,rewardEligible,buildTags:cardBuildTags(item),signatureBossLabel:category==='signature'?signatureBossLabel(item):'',legacyPackId:item.packId||null};
   }
   function cardCatalog(runState=activeRun()){return (Compendium?.cardCatalog?.()||[]).map(item=>decorateCardItem(item,runState))}
   function cardFilterMatch(item,filter){
@@ -103,6 +105,7 @@
     if(filter==='pure')return item.uiCategory==='pure';
     if(filter==='effect')return item.uiCategory==='effect';
     if(filter==='signature')return item.uiCategory==='signature';
+    if(BUILD_FILTER_TAG[filter])return Array.isArray(item.buildTags)&&item.buildTags.includes(BUILD_FILTER_TAG[filter]);
     if(filter==='owned')return !!item.owned;
     if(filter==='locked')return item.uiCategory==='signature'&&!item.unlocked;
     return true;
@@ -115,7 +118,7 @@
   function searchableText(item){
     const parts=[item?.name,item?.description,item?.meta,item?.id,item?.suit,rankLabel(item?.rank),suitSymbol(item?.suit)];
     if(item?.kind==='card'){
-      parts.push(CARD_FILTER_LABELS[item.uiCategory],item.owned?'보유':'미보유',item.unlocked===false?'잠김':'해금',item.signatureBossLabel,item.rewardEligible?'보상 후보':'보상 제외');
+      parts.push(CARD_FILTER_LABELS[item.uiCategory],...(item.buildTags||[]),item.owned?'보유':'미보유',item.unlocked===false?'잠김':'해금',item.signatureBossLabel,item.rewardEligible?'보상 후보':'보상 제외');
     }
     return parts.filter(Boolean).join(' ').toLocaleLowerCase('ko');
   }
@@ -133,6 +136,7 @@
       return Array.isArray(badges)?badges.filter(Boolean):[];
     }
     const badges=[item.uiCategory==='pure'?'순수 카드':item.uiCategory==='signature'?'보스 시그니처':'효과 카드'];
+    if(item.uiCategory!=='pure')badges.push(...(item.buildTags||[]));
     if(item.owned)badges.push('이번 런 보유');
     if(item.uiCategory==='signature')badges.push(item.unlocked?'해금됨':'잠김');
     badges.push(item.rewardEligible?'보상 후보':'보상 제외');
@@ -143,7 +147,7 @@
   function keywordHtml(text){return typeof Compendium?.highlightKeywordsText==='function'?Compendium.highlightKeywordsText(text):escapeHtml(text)}
   function itemMeta(item){
     if(item?.kind==='card'&&item.uiCategory==='signature')return item.signatureBossLabel?`${item.signatureBossLabel} 처치 해금`:'보스 처치 해금';
-    if(item?.kind==='card')return item.uiCategory==='pure'?'표준 52장':'공용 효과 풀';
+    if(item?.kind==='card')return item.uiCategory==='pure'?'표준 52장':`공용 효과 풀${item.buildTags?.length?` · ${item.buildTags.join(' · ')}`:''}`;
     return String(item?.meta||'');
   }
   function itemHtml(item,index){

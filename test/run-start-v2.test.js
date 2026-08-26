@@ -7,16 +7,17 @@ const RunStart=require('../run-start-v2.js');
 
 function constantRng(value){return()=>value}
 
-test('8-A 새 런은 특정 카드군 대신 공용 스타터 1종만 노출하고 12장 · 순수 6~8 · 공용 효과 4~6 규칙을 지킨다',()=>{
-  assert.equal(RunStart.STARTERS.length,1);
-  assert.equal(RunStart.STARTERS[0].id,'common');
+test('빌드 아이덴티티 스타터 4종은 모두 12장 · 순수 6~8 · 공용 효과 4~6 규칙을 지킨다',()=>{
+  assert.equal(RunStart.STARTERS.length,4);
+  assert.deepEqual(RunStart.STARTERS.map(starter=>starter.id),['common','gambler','trickster','survivor']);
   assert.equal(RunStart.validateStarterRegistry(Cards).length,0);
-  const starter=RunStart.STARTERS[0];
-  assert.equal(RunStart.starterCardCount(starter),12);
-  assert.ok(starter.pureSlots.length>=6&&starter.pureSlots.length<=8);
-  assert.ok(starter.effectCardIds.length>=4&&starter.effectCardIds.length<=6);
   const commonPool=new Set(RunStart.commonCardPoolIds(Cards));
-  assert.ok(starter.effectCardIds.every(id=>commonPool.has(id)));
+  for(const starter of RunStart.STARTERS){
+    assert.equal(RunStart.starterCardCount(starter),12);
+    assert.ok(starter.pureSlots.length>=6&&starter.pureSlots.length<=8);
+    assert.ok(starter.effectCardIds.length>=4&&starter.effectCardIds.length<=6);
+    assert.ok(starter.effectCardIds.every(id=>Cards.CARD_DEFINITION_BY_ID[id]?.category==='general'&&Cards.CARD_DEFINITION_BY_ID[id]?.rarity==='common'));
+  }
 });
 
 test('구버전 무소속/저격수/사진가 스타터는 삭제하지 않고 숨김 보관하며 새 런에서는 공용 스타터로 치환한다',()=>{
@@ -84,7 +85,7 @@ test('런 정체성은 공용 시작 덱 + 시작 특성을 저장하고 구버�
   assert.equal(run.gold,80);
   assert.equal(run.char.id,'starter_identity');
   assert.equal(run.char.compatibilityOnly,true);
-  assert.equal(run.pack.name,'공용 시작 덱');
+  assert.equal(run.pack.name,'스타터 덱');
   assert.equal(run.pack.compatibilityOnly,true);
 });
 

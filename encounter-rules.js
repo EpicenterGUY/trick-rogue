@@ -15,7 +15,10 @@
     thin_signal:Object.freeze({id:'thin_signal',label:'감쇠 지대',description:'트럼프 카드의 트릭 적용 숫자 보너스가 +3 대신 +1이 된다.',rulesOverride:Object.freeze({trumpBonus:1}),effects:Object.freeze([])}),
     outlaw_zone:Object.freeze({id:'outlaw_zone',label:'무법지대',description:'이번 전투에서 트럼프 무늬는 유지되지만 트릭 적용 숫자 보너스는 0이 된다.',rulesOverride:Object.freeze({trumpBonus:0}),effects:Object.freeze([])}),
     narrow_table:Object.freeze({id:'narrow_table',label:'좁은 테이블',description:'기본 최대 손패가 1 감소한다.',rulesOverride:Object.freeze({maxHandModifier:-1}),effects:Object.freeze([])}),
-    inversion_zone:Object.freeze({id:'inversion_zone',label:'뒤집힌 세계',description:'모든 보정을 끝낸 최종 적용 숫자가 낮은 쪽이 트릭에서 승리한다.',rulesOverride:Object.freeze({lowFinalValueWins:true}),effects:Object.freeze([])})
+    inversion_zone:Object.freeze({id:'inversion_zone',label:'뒤집힌 세계',description:'모든 보정을 끝낸 최종 적용 숫자가 낮은 쪽이 트릭에서 승리한다.',rulesOverride:Object.freeze({lowFinalValueWins:true}),effects:Object.freeze([])}),
+    loaded_table:Object.freeze({id:'loaded_table',label:'과열 테이블',description:'기본 최대 손패가 1 감소하지만 트럼프 카드의 트릭 적용 숫자 보너스가 +4가 된다.',rulesOverride:Object.freeze({trumpBonus:4,maxHandModifier:-1}),effects:Object.freeze([])}),
+    wide_table:Object.freeze({id:'wide_table',label:'넓은 테이블',description:'기본 최대 손패가 1 증가하지만 트럼프 카드의 트릭 적용 숫자 보너스가 +2가 된다.',rulesOverride:Object.freeze({trumpBonus:2,maxHandModifier:1}),effects:Object.freeze([])}),
+    royal_signal:Object.freeze({id:'royal_signal',label:'왕실 중계소',description:'트럼프 카드의 트릭 적용 숫자 보너스가 +3 대신 +6이 된다.',rulesOverride:Object.freeze({trumpBonus:6}),effects:Object.freeze([])})
   });
   const ENCOUNTER_PROFILES=Object.freeze({
     battle:Object.freeze({id:'raider',type:'battle',label:'폐허 약탈자',rulesOverride:Object.freeze({}),eliteModifier:null,bossPhases:Object.freeze([]),defaultField:null}),

@@ -117,7 +117,8 @@
     ];
   }
   function traitCatalog(runState=activeRun()){
-    return (RunStartV2?.RUN_TRAITS||[]).map(def=>({kind:'trait',id:def.id,name:def.name,description:def.desc||'',meta:'시작 특성',owned:runState?.traitId===def.id,implemented:true}));
+    const modern=[...(RunStartV2?.RUN_TRAITS||[])],archived=(RunStartV2?.ARCHIVED_TRAITS||[]).filter(def=>runState?.traitId===def.id);
+    return [...modern,...archived].map(def=>({kind:'trait',id:def.id,name:def.name,description:def.desc||'',meta:def.archived?'구버전 특성':'시작 특성',owned:runState?.traitId===def.id,implemented:true}));
   }
   function fieldCatalog(runState=activeRun()){
     const owned=new Set(runState?.fieldState?.owned||runState?.runFieldState?.owned||[]),activeId=runState?.fieldState?.queued||runState?.runFieldState?.queued||null;
