@@ -28,9 +28,12 @@
   function always(){return true}
   function hasDeck(runState){return Array.isArray(runState?.deck)&&runState.deck.length>1}
   function hasMap(runState){return Array.isArray(runState?.map)&&runState.map.length>0}
+  function regionVisitTarget(runState){return Math.max(0,Math.trunc(finite(runState?.runFlow?.regionVisitTarget,2)))}
+  function remainingRegionVisits(runState){return Math.max(0,regionVisitTarget(runState)-array(runState?.runFlow?.visitedRegionIds).length)}
+  function canUseLostAndFound(runState){return hasDeck(runState)&&remainingRegionVisits(runState)>0}
 
   const EVENT_DEFINITIONS=Object.freeze({
-    lost_and_found:Object.freeze({id:'lost_and_found',name:'분실물 보관소',description:'카드 한 장을 맡긴다. 다음 지역에 들어갈 때 강화되어 돌아온다.',tags:Object.freeze(['general','deck']),regionTags:Object.freeze([]),weight:1.0,eligibility:hasDeck,type:'special',oneShot:true}),
+    lost_and_found:Object.freeze({id:'lost_and_found',name:'분실물 보관소',description:'카드 한 장을 맡긴다. 다음 일반 지역에 들어갈 때 강화되어 돌아온다.',tags:Object.freeze(['general','deck']),regionTags:Object.freeze([]),weight:1.0,eligibility:canUseLostAndFound,type:'special',oneShot:true}),
     old_map:Object.freeze({id:'old_map',name:'낡은 지도',description:'앞쪽 경로의 정보를 하나 골라 미리 확인한다.',tags:Object.freeze(['general','information']),regionTags:Object.freeze([]),weight:1.0,eligibility:hasMap,type:'choice',oneShot:false,choices:Object.freeze([
       Object.freeze({id:'next_node',label:'다음 노드 종류 확인'}),Object.freeze({id:'next_event',label:'다음 이벤트 성향 확인'})
     ])}),
@@ -134,19 +137,23 @@
   }
   function applyActions(runState,actions,options={}){return array(actions).map((action,index)=>applyAction(runState,action,{...options,salt:`${options.salt||'event'}:${index}`}))}
   function storeCard(runState,index,{sourceEventId='lost_and_found'}={}){
+    if(!canUseLostAndFound(runState))return{ok:false,reason:'no_future_region'};
     const state=ensureEventState(runState),deck=array(runState.deck),safeIndex=Number(index);if(!Number.isInteger(safeIndex)||safeIndex<0||safeIndex>=deck.length)return{ok:false,reason:'card_not_found'};
     const card=deck.splice(safeIndex,1)[0],visitCount=array(runState.runFlow?.visitedRegionIds).length,entry={id:`stored:${state.storedCards.length+1}`,sourceEventId,card,returnAtVisitCount:visitCount+1,storedAtStage:runState.runStage||1};state.storedCards.push(entry);return{ok:true,entry};
   }
+  function returnStoredCards(runState,{runtimeRoot=root,recoverOrphaned=false}={}){
+    const state=ensureEventState(runState),visitCount=array(runState.runFlow?.visitedRegionIds).length,remaining=[],results=[];
+    for(const entry of state.storedCards){
+      const due=visitCount>=finite(entry.returnAtVisitCount,Infinity)||recoverOrphaned;
+      if(due){const card=upgradeCard(entry.card,runtimeRoot);if(!Array.isArray(runState.deck))runState.deck=[];runState.deck.push(card);results.push({type:'stored_card_returned',id:entry.id,card,recovered:recoverOrphaned&&visitCount<finite(entry.returnAtVisitCount,Infinity)})}
+      else remaining.push(entry);
+    }
+    state.storedCards=remaining;return results;
+  }
   function handleRunHook(runState,hook,context={},runtimeRoot=root){
     const state=ensureEventState(runState),results=[];record(runState,{type:'hook',hook,context:clone(context)});
-    if(hook==='on_region_enter'){
-      const visitCount=array(runState.runFlow?.visitedRegionIds).length,remaining=[];
-      for(const entry of state.storedCards){
-        if(visitCount>=finite(entry.returnAtVisitCount,Infinity)){const card=upgradeCard(entry.card,runtimeRoot);if(!Array.isArray(runState.deck))runState.deck=[];runState.deck.push(card);results.push({type:'stored_card_returned',id:entry.id,card})}
-        else remaining.push(entry);
-      }
-      state.storedCards=remaining;
-    }
+    if(hook==='on_region_enter')results.push(...returnStoredCards(runState,{runtimeRoot}));
+    else if(hook==='on_stage_enter'&&remainingRegionVisits(runState)===0&&finite(runState.runStage)>=7)results.push(...returnStoredCards(runState,{runtimeRoot,recoverOrphaned:true}));
     return results;
   }
   function eventContext(runState,node,runtimeRoot=root){return{runState,node,regionIds:contextRegionIds(runState,node),eventTags:currentEventTags(runState,node),random:deterministicRng(runState,`minigame:${eventSalt(runState,node)}`,runtimeRoot)}}
@@ -169,7 +176,10 @@
   function magicBoxModel(runState,runtimeRoot=root){const card=array(runState.deck)[0]||generatedCard(runState,'magic-hint',runtimeRoot),rank=finite(card.rank),red=card.suit==='H'||card.suit==='D';return{hintCard:clone(card),rank,red}}
   function signalScanModel(runState){const intel=finite(runState.enemyForecast||runState.enemyInformation?.forecastLevel||0);return{intel,extraHint:intel>0}}
   function specialChoice(runState,node,definition,choiceId,{runtimeRoot=root}={}){
-    if(definition.id==='lost_and_found'){const result=storeCard(runState,Number(choiceId),{sourceEventId:definition.id});return result.ok?{ok:true,actions:[],message:`${cardName(result.entry.card)} 보관 완료`}:result}
+    if(definition.id==='lost_and_found'){
+      if(!canUseLostAndFound(runState))return{ok:true,actions:[],skipped:true,message:'앞으로 방문할 일반 지역이 없어 카드를 맡기지 않았다.'};
+      const result=storeCard(runState,Number(choiceId),{sourceEventId:definition.id});return result.ok?{ok:true,actions:[],message:`${cardName(result.entry.card)} 보관 완료`}:result;
+    }
     if(definition.id==='magic_box'){
       const model=ensureEventState(runState).activeEvent?.dynamic||magicBoxModel(runState,runtimeRoot);let actions,message;
       if(choiceId==='safe'){actions=[{type:'gain_gold',amount:12}];message='안전 상자'}
@@ -211,7 +221,7 @@
   }
 
   function choiceHtml(definition,runState,node){
-    if(definition.id==='lost_and_found')return array(runState.deck).map((card,index)=>`<button class="choice" data-event-choice="${index}"><b>${escapeHtml(cardName(card))}</b><span>다음 지역 진입 시 +1 강화되어 돌아온다.</span></button>`).join('');
+    if(definition.id==='lost_and_found')return array(runState.deck).map((card,index)=>`<button class="choice" data-event-choice="${index}"><b>${escapeHtml(cardName(card))}</b><span>다음 일반 지역 진입 시 +1 강화되어 돌아온다.</span></button>`).join('');
     if(definition.id==='magic_box'){
       const model=ensureEventState(runState).activeEvent?.dynamic;return`<div class="choice"><b>힌트 카드 · ${escapeHtml(cardName(model?.hintCard))}</b><span>숫자 상자는 9 이상, 무늬 상자는 ♥/♦일 때 보상이 커진다.</span></div><button class="choice" data-event-choice="safe"><b>안전 상자</b><span>확정 소량 보상</span></button><button class="choice" data-event-choice="number"><b>숫자 상자</b><span>힌트 숫자가 9 이상이면 대박</span></button><button class="choice" data-event-choice="suit"><b>무늬 상자</b><span>힌트가 붉은 무늬면 카드까지 획득</span></button>`;
     }
@@ -260,5 +270,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<100)setTimeout(attempt,25);else console.warn('[run-events] 이벤트 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false}
 
-  return{STAGE,EVENT_TYPES,EVENT_DEFINITIONS,GENERAL_REGION,flowApi,minigameApi,economyApi,relicApi,activeRun,clone,escapeHtml,finite,array,cardName,validateEventDefinition,validateEventRegistry,eventDefinition,ensureEventState,contextRegionIds,currentEventTags,eventEligible,eventWeight,eventCandidates,deterministicRng,weightedEventPick,eventSalt,selectEvent,record,generatedCard,addGeneratedCard,upgradeCard,acquireRelic,applyAction,applyActions,storeCard,handleRunHook,eventContext,startEvent,revealRoute,magicBoxModel,signalScanModel,specialChoice,finishEvent,chooseEvent,chooseMinigame,choiceHtml,minigameHtml,showModal,renderActiveEvent,bindEventUi,showEventNode,forceEvent,forceMinigame,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,EVENT_TYPES,EVENT_DEFINITIONS,GENERAL_REGION,flowApi,minigameApi,economyApi,relicApi,activeRun,clone,escapeHtml,finite,array,cardName,regionVisitTarget,remainingRegionVisits,canUseLostAndFound,validateEventDefinition,validateEventRegistry,eventDefinition,ensureEventState,contextRegionIds,currentEventTags,eventEligible,eventWeight,eventCandidates,deterministicRng,weightedEventPick,eventSalt,selectEvent,record,generatedCard,addGeneratedCard,upgradeCard,acquireRelic,applyAction,applyActions,storeCard,returnStoredCards,handleRunHook,eventContext,startEvent,revealRoute,magicBoxModel,signalScanModel,specialChoice,finishEvent,chooseEvent,chooseMinigame,choiceHtml,minigameHtml,showModal,renderActiveEvent,bindEventUi,showEventNode,forceEvent,forceMinigame,installBrowser,installWhenReady,resetForTests};
 });
