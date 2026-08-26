@@ -249,7 +249,7 @@ test('RunStart 임시 보상 래퍼가 먼저 설치돼 있어도 8-C는 유물 
 test('8-C 브라우저 로더는 8-B 런 흐름 뒤 경제 계층을 거쳐 최종 전투 레이아웃으로 간다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/run-economy-v2\.js/);
-  assert.match(source,/if\(root\.RunFlowV2\)\{loadRunEconomyV2\(\);return;\}/);
+  assert.match(source,/if\(root\.RunFlowV2\)\{loadRunMinigames\(\);return;\}/);
   assert.match(source,/if\(root\.RunEconomyV2\)/);
   assert.match(source,/RelicSystem\?\.wrapShowReward/);
 });

@@ -68,10 +68,20 @@
     const script=loadScript('run-economy-v2.js','trick-run-economy-v2-runtime');
     if(script?.dataset?.loaded==='true')finishRunEconomyV2();else script?.addEventListener?.('load',finishRunEconomyV2,{once:true});
   }
-  function loadRunFlowV2(){
-    if(root.RunFlowV2){loadRunEconomyV2();return;}
-    const script=loadScript('run-flow-v2.js','trick-run-flow-v2-runtime');
+  function loadRunEvents(){
+    if(root.RunEvents){loadRunEconomyV2();return;}
+    const script=loadScript('run-events.js','trick-run-events-runtime');
     if(script?.dataset?.loaded==='true')loadRunEconomyV2();else script?.addEventListener?.('load',loadRunEconomyV2,{once:true});
+  }
+  function loadRunMinigames(){
+    if(root.RunMinigames){loadRunEvents();return;}
+    const script=loadScript('run-minigames.js','trick-run-minigames-runtime');
+    if(script?.dataset?.loaded==='true')loadRunEvents();else script?.addEventListener?.('load',loadRunEvents,{once:true});
+  }
+  function loadRunFlowV2(){
+    if(root.RunFlowV2){loadRunMinigames();return;}
+    const script=loadScript('run-flow-v2.js','trick-run-flow-v2-runtime');
+    if(script?.dataset?.loaded==='true')loadRunMinigames();else script?.addEventListener?.('load',loadRunMinigames,{once:true});
   }
   function loadRunStartV2(){
     if(root.RunStartV2){loadRunFlowV2();return;}

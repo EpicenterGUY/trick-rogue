@@ -134,7 +134,7 @@ if(!ENABLED){
     await clickElement(cdp,"document.querySelector('#startScreen .startBottom button')",'런 시작');
     await waitFor(cdp,"document.getElementById('mapScreen').classList.contains('active') && typeof run!=='undefined' && !!run",{label:'map screen after run start'});
 
-    await clickElement(cdp,"[...document.querySelectorAll('#mapGrid .node')].find(el=>!el.classList.contains('lock')&&!el.classList.contains('done'))",'첫 맵 노드');
+    await clickElement(cdp,"document.querySelector('#mapGrid .node.current:not(:disabled)')",'첫 맵 노드');
     await waitFor(cdp,"document.getElementById('battleScreen').classList.contains('active') && typeof battle!=='undefined' && !!battle",{label:'battle screen'});
     await waitFor(cdp,"document.querySelectorAll('#handRow .card').length>0 && !!document.getElementById('battleDeckPile')",{label:'hand and pile HUD'});
 
