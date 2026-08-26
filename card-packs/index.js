@@ -62,6 +62,21 @@
 });
 
 (function(root){
+  if(typeof module!=='undefined'){
+    const links=require('../card-system-links.js');
+    links.applyDefinitionPatches(root.EFFECT_CARD_DEFINITIONS||[]);
+    root.CardSystemLinks=links;
+    return;
+  }
+  if(typeof document==='undefined'||root.CardSystemLinks||document.querySelector('script[data-trick-card-system-links]'))return;
+  if(document.readyState==='loading'){
+    document.write('<script src="card-system-links.js" data-trick-card-system-links="true"><\/script>');
+    return;
+  }
+  const script=document.createElement('script');script.src='card-system-links.js';script.async=false;script.dataset.trickCardSystemLinks='true';document.head.appendChild(script);
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+(function(root){
   if(typeof document==='undefined'||root.MigratedTacticCards||document.querySelector('script[data-trick-common-card-bootstrap]'))return;
   if(document.readyState!=='loading')return;
   document.write('<script src="tactic-card-migration.js" data-trick-common-card-bootstrap="migration"><\/script><script src="migrated-tactic-cards.js" data-trick-common-card-bootstrap="definitions"><\/script>');
