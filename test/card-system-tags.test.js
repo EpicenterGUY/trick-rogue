@@ -4,12 +4,26 @@ const fs=require('node:fs');
 const path=require('node:path');
 const Cards=require('../cards.js');
 const Pack01=require('../card-packs/pack01.js');
+const Migrated=require('../migrated-tactic-cards.js');
 const BuildTags=require('../card-build-tags.js');
 const SystemTags=require('../card-system-tags.js');
 const Economy=require('../run-economy-v2.js');
 
 function definitionById(id){
-  return Cards.CARD_DEFINITION_BY_ID?.[id]||Cards.ALL_CARD_DEFINITIONS?.find(definition=>definition.id===id)||Pack01.find(definition=>definition.id===id)||null;
+  return Cards.CARD_DEFINITION_BY_ID?.[id]
+    || Cards.ALL_CARD_DEFINITIONS?.find(definition=>definition.id===id)
+    || Migrated.ACTIVE_CARD_BY_ID?.[id]
+    || Pack01.find(definition=>definition.id===id)
+    || null;
+}
+
+function currentDefinitions(){
+  const seen=new Set();
+  return[
+    ...(Cards.ALL_CARD_DEFINITIONS||[]),
+    ...(Migrated.ACTIVE_CARD_DEFINITIONS||[]),
+    ...Pack01
+  ].filter(definition=>definition?.id&&!seen.has(definition.id)&&(seen.add(definition.id),true));
 }
 
 test('시스템 태그는 빌드 계열과 분리된 단일 레지스트리를 가진다',()=>{
@@ -69,7 +83,7 @@ test('장기 확장용 RNG·부채·생성·변환·메모리 태그는 미리 �
     assert.equal(SystemTags.isKnownTag(id),true,id);
     assert.equal(SystemTags.tagDefinition(id).reserved,true,id);
   }
-  const current=Cards.ALL_CARD_DEFINITIONS.flatMap(SystemTags.inferDefinitionTags);
+  const current=currentDefinitions().flatMap(SystemTags.inferDefinitionTags);
   assert.equal(current.includes('debt'),false,'기존 효과를 이름만 보고 부채로 재분류하지 않는다');
   assert.equal(current.includes('generation'),false,'기존 효과를 임의로 생성 태그로 재분류하지 않는다');
 });
