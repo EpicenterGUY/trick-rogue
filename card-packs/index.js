@@ -77,6 +77,15 @@
 })(typeof globalThis!=='undefined'?globalThis:this);
 
 (function(root){
+  if(typeof document==='undefined'||root.CardSystemTags||document.querySelector('script[data-trick-system-tags-runtime]'))return;
+  if(document.readyState==='loading'){
+    document.write('<script src="card-system-tags.js" data-trick-system-tags-runtime="true"><\/script>');
+    return;
+  }
+  const script=document.createElement('script');script.src='card-system-tags.js';script.async=false;script.dataset.trickSystemTagsRuntime='true';document.head.appendChild(script);
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+(function(root){
   if(typeof document==='undefined'||root.CardPersonalityRuntime||document.querySelector('script[data-trick-card-personality-runtime]'))return;
   if(document.readyState==='loading'){
     document.write('<script src="card-personality-runtime.js" data-trick-card-personality-runtime="true"><\/script>');
