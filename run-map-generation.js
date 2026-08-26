@@ -6,6 +6,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
   const STAGE='7-3';
   const PROFILE_VERSION='7-3';
+  const MAP_VISUAL_STYLE_ID='trick-map-visual-fix';
   const ACT_MAP_PROFILES=Object.freeze({
     act1:Object.freeze({
       actId:'act1',
@@ -132,9 +133,33 @@
     const state=runState?.mapGenerationState;if(!state)return null;return{version:state.version,actId:state.actId,runSeed:state.runSeed,actSeed:state.actSeed,variantId:state.variantId,generated:state.generated===true,historyCount:Array.isArray(runState.actMapHistory)?runState.actMapHistory.length:0};
   }
   function activeRun(runtimeRoot=root){try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return runtimeRoot?.run||null}
+  function ensureMapVisualFix(runtimeRoot=root){
+    const doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null);if(!doc)return null;
+    let style=doc.getElementById?.(MAP_VISUAL_STYLE_ID)||null;
+    if(!style&&typeof doc.createElement==='function'&&doc.head?.appendChild){
+      style=doc.createElement('style');style.id=MAP_VISUAL_STYLE_ID;
+      style.textContent=`
+#mapSvg{z-index:0!important;overflow:visible!important}
+#mapSvg line{stroke:#555443!important;stroke-width:3!important;opacity:.58!important}
+#mapGrid{z-index:1!important}
+#mapGrid .node.lock,#mapGrid .node.done{opacity:1!important}
+#mapGrid .node.lock{background:#10130f!important;border-color:#343226!important;box-shadow:1px 2px 0 #0008!important;color:#655f51!important}
+#mapGrid .node.done{background:#11140f!important;border-color:#403b2d!important;box-shadow:1px 2px 0 #0008!important;color:#777062!important}
+#mapGrid .node.lock .icon,#mapGrid .node.lock .nm{opacity:.2!important}
+#mapGrid .node.done .icon,#mapGrid .node.done .nm{opacity:.34!important}
+`;
+      doc.head.appendChild(style);
+    }
+    const wrap=doc.getElementById?.('mapWrap'),grid=doc.getElementById?.('mapGrid'),svg=doc.getElementById?.('mapSvg');
+    if(!wrap||!grid||!svg)return{style,aligned:false};
+    const left=Number(grid.offsetLeft)||0,top=Number(grid.offsetTop)||0,width=Math.max(1,Number(grid.clientWidth)||Number(wrap.clientWidth)||1),height=Math.max(1,Number(grid.clientHeight)||Number(wrap.clientHeight)||1);
+    if(svg.style){svg.style.left=`${left}px`;svg.style.top=`${top}px`;svg.style.right='auto';svg.style.bottom='auto';svg.style.width=`${width}px`;svg.style.height=`${height}px`}
+    if(typeof svg.setAttribute==='function'){svg.setAttribute('width',width);svg.setAttribute('height',height);svg.setAttribute('viewBox',`0 0 ${width} ${height}`)}
+    return{style,aligned:true,left,top,width,height};
+  }
   function decorateMap(runtimeRoot=root){
-    const runState=activeRun(runtimeRoot),doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null);if(!runState||!doc)return null;const summary=mapGenerationSummary(runState);if(!summary)return null;
-    const grid=doc.getElementById?.('mapGrid');if(grid?.dataset){grid.dataset.mapVariant=summary.variantId||'static';grid.dataset.runSeed=String(summary.runSeed)}
+    const runState=activeRun(runtimeRoot),doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null);if(!runState||!doc)return null;const visual=ensureMapVisualFix(runtimeRoot),summary=mapGenerationSummary(runState);if(!summary)return null;
+    const grid=doc.getElementById?.('mapGrid');if(grid?.dataset){grid.dataset.mapVariant=summary.variantId||'static';grid.dataset.runSeed=String(summary.runSeed);grid.dataset.mapVisualAligned=visual?.aligned?'true':'false'}
     const badge=doc.getElementById?.('mapActBadge');if(badge){const suffix=summary.variantId?` · 맵 ${summary.variantId}`:` · 고정 맵`;if(!String(badge.title||'').includes(' · 맵 ')&&!String(badge.title||'').includes(' · 고정 맵'))badge.title=`${badge.title||runState.actName||'액트'}${suffix}`}
     return summary;
   }
@@ -162,5 +187,5 @@
   function installWhenReady(runtimeRoot=root){
     if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;if(attempts++<60)setTimeout(attempt,25);else console.warn('[run-map-generation] 경로 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true;
   }
-  return{STAGE,PROFILE_VERSION,ACT_MAP_PROFILES,toUint32,hashSeed,normalizeSeed,randomSeed,ensureRunSeed,deriveActSeed,profileForAct,variantForSeed,typeCounts,validateMapProfile,validateProfiles,generatedDefinition,validateGeneratedMap,generateActMap,progressStarted,ensureMapHistory,applyGeneratedActMap,mapGenerationSummary,activeRun,decorateMap,wrapBeginRun,wrapCompleteNode,wrapRenderMap,installBrowserRuntime,installWhenReady};
+  return{STAGE,PROFILE_VERSION,MAP_VISUAL_STYLE_ID,ACT_MAP_PROFILES,toUint32,hashSeed,normalizeSeed,randomSeed,ensureRunSeed,deriveActSeed,profileForAct,variantForSeed,typeCounts,validateMapProfile,validateProfiles,generatedDefinition,validateGeneratedMap,generateActMap,progressStarted,ensureMapHistory,applyGeneratedActMap,mapGenerationSummary,activeRun,ensureMapVisualFix,decorateMap,wrapBeginRun,wrapCompleteNode,wrapRenderMap,installBrowserRuntime,installWhenReady};
 });
