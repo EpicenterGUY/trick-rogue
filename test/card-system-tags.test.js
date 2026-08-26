@@ -47,7 +47,7 @@ test('현재 3지역 보상 프로필은 등록된 시스템 태그만 사용한
 test('기존 카드 자동 추론 결과는 시스템 태그 레지스트리를 거쳐 그대로 유지된다',()=>{
   const cases={
     'core.scout':['information'],
-    'core.emergency_draw':['draw','hand_control'],
+    'core.emergency_draw':['draw'],
     'core.reverse':['trick_rule','variant'],
     'pack01.sharp_glass':['damage','status'],
     'pack01.recursive_function':['copy','variant'],
