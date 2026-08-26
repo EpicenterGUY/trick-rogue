@@ -183,8 +183,8 @@
   function decorateMap(runtimeRoot=root){
     const runState=activeRun(runtimeRoot),doc=runtimeRoot?.document;if(!runState?.runFlow||!doc)return null;const flow=ensureFlowState(runState),badge=doc.getElementById?.('mapActBadge');ensureStageBadge(runtimeRoot,runState);
     let label='공통지역',title='기본 규칙에 적응하고 첫 보상을 확보한 뒤 지역을 선택한다.',headerName='공통지역';
-    if(flow.phase==='region'||regionProfile(runState.actId)){const profile=regionProfile(runState.actId);label=`지역 ${Math.max(1,flow.visitedRegionIds.length)} · ${profile?.name||runState.actName}`;title=profile?.desc||'';headerName=profile?.name||runState.actName||'일반지역'}
-    else if(flow.phase==='region_choice'){label='지역 선택';title='현재 덱에 맞는 다음 지역을 선택한다.';headerName='지역 선택'}
+    if(flow.phase==='region_choice'){label='지역 선택';title='현재 덱에 맞는 다음 지역을 선택한다.';headerName='지역 선택'}
+    else if(flow.phase==='region'||regionProfile(runState.actId)){const profile=regionProfile(runState.actId);label=`지역 ${Math.max(1,flow.visitedRegionIds.length)} · ${profile?.name||runState.actName}`;title=profile?.desc||'';headerName=profile?.name||runState.actName||'일반지역'}
     else if(runState.actId===GATEWAY_ACT_ID||flow.phase==='gateway'){label='최종 관문';title='방문한 두 지역의 성향이 함께 섞인다.';headerName='최종 관문'}
     else if(runState.actId===FINAL_ACT_ID||flow.phase==='final'){label='최종지역';title='최종 보스로 이어지는 마지막 경로.';headerName='최종지역'}
     if(badge){badge.innerHTML=escapeHtml(label);badge.title=title}const logo=doc.querySelector?.('#mapScreen .topbar .logo');if(logo)logo.innerHTML=`액트 1 · <b>${escapeHtml(headerName)}</b>`;const grid=doc.getElementById?.('mapGrid');if(grid?.dataset){grid.dataset.runFlowPhase=flow.phase;grid.dataset.runStage=String(runState.runStage)}
