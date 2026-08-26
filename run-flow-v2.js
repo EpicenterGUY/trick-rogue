@@ -137,12 +137,17 @@
     const definition=regionBranches(regionId,runtimeRoot).find(branch=>branch.id===node.branchId),record={regionId,branchId:node.branchId,branchLabel:node.branchLabel||definition?.label||node.branchId,tags:[...(node.branchTags||definition?.tags||[])],visitIndex:flow.visitedRegionIds.indexOf(regionId)+1};
     flow.visitedRegionBranches.push(record);flow.journeyHistory.push({...record});flow.history.push({type:'region_branch_selected',...record,step:flow.history.length+1});const stage=record.visitIndex===1?3:6;setRunStage(runState,stage,{reason:'region_branch_selected'});emitRunHook(runState,'on_region_branch_selected',record,runtimeRoot);emitRunHook(runState,'on_stage_enter',{stage,...record},runtimeRoot);return{ok:true,duplicate:false,record,stage};
   }
+  function transitionAfterRegionBoss(runState,profile,{runtimeRoot=root,reason='region_complete',recovered=false}={}){
+    const flow=ensureFlowState(runState),alreadyRecorded=flow.completedRegionIds.includes(profile.id);runState.runComplete=false;runState.currentNodeId=null;
+    if(!alreadyRecorded){flow.completedRegionIds.push(profile.id);flow.history.push({type:'region_complete',regionId:profile.id,regionName:profile.name,recovered:!!recovered,step:flow.history.length+1});emitRunHook(runState,'on_region_leave',{regionId:profile.id,visitIndex:flow.completedRegionIds.length,recovered:!!recovered},runtimeRoot)}
+    if(flow.completedRegionIds.length<flow.regionVisitTarget){if(flow.phase==='region_choice'&&flow.pendingRegionOfferIds.length)return{ok:true,regionComplete:true,next:'region_choice',offers:[...flow.pendingRegionOfferIds],recovered:!!recovered};const offers=beginRegionChoice(runState,{reason});return{ok:true,regionComplete:true,next:'region_choice',offers,recovered:!!recovered}}
+    if(runState.actId===GATEWAY_ACT_ID||flow.phase==='gateway')return{ok:true,regionComplete:true,next:'gateway',actId:GATEWAY_ACT_ID,stage:7,recovered:!!recovered};
+    applyFlowAct(runState,GATEWAY_ACT_ID,{runtimeRoot,recordPrevious:true,phase:'gateway'});setRunStage(runState,7,{reason:'final_gateway'});flow.history.push({type:'gateway_enter',sourceRegionIds:[...flow.visitedRegionIds],recovered:!!recovered,step:flow.history.length+1});emitRunHook(runState,'on_stage_enter',{stage:7,sourceRegionIds:[...flow.visitedRegionIds],recovered:!!recovered},runtimeRoot);return{ok:true,regionComplete:true,next:'gateway',actId:GATEWAY_ACT_ID,stage:7,recovered:!!recovered};
+  }
   function completeRegionBoss(runState,node,{runtimeRoot=root}={}){
-    const flow=ensureFlowState(runState),profile=regionProfile(runState.actId);if(!profile||node?.type!=='boss')return{ok:false,reason:'not_region_boss'};const completed=toSet(runState.completed),available=toSet(runState.available);if(completed.has(node.id))return{ok:false,reason:'already_completed'};
-    completed.add(node.id);available.delete(node.id);runState.completed=completed;runState.available=available;runState.lastCompletedNodeId=node.id;runState.currentNodeId=null;runState.runComplete=false;if(!flow.completedRegionIds.includes(profile.id))flow.completedRegionIds.push(profile.id);
-    flow.history.push({type:'region_complete',regionId:profile.id,regionName:profile.name,step:flow.history.length+1});emitRunHook(runState,'on_region_leave',{regionId:profile.id,visitIndex:flow.completedRegionIds.length},runtimeRoot);
-    if(flow.completedRegionIds.length<flow.regionVisitTarget){const offers=beginRegionChoice(runState,{reason:'region_complete'});return{ok:true,regionComplete:true,next:'region_choice',offers}}
-    applyFlowAct(runState,GATEWAY_ACT_ID,{runtimeRoot,recordPrevious:true,phase:'gateway'});setRunStage(runState,7,{reason:'final_gateway'});flow.history.push({type:'gateway_enter',sourceRegionIds:[...flow.visitedRegionIds],step:flow.history.length+1});emitRunHook(runState,'on_stage_enter',{stage:7,sourceRegionIds:[...flow.visitedRegionIds]},runtimeRoot);return{ok:true,regionComplete:true,next:'gateway',actId:GATEWAY_ACT_ID,stage:7};
+    const flow=ensureFlowState(runState),profile=regionProfile(runState.actId);if(!profile||node?.type!=='boss')return{ok:false,reason:'not_region_boss'};const completed=toSet(runState.completed),available=toSet(runState.available);
+    if(completed.has(node.id)){if(flow.phase==='region')return transitionAfterRegionBoss(runState,profile,{runtimeRoot,reason:'region_terminal_recovery',recovered:true});return{ok:false,reason:'already_completed'}}
+    completed.add(node.id);available.delete(node.id);runState.completed=completed;runState.available=available;runState.lastCompletedNodeId=node.id;runState.currentNodeId=null;runState.runComplete=false;return transitionAfterRegionBoss(runState,profile,{runtimeRoot});
   }
   function completeGateway(runState,{runtimeRoot=root}={}){const flow=ensureFlowState(runState);if(runState.actId!==GATEWAY_ACT_ID)return{ok:false,reason:'not_gateway'};applyFlowAct(runState,FINAL_ACT_ID,{runtimeRoot,recordPrevious:true,phase:'final'});setRunStage(runState,8,{reason:'final_area'});flow.history.push({type:'final_enter',sourceRegionIds:[...flow.visitedRegionIds],journeyHistory:flow.journeyHistory.map(entry=>({...entry})),step:flow.history.length+1});emitRunHook(runState,'on_stage_enter',{stage:8,sourceRegionIds:[...flow.visitedRegionIds]},runtimeRoot);return{ok:true,next:'final',actId:FINAL_ACT_ID,stage:8}}
   function nodePlan(runState,nodeOrId){const id=typeof nodeOrId==='string'?nodeOrId:nodeOrId?.id;return(runState?.map||[]).find(node=>node.id===id)?.regionPlan||null}
@@ -156,22 +161,33 @@
   function chooseRegionFromUi(regionId,runtimeRoot=root){const runState=activeRun(runtimeRoot);if(!runState)return false;const result=chooseRegion(runState,regionId,{runtimeRoot});if(!result.ok)return false;if(typeof runtimeRoot?.closeOverlay==='function')runtimeRoot.closeOverlay();if(typeof runtimeRoot?.showScreen==='function')runtimeRoot.showScreen('mapScreen');if(typeof runtimeRoot?.renderMap==='function')runtimeRoot.renderMap();if(typeof runtimeRoot?.sfx==='function')runtimeRoot.sfx('click');return true}
   function commonTerminal(runState,node){return runState?.actId===COMMON_ACT_ID&&node&&!(node.next||[]).length}
   function gatewayTerminal(runState,node){return runState?.actId===GATEWAY_ACT_ID&&node&&!(node.next||[]).length}
+  function terminalRewardClaimed(runState,nodeId){return!!runState?.economyState?.rewardClaims?.[nodeId]}
+  function recoverTerminalNodeState(runState,terminal){
+    if(!runState||!terminal)return null;const completed=toSet(runState.completed),available=toSet(runState.available),rewardDone=terminalRewardClaimed(runState,terminal.id);
+    if(!completed.has(terminal.id)&&!rewardDone)return null;
+    if(!completed.has(terminal.id)){completed.add(terminal.id);runState.lastCompletedNodeId=terminal.id}
+    available.delete(terminal.id);runState.completed=completed;runState.available=available;if(available.size>0)return null;runState.currentNodeId=null;runState.runComplete=false;return{terminalId:terminal.id,rewardRecovered:rewardDone};
+  }
   function recoverCommonTerminalChoice(runState){
     if(!runState?.runFlow||runState.actId!==COMMON_ACT_ID)return{recovered:false,reason:'not_common'};
     const flow=ensureFlowState(runState);if(flow.phase!=='common')return{recovered:false,reason:'phase'};
-    const completed=toSet(runState.completed),available=toSet(runState.available),terminal=(runState.map||[]).find(node=>!(node.next||[]).length);
-    if(!terminal||!completed.has(terminal.id)||available.size>0||runState.currentNodeId)return{recovered:false,reason:'not_terminal'};
-    const offers=beginRegionChoice(runState,{reason:'common_terminal_recovery'});return{recovered:true,next:'region_choice',terminalId:terminal.id,offers};
+    const terminal=(runState.map||[]).find(node=>!(node.next||[]).length),state=recoverTerminalNodeState(runState,terminal);if(!state)return{recovered:false,reason:'not_terminal'};
+    const offers=beginRegionChoice(runState,{reason:'common_terminal_recovery'});return{recovered:true,next:'region_choice',...state,offers};
+  }
+  function recoverRegionTerminalTransition(runState,{runtimeRoot=root}={}){
+    if(!runState?.runFlow)return{recovered:false,reason:'no_flow'};const profile=regionProfile(runState.actId);if(!profile)return{recovered:false,reason:'not_region'};const flow=ensureFlowState(runState);if(flow.phase!=='region')return{recovered:false,reason:'phase'};
+    const terminal=(runState.map||[]).find(node=>node.type==='boss'&&!(node.next||[]).length),state=recoverTerminalNodeState(runState,terminal);if(!state)return{recovered:false,reason:'not_terminal'};
+    const transition=transitionAfterRegionBoss(runState,profile,{runtimeRoot,reason:'region_terminal_recovery',recovered:true});return{...transition,recovered:true,...state};
   }
   function ensureStageBadge(runtimeRoot,runState){const doc=runtimeRoot?.document,build=doc?.getElementById?.('mapBuild'),host=build?.parentElement?.parentElement;if(!doc||!host)return null;let badge=doc.getElementById?.('mapStageBadge');if(!badge){badge=doc.createElement('span');badge.id='mapStageBadge';badge.className='badge';host.insertBefore(badge,host.firstChild||null)}badge.innerHTML=`STAGE <b>${runState.runStage}</b> / ${MAX_RUN_STAGE}`;badge.title='현재 런 진행 단계';return badge}
   function decorateMap(runtimeRoot=root){
     const runState=activeRun(runtimeRoot),doc=runtimeRoot?.document;if(!runState?.runFlow||!doc)return null;const flow=ensureFlowState(runState),badge=doc.getElementById?.('mapActBadge');ensureStageBadge(runtimeRoot,runState);
-    let label='공통지역',title='기본 규칙에 적응하고 첫 보상을 확보한 뒤 지역을 선택한다.';
-    if(flow.phase==='region'||regionProfile(runState.actId)){const profile=regionProfile(runState.actId);label=`지역 ${Math.max(1,flow.visitedRegionIds.length)} · ${profile?.name||runState.actName}`;title=profile?.desc||''}
-    else if(flow.phase==='region_choice'){label='지역 선택';title='현재 덱에 맞는 다음 지역을 선택한다.'}
-    else if(runState.actId===GATEWAY_ACT_ID||flow.phase==='gateway'){label='최종 관문';title='방문한 두 지역의 성향이 함께 섞인다.'}
-    else if(runState.actId===FINAL_ACT_ID||flow.phase==='final'){label='최종지역';title='최종 보스로 이어지는 마지막 경로.'}
-    if(badge){badge.innerHTML=escapeHtml(label);badge.title=title}const grid=doc.getElementById?.('mapGrid');if(grid?.dataset){grid.dataset.runFlowPhase=flow.phase;grid.dataset.runStage=String(runState.runStage)}
+    let label='공통지역',title='기본 규칙에 적응하고 첫 보상을 확보한 뒤 지역을 선택한다.',headerName='공통지역';
+    if(flow.phase==='region_choice'){label='지역 선택';title='현재 덱에 맞는 다음 지역을 선택한다.';headerName='지역 선택'}
+    else if(flow.phase==='region'||regionProfile(runState.actId)){const profile=regionProfile(runState.actId);label=`지역 ${Math.max(1,flow.visitedRegionIds.length)} · ${profile?.name||runState.actName}`;title=profile?.desc||'';headerName=profile?.name||runState.actName||'일반지역'}
+    else if(runState.actId===GATEWAY_ACT_ID||flow.phase==='gateway'){label='최종 관문';title='방문한 두 지역의 성향이 함께 섞인다.';headerName='최종 관문'}
+    else if(runState.actId===FINAL_ACT_ID||flow.phase==='final'){label='최종지역';title='최종 보스로 이어지는 마지막 경로.';headerName='최종지역'}
+    if(badge){badge.innerHTML=escapeHtml(label);badge.title=title}const logo=doc.querySelector?.('#mapScreen .topbar .logo');if(logo)logo.innerHTML=`액트 1 · <b>${escapeHtml(headerName)}</b>`;const grid=doc.getElementById?.('mapGrid');if(grid?.dataset){grid.dataset.runFlowPhase=flow.phase;grid.dataset.runStage=String(runState.runStage)}
     const buttons=[...(doc.querySelectorAll?.('#mapGrid .node')||[])];(runState.map||[]).forEach((node,index)=>{const button=buttons[index],plan=node.regionPlan;if(!button)return;const parts=[];if(node.branchEntry&&node.branchLabel){const name=button.querySelector?.('.nm');if(name)name.textContent=node.branchLabel;parts.push(`내부 경로 · ${node.branchLabel}`)}if(plan?.enemyTag)parts.push(`적 경향 · ${plan.enemyTag}`);if(plan?.eventTag)parts.push(`이벤트 경향 · ${plan.eventTag}`);if(plan?.sourceRegionIds?.length>1)parts.push(`혼합 지역 · ${plan.sourceRegionIds.map(id=>regionProfile(id)?.name||id).join(' + ')}`);if(plan?.rewardWeights)parts.push(`보상 · 공용 ${Math.round(plan.rewardWeights.neutral*100)} / 지역 ${Math.round(plan.rewardWeights.theme*100)}`);if(parts.length)button.title=parts.join(' · ')});return runFlowSummary(runState);
   }
 
@@ -198,7 +214,7 @@
   function wrapRenderMap(runtimeRoot=root){
     const original=runtimeRoot?.renderMap;if(typeof original!=='function')return false;if(original.__runFlowV3)return true;
     function wrapped(){
-      const runState=activeRun(runtimeRoot),recovery=recoverCommonTerminalChoice(runState),result=original.apply(this,arguments);decorateMap(runtimeRoot);if(recovery.recovered)showRegionChoice(runtimeRoot);return result;
+      const runState=activeRun(runtimeRoot),commonRecovery=recoverCommonTerminalChoice(runState),regionRecovery=commonRecovery.recovered?{recovered:false}:recoverRegionTerminalTransition(runState,{runtimeRoot}),result=original.apply(this,arguments);decorateMap(runtimeRoot);if(commonRecovery.recovered)showRegionChoice(runtimeRoot);else if(regionRecovery.recovered){if(regionRecovery.next==='region_choice')showRegionChoice(runtimeRoot);else if(regionRecovery.next==='gateway')showGatewayTransition(runtimeRoot)}return result;
     }
     wrapped.__runFlowV3=true;wrapped.__runFlowV2=true;wrapped.__original=original;runtimeRoot.renderMap=wrapped;return true;
   }
@@ -208,5 +224,5 @@
   function forceRegionBranch(runState,regionId,branchId,{runtimeRoot=root}={}){const branch=regionBranches(regionId,runtimeRoot).find(item=>item.id===branchId);if(!branch)return{ok:false,reason:'unknown_branch'};const flow=ensureFlowState(runState);if(!flow.visitedRegionIds.includes(regionId))flow.visitedRegionIds.push(regionId);flow.currentRegionId=regionId;return recordBranchSelection(runState,{branchId,branchLabel:branch.label,branchTags:branch.tags,branchEntry:true},{runtimeRoot})}
   function resetForTests(){installed=false}
 
-  return{STAGE,COMMON_ACT_ID,GATEWAY_ACT_ID,FINAL_ACT_ID,REGION_VISIT_TARGET,MAX_RUN_STAGE,REGION_PROFILES,runStructure,runPaths,runMapGeneration,runEvents,activeRun,escapeHtml,toSet,weightTotal,weightedPick,hash32,deterministicRng,regionProfile,regionIds,regionBranches,validateRegionProfiles,createFlowState,inferRunStage,setRunStage,ensureFlowState,clearLegacyRunMapState,actDisplayIndex,annotateRegionMap,annotateGatewayMap,emitRunHook,applyFlowAct,initializeRunFlow,availableRegionIds,beginRegionChoice,regionChoiceModel,chooseRegion,branchRecord,recordBranchSelection,completeRegionBoss,completeGateway,nodePlan,gatewayPlan,runFlowSummary,regionOptionHtml,showRegionChoice,showGatewayTransition,showFinalTransition,chooseRegionFromUi,commonTerminal,gatewayTerminal,recoverCommonTerminalChoice,ensureStageBadge,decorateMap,wrapBeginRun,wrapEnterNode,wrapCompleteNode,wrapRenderMap,installBrowser,installWhenReady,forceStage,forceRegionBranch,resetForTests};
+  return{STAGE,COMMON_ACT_ID,GATEWAY_ACT_ID,FINAL_ACT_ID,REGION_VISIT_TARGET,MAX_RUN_STAGE,REGION_PROFILES,runStructure,runPaths,runMapGeneration,runEvents,activeRun,escapeHtml,toSet,weightTotal,weightedPick,hash32,deterministicRng,regionProfile,regionIds,regionBranches,validateRegionProfiles,createFlowState,inferRunStage,setRunStage,ensureFlowState,clearLegacyRunMapState,actDisplayIndex,annotateRegionMap,annotateGatewayMap,emitRunHook,applyFlowAct,initializeRunFlow,availableRegionIds,beginRegionChoice,regionChoiceModel,chooseRegion,branchRecord,recordBranchSelection,transitionAfterRegionBoss,completeRegionBoss,completeGateway,nodePlan,gatewayPlan,runFlowSummary,regionOptionHtml,showRegionChoice,showGatewayTransition,showFinalTransition,chooseRegionFromUi,commonTerminal,gatewayTerminal,terminalRewardClaimed,recoverTerminalNodeState,recoverCommonTerminalChoice,recoverRegionTerminalTransition,ensureStageBadge,decorateMap,wrapBeginRun,wrapEnterNode,wrapCompleteNode,wrapRenderMap,installBrowser,installWhenReady,forceStage,forceRegionBranch,resetForTests};
 });
