@@ -95,6 +95,27 @@ test('맵 생성 상태는 액트별 파생 시드를 사용해 런 시드 하�
   assert.notEqual(act1,act2);
 });
 
+test('맵 줄기는 패딩 안쪽 grid 좌표계와 맞고 잠긴 노드 박스는 연결선을 비치지 않는다',()=>{
+  const styles=new Map();
+  const svg={style:{},attrs:{},setAttribute(name,value){this.attrs[name]=String(value)}};
+  const grid={dataset:{},offsetLeft:10,offsetTop:10,clientWidth:340,clientHeight:420};
+  const wrap={clientWidth:360,clientHeight:440};
+  const doc={
+    head:{appendChild(node){styles.set(node.id,node)}},
+    createElement(tag){return{tagName:String(tag).toUpperCase(),id:'',textContent:''}},
+    getElementById(id){return styles.get(id)||({mapWrap:wrap,mapGrid:grid,mapSvg:svg}[id]||null)}
+  };
+  const result=RunMapGeneration.ensureMapVisualFix({document:doc});
+  assert.equal(result.aligned,true);
+  assert.deepEqual({left:result.left,top:result.top,width:result.width,height:result.height},{left:10,top:10,width:340,height:420});
+  assert.equal(svg.style.left,'10px');assert.equal(svg.style.top,'10px');
+  assert.equal(svg.style.width,'340px');assert.equal(svg.style.height,'420px');
+  assert.equal(svg.attrs.viewBox,'0 0 340 420');
+  const style=styles.get(RunMapGeneration.MAP_VISUAL_STYLE_ID);
+  assert.ok(style);assert.match(style.textContent,/\.node\.lock,#mapGrid \.node\.done\{opacity:1!important\}/);
+  assert.match(style.textContent,/\.node\.lock \.icon/);
+});
+
 test('브라우저 어댑터는 새 런에 실제 생성 맵을 적용하고 렌더에 변형 메타데이터를 남긴다',()=>{
   const calls=[],grid={dataset:{}},badge={title:'액트 1'},doc={getElementById(id){return id==='mapGrid'?grid:id==='mapActBadge'?badge:null}};
   const root={document:doc,run:null,RunStructure,RunPaths,
