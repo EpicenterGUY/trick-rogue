@@ -68,6 +68,7 @@
     return html+escapeHtml(source.slice(cursor));
   }
   function keywordCatalog(){return keywordTerms().map(term=>({...KEYWORD_DEFINITIONS[term]}))}
+  function keywordDecorationBlocked(parent){return!!parent?.closest?.('.compKeyword,script,style,input,textarea,select,option,button,a,label,[role="button"],[role="link"]')}
 
   function isPureCard(card){return typeof Cards?.isPureCard==='function'?Cards.isPureCard(card):!card?.cardId&&!card?.definition&&!card?.named&&!(card?.effects?.length)}
   function cardDefinition(card){return card?.definition||card?.named||null}
@@ -193,7 +194,7 @@
   }
   function decorateKeywords(container,runtimeRoot=root){
     const doc=container?.ownerDocument||runtimeRoot?.document;if(!container||!doc?.createTreeWalker)return 0;const SHOW_TEXT=runtimeRoot?.NodeFilter?.SHOW_TEXT||4,walker=doc.createTreeWalker(container,SHOW_TEXT),nodes=[];let node;
-    while((node=walker.nextNode())){const parent=node.parentElement;if(!node.nodeValue?.trim()||parent?.closest?.('.compKeyword,script,style,input,textarea,button[data-keyword]'))continue;if(keywordPattern().test(node.nodeValue)){keywordPattern().lastIndex=0;nodes.push(node)}}
+    while((node=walker.nextNode())){const parent=node.parentElement;if(!node.nodeValue?.trim()||keywordDecorationBlocked(parent))continue;if(keywordPattern().test(node.nodeValue)){keywordPattern().lastIndex=0;nodes.push(node)}}
     let count=0;
     for(const textNode of nodes){const text=textNode.nodeValue,pattern=keywordPattern(),fragment=doc.createDocumentFragment();let cursor=0,match;while((match=pattern.exec(text))){fragment.appendChild(doc.createTextNode(text.slice(cursor,match.index)));const term=match[0],button=doc.createElement('button');button.type='button';button.className='compKeyword';button.dataset.keyword=term;button.title=keywordDefinition(term).description;const strong=doc.createElement('strong');strong.textContent=term;button.appendChild(strong);button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();keywordPopover(runtimeRoot,term)});fragment.appendChild(button);cursor=match.index+term.length;count++}fragment.appendChild(doc.createTextNode(text.slice(cursor)));textNode.replaceWith(fragment)}
     container.querySelectorAll?.('.compKeyword[data-keyword]')?.forEach(button=>{if(button.dataset.keywordBound)return;button.dataset.keywordBound='true';button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();keywordPopover(runtimeRoot,button.dataset.keyword)})});return count;
@@ -217,7 +218,6 @@
     const close=modal.querySelector?.('[data-comp-close]');if(close)close.onclick=()=>runtimeRoot?.closeOverlay?.();return true;
   }
   function showCompendium(runtimeRoot=root,section='cards',cardFilter='all'){setView({section:SECTION_ORDER.includes(section)?section:'cards',cardFilter:CARD_FILTERS.includes(cardFilter)?cardFilter:'all',selected:null});return renderCompendium(runtimeRoot)}
-
   function wrapShowModal(runtimeRoot=root){
     const original=runtimeRoot?.showModal;if(typeof original!=='function')return false;if(original.__compendium8H)return true;originalShowModal=original;
     const wrapped=function(html,...args){const result=original.call(this,html,...args),doc=runtimeRoot?.document||(typeof document!=='undefined'?document:null),modal=doc?.getElementById?.('modal');if(modal)decorateKeywords(modal,runtimeRoot);return result};wrapped.__compendium8H=true;wrapped.__legacyShowModal=original;runtimeRoot.showModal=wrapped;return true;
@@ -242,5 +242,5 @@
     if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowserRuntime(runtimeRoot))return;if(attempts++<100)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[8-H] 도감 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true;
   }
   function resetForTests(){installed=false;originalShowModal=null;viewState={section:'cards',cardFilter:'all',query:'',selected:null}}
-  return{STAGE,KEYWORD_DEFINITIONS,SECTION_ORDER,SECTION_LABELS,CARD_FILTERS,CARD_FILTER_LABELS,SUIT_ORDER,keywordDefinition,keywordTerms,keywordPattern,highlightKeywordsText,keywordCatalog,activeRun,isPureCard,cardDefinition,rewardKeyForCard,rewardEligibleKeys,cardCatalogOrder,compareCardCatalogItems,cardCatalog,relicCatalog,clauseCatalog,traitCatalog,fieldCatalog,statusCatalog,synergyCatalog,sectionCatalog,cardFilterMatch,searchableText,filteredCatalog,catalogCounts,setView,itemBadges,decorateKeywords,keywordPopover,renderCompendium,showCompendium,wrapShowModal,wrapInspectCard,installEntryButtons,installBrowserRuntime,installWhenReady,resetForTests};
+  return{STAGE,KEYWORD_DEFINITIONS,SECTION_ORDER,SECTION_LABELS,CARD_FILTERS,CARD_FILTER_LABELS,SUIT_ORDER,keywordDefinition,keywordTerms,keywordPattern,highlightKeywordsText,keywordCatalog,keywordDecorationBlocked,activeRun,isPureCard,cardDefinition,rewardKeyForCard,rewardEligibleKeys,cardCatalogOrder,compareCardCatalogItems,cardCatalog,relicCatalog,clauseCatalog,traitCatalog,fieldCatalog,statusCatalog,synergyCatalog,sectionCatalog,cardFilterMatch,searchableText,filteredCatalog,catalogCounts,setView,itemBadges,decorateKeywords,keywordPopover,renderCompendium,showCompendium,wrapShowModal,wrapInspectCard,installEntryButtons,installBrowserRuntime,installWhenReady,resetForTests};
 });
