@@ -12,6 +12,7 @@
   const CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET='trick-chip-builds-9-e-compendium-bridge';
   const COMPENDIUM_DATASET='trick-compendium-8-h';
   const COMPENDIUM_BRIDGE_DATASET='trick-compendium-8-h-runtime-bridge';
+  const BATTLE_SCENE_V2_DATASET='trick-battle-scene-v2';
   const MOBILE_STAGE_WIDTH=92;
   const MOBILE_STAGE_HEIGHT=140;
   const MOBILE_SHOWDOWN_CARD_WIDTH=56;
@@ -174,6 +175,7 @@
   function loadChipBuildCompendiumBridge(doc=root.document){return appendScript(doc,'chip-builds-9-e-compendium-bridge.js',CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET,()=>!!root.ChipBuilds9ECompendiumBridge)}
   function loadCompendium(doc=root.document){return appendScript(doc,'compendium-8-h.js',COMPENDIUM_DATASET,()=>!!root.Compendium8H)}
   function loadCompendiumBridge(doc=root.document){return appendScript(doc,'compendium-8-h-runtime-bridge.js',COMPENDIUM_BRIDGE_DATASET,()=>!!root.Compendium8HRuntimeBridge)}
+  function loadBattleSceneV2(doc=root.document){return appendScript(doc,'battle-scene-v2.js',BATTLE_SCENE_V2_DATASET,()=>!!root.BattleSceneV2)}
   function activeBattle(runtimeRoot=root){try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}return runtimeRoot?.battle||null}
   function activeRun(runtimeRoot=root){try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return runtimeRoot?.run||null}
   function battleHudState(state=activeBattle(root)){
@@ -211,10 +213,10 @@
   }
   function install(doc=root.document){
     if(!doc||typeof doc.createElement!=='function')return false;
-    loadEnemyContent(doc);loadContentExpansion(doc);loadPureSynergies(doc);loadChipBuilds(doc);loadChipBuildCompendiumBridge(doc);loadCompendium(doc);loadCompendiumBridge(doc);wrapRenderBattle(root);syncBattleHud(doc,activeBattle(root));syncBattlePresentation(doc,activeRun(root));
+    loadEnemyContent(doc);loadContentExpansion(doc);loadPureSynergies(doc);loadChipBuilds(doc);loadChipBuildCompendiumBridge(doc);loadCompendium(doc);loadCompendiumBridge(doc);loadBattleSceneV2(doc);wrapRenderBattle(root);syncBattleHud(doc,activeBattle(root));syncBattlePresentation(doc,activeRun(root));
     if(doc.getElementById?.(STYLE_ID))return true;
     const style=doc.createElement('style');style.id=STYLE_ID;style.textContent=STYLE_TEXT;(doc.head||doc.documentElement)?.appendChild(style);return true;
   }
 
-  return{STYLE_ID,ENEMY_CONTENT_DATASET,CONTENT_EXPANSION_DATASET,PURE_SYNERGY_DATASET,CHIP_BUILD_DATASET,CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET,COMPENDIUM_DATASET,COMPENDIUM_BRIDGE_DATASET,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,MOBILE_MAP_NODE_WIDTH,MOBILE_MAP_NODE_HEIGHT,MOBILE_MAP_DECK_COLUMNS,STYLE_TEXT,appendScript,loadEnemyContent,loadContentExpansion,loadPureSynergies,loadChipBuilds,loadChipBuildCompendiumBridge,loadCompendium,loadCompendiumBridge,activeBattle,activeRun,battleHudState,toggleClass,syncBattleHud,battleRegionId,handFanModel,syncBattlePresentation,wrapRenderBattle,install};
+  return{STYLE_ID,ENEMY_CONTENT_DATASET,CONTENT_EXPANSION_DATASET,PURE_SYNERGY_DATASET,CHIP_BUILD_DATASET,CHIP_BUILD_COMPENDIUM_BRIDGE_DATASET,COMPENDIUM_DATASET,COMPENDIUM_BRIDGE_DATASET,BATTLE_SCENE_V2_DATASET,MOBILE_STAGE_WIDTH,MOBILE_STAGE_HEIGHT,MOBILE_SHOWDOWN_CARD_WIDTH,MOBILE_MAP_NODE_WIDTH,MOBILE_MAP_NODE_HEIGHT,MOBILE_MAP_DECK_COLUMNS,STYLE_TEXT,appendScript,loadEnemyContent,loadContentExpansion,loadPureSynergies,loadChipBuilds,loadChipBuildCompendiumBridge,loadCompendium,loadCompendiumBridge,loadBattleSceneV2,activeBattle,activeRun,battleHudState,toggleClass,syncBattleHud,battleRegionId,handFanModel,syncBattlePresentation,wrapRenderBattle,install};
 });
