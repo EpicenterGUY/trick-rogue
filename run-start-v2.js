@@ -279,12 +279,21 @@
     if(typeof runtimeRoot?.artHtml==='function')return runtimeRoot.artHtml(card);
     return'';
   }
+  function isPureOpeningTargetCard(card){return!!card&&!card.named&&!card.definition&&!card.cardId&&(!Array.isArray(card.effects)||card.effects.length===0)}
+  function openingEngraveTargetIndex(runState,definition){
+    if(!Array.isArray(runState?.deck)||!definition)return-1;
+    return runState.deck.findIndex(card=>card?.suit===definition.suit&&card?.rank===definition.rank&&isPureOpeningTargetCard(card));
+  }
+  function canEngraveOpeningReward(runState,cardId,cardsApi=root){
+    const definition=cardsApi?.CARD_DEFINITION_BY_ID?.[cardId];
+    return!!definition&&openingEngraveTargetIndex(runState,definition)>=0;
+  }
   function showOpeningReward(runtimeRoot=root,node){
     const runState=activeRun(runtimeRoot);if(!runState||!node)return false;
     const cardsApi=cardsApiFor(runtimeRoot),opts=shuffleIds(earlyCommonRewardIds(cardsApi),runtimeRoot?.Math?.random||Math.random).slice(0,3);
     if(!opts.length)return false;
-    const boxes=opts.map(id=>{const def=cardsApi.CARD_DEFINITION_BY_ID?.[id];if(!def)return'';return`<div class="rewardBox"><div class="cardArt">${openingRewardArt(runtimeRoot,id)}</div><h3>${def.name}</h3><p>${def.description||''}</p><div class="rewardBtns"><button onclick="RunStartV2.takeOpeningReward('${id}','engrave','${node.id}')">각인</button><button onclick="RunStartV2.takeOpeningReward('${id}','add','${node.id}')">추가</button></div></div>`}).join('');
-    const html=`<h2>공통지역 카드 보상</h2><p>초반에는 특정 카드군 전용 카드 대신 <b>공용 효과 카드</b>만 등장한다. <b>각인</b>은 같은 숫자·무늬의 기존 카드를 바꾸고, <b>추가</b>는 새 복사본을 덱에 넣는다.</p><div class="rewardGrid">${boxes}</div><div class="choiceList"><button class="choice" onclick="skipReward('${node.id}')"><b>자원 보상으로 바꾸기</b><span>골드 +12</span></button></div>`;
+    const boxes=opts.map(id=>{const def=cardsApi.CARD_DEFINITION_BY_ID?.[id];if(!def)return'';const canEngrave=canEngraveOpeningReward(runState,id,cardsApi);const engraveButton=canEngrave?`<button onclick="RunStartV2.takeOpeningReward('${id}','engrave','${node.id}')">각인</button>`:'<button disabled aria-disabled="true" title="같은 숫자·무늬의 순수 카드가 필요합니다">각인 불가</button>';return`<div class="rewardBox"><div class="cardArt">${openingRewardArt(runtimeRoot,id)}</div><h3>${def.name}</h3><p>${def.description||''}</p><div class="rewardBtns">${engraveButton}<button onclick="RunStartV2.takeOpeningReward('${id}','add','${node.id}')">추가</button></div></div>`}).join('');
+    const html=`<h2>공통지역 카드 보상</h2><p>초반에는 특정 카드군 전용 카드 대신 <b>공용 효과 카드</b>만 등장한다. <b>각인</b>은 같은 숫자·무늬의 <b>순수 카드</b>만 바꾸고, <b>추가</b>는 새 복사본을 덱에 넣는다.</p><div class="rewardGrid">${boxes}</div><div class="choiceList"><button class="choice" onclick="skipReward('${node.id}')"><b>자원 보상으로 바꾸기</b><span>골드 +12</span></button></div>`;
     if(typeof runtimeRoot?.showModal==='function'){runtimeRoot.showModal(html);return true}
     return false;
   }
@@ -294,9 +303,9 @@
     if(typeof runtimeRoot?.makeGeneral!=='function'&&typeof runtimeRoot?.createDefinitionCard!=='function')return{ok:false,reason:'card_factory_missing'};
     const create=()=>openingRewardCard(runtimeRoot,cardId);let replacedIndex=-1;
     if(mode==='engrave'){
-      replacedIndex=runState.deck.findIndex(card=>card.suit===def.suit&&card.rank===def.rank&&!card.named&&!card.definition&&!card.cardId&&(!Array.isArray(card.effects)||card.effects.length===0));
-      if(replacedIndex<0)replacedIndex=runState.deck.findIndex(card=>card.suit===def.suit&&card.rank===def.rank);
-      if(replacedIndex>=0)runState.deck[replacedIndex]=create();else runState.deck.push(create());
+      replacedIndex=openingEngraveTargetIndex(runState,def);
+      if(replacedIndex<0)return{ok:false,reason:'no_pure_target',cardId,mode,replacedIndex,deckSize:runState.deck.length};
+      runState.deck[replacedIndex]=create();
     }else if(mode==='add')runState.deck.push(create());
     else return{ok:false,reason:'invalid_mode'};
     if(typeof runtimeRoot?.closeOverlay==='function')runtimeRoot.closeOverlay();
@@ -348,5 +357,5 @@
   }
   function resetForTests(){installed=false;selection=null;uidCounter=0}
 
-  return{STAGE,BASE_HP,BASE_GOLD,STARTER_DECK_SIZE,TRAIT_OFFER_COUNT,SUITS,COMMON_STARTER_ID,COMMON_OPENING_ACT_ID,COMMON_CARD_POOL_IDS,COMMON_STARTER_EFFECT_CARD_IDS,COMMON_STARTER_PURE_SLOTS,STARTERS,ARCHIVED_STARTERS,LEGACY_STARTER_ALIASES,RUN_TRAITS,ARCHIVED_TRAITS,normalizeStarterId,starterDefinition,archivedStarterDefinition,traitDefinition,parseSlot,starterCardCount,commonCardPoolIds,validateCommonCardPool,validateStarterDefinition,validateStarterRegistry,buildStarterDeck,isCommonOpeningPhase,earlyCommonRewardIds,rewardPoolForRun,isOpeningRewardCard,offerTraits,createSelection,ensureSelection,resetSelection,selectedStarter,selectedTrait,applyTraitToRun,applyTraitToBattle,applyIdentityToRun,canAcquireCard,activeRun,activeBattle,cardsApiFor,renderStart,selectStarter,selectTrait,renderIdentityBadge,renderBattleIdentity,shuffleIds,openingRewardCard,openingRewardArt,showOpeningReward,takeOpeningReward,wrapShowReward,wrapBeginRun,wrapStartBattle,wrapRenderMap,wrapRenderBattle,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,BASE_HP,BASE_GOLD,STARTER_DECK_SIZE,TRAIT_OFFER_COUNT,SUITS,COMMON_STARTER_ID,COMMON_OPENING_ACT_ID,COMMON_CARD_POOL_IDS,COMMON_STARTER_EFFECT_CARD_IDS,COMMON_STARTER_PURE_SLOTS,STARTERS,ARCHIVED_STARTERS,LEGACY_STARTER_ALIASES,RUN_TRAITS,ARCHIVED_TRAITS,normalizeStarterId,starterDefinition,archivedStarterDefinition,traitDefinition,parseSlot,starterCardCount,commonCardPoolIds,validateCommonCardPool,validateStarterDefinition,validateStarterRegistry,buildStarterDeck,isCommonOpeningPhase,earlyCommonRewardIds,rewardPoolForRun,isOpeningRewardCard,offerTraits,createSelection,ensureSelection,resetSelection,selectedStarter,selectedTrait,applyTraitToRun,applyTraitToBattle,applyIdentityToRun,canAcquireCard,activeRun,activeBattle,cardsApiFor,renderStart,selectStarter,selectTrait,renderIdentityBadge,renderBattleIdentity,shuffleIds,openingRewardCard,openingRewardArt,isPureOpeningTargetCard,openingEngraveTargetIndex,canEngraveOpeningReward,showOpeningReward,takeOpeningReward,wrapShowReward,wrapBeginRun,wrapStartBattle,wrapRenderMap,wrapRenderBattle,installBrowser,installWhenReady,resetForTests};
 });
