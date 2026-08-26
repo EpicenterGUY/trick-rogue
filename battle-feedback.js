@@ -1,6 +1,7 @@
-(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.BattleFeedback=api;if(typeof document!=='undefined'){api.loadRunStartV2Runtime(document,root);api.loadRuleGlossaryRuntime(document);api.loadDeveloperToolsRuntime(document,root.location)}})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module!=='undefined')module.exports=api;root.BattleFeedback=api;if(typeof document!=='undefined'){api.loadRunStartV2Runtime(document,root);api.loadRuleGlossaryRuntime(document);api.loadDeveloperToolsRuntime(document,root.location);api.loadReadableFeedbackRuntime(document)}})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const SHAKE_PROFILES=Object.freeze({small:Object.freeze({amplitude:1,duration:80}),normal:Object.freeze({amplitude:3,duration:110}),large:Object.freeze({amplitude:4,duration:135}),showdown:Object.freeze({amplitude:6,duration:150})});
   const RUN_START_SELECTOR='script[data-trick-run-start-v2-runtime]';
+  const READABLE_FEEDBACK_SELECTOR='script[data-trick-readable-feedback]';
   function damageTier(amount){if(amount<=2)return'small';if(amount>=8)return'large';return'normal'}
   function shakeFrames(amplitude){return[{transform:'translate(0, 0)'},{transform:`translate(${-amplitude}px, ${Math.ceil(amplitude/2)}px)`},{transform:`translate(${amplitude}px, ${-Math.floor(amplitude/2)}px)`},{transform:`translate(${-Math.ceil(amplitude/2)}px, 0)`},{transform:'translate(0, 0)'}]}
   function createController({element,reducedMotion=()=>false}={}){let activeAnimation=null;function shake(tier){const profile=SHAKE_PROFILES[tier]||SHAKE_PROFILES.normal;if(activeAnimation)activeAnimation.cancel();if(!element?.animate||reducedMotion()){activeAnimation=null;return profile}activeAnimation=element.animate(shakeFrames(profile.amplitude),{duration:profile.duration,easing:'linear'});activeAnimation.finished.catch(()=>{}).finally(()=>{activeAnimation=null});return profile}return{shake,damage(amount){return shake(damageTier(amount))},cancel(){if(activeAnimation)activeAnimation.cancel();activeAnimation=null}}}
@@ -44,6 +45,16 @@
     (doc.head||doc.documentElement)?.appendChild(script);
     return true;
   }
+  function loadReadableFeedbackRuntime(doc){
+    if(!doc?.createElement)return false;
+    const load=()=>{
+      if(doc.querySelector?.(READABLE_FEEDBACK_SELECTOR))return false;
+      const script=doc.createElement('script');script.src='battle-readable-feedback.js';script.async=false;script.dataset.trickReadableFeedback='true';
+      (doc.head||doc.documentElement)?.appendChild(script);return true;
+    };
+    if(doc.readyState==='loading'&&typeof doc.addEventListener==='function'){doc.addEventListener('DOMContentLoaded',load,{once:true});return true}
+    return load();
+  }
   function isDeveloperMode(locationLike){
     const search=typeof locationLike==='string'?locationLike:(locationLike?.search||'');
     try{return new URLSearchParams(search).get('dev')==='1'}catch(_){return false}
@@ -68,5 +79,5 @@
     (doc.head||doc.documentElement)?.appendChild(script);
     return true;
   }
-  return{SHAKE_PROFILES,RUN_START_SELECTOR,damageTier,shakeFrames,createController,setStartBootHidden,installRunStartV2WhenReady,loadRunStartV2Runtime,loadRuleGlossaryRuntime,isDeveloperMode,loadDeveloperM2Runtime,loadDeveloperToolsRuntime};
+  return{SHAKE_PROFILES,RUN_START_SELECTOR,READABLE_FEEDBACK_SELECTOR,damageTier,shakeFrames,createController,setStartBootHidden,installRunStartV2WhenReady,loadRunStartV2Runtime,loadRuleGlossaryRuntime,loadReadableFeedbackRuntime,isDeveloperMode,loadDeveloperM2Runtime,loadDeveloperToolsRuntime};
 });
