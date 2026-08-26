@@ -277,3 +277,354 @@
   #handRow .card.sel,#handRow .card.is-selected,#handRow .card.exchange-selected,#handRow .card[data-exchange-selected="true"],#handRow .card[aria-pressed="true"]{animation:none}
   #versus.cardImpact .vsText,.showdownSequence.preImpact .sequenceValue{animation:none}
 }
+
+/* --------------------------------------------------------------------------
+   Table pass — deliberately reduce generic dashboard/card-component language.
+   The UI should feel like one battered card table with labels attached to it,
+   not a collection of glowing SaaS panels.
+   -------------------------------------------------------------------------- */
+:root{
+  --bg:#0d100d;
+  --bg2:#090b09;
+  --panel:#151914;
+  --panel2:#1b2019;
+  --line:#5c5139;
+  --text:#ece3cb;
+  --soft:#a89f8c;
+  --gold:#c7a65e;
+  --cyan:#c7a65e;
+  --paper:#e8ddc2;
+  --paper2:#d8c9a8;
+}
+
+#app{
+  background:#0d100d!important;
+  box-shadow:inset 0 0 0 1px #2b2e27, inset 0 0 70px #0009!important;
+}
+#app::before{
+  background:
+    repeating-linear-gradient(90deg,#ffffff05 0 1px,transparent 1px 5px),
+    repeating-linear-gradient(0deg,#00000015 0 1px,transparent 1px 7px)!important;
+  opacity:.32!important;
+}
+
+/* One restrained frame language. */
+.pixel{
+  background:#151914!important;
+  border:1px solid #665a3d!important;
+  box-shadow:2px 3px 0 #0008!important;
+}
+.pixelBtn,
+.choice,
+.termBtn,
+.rewardBtns button{
+  background:#191c17!important;
+  border:1px solid #716342!important;
+  box-shadow:2px 2px 0 #0008!important;
+  color:#e9dfc7!important;
+  text-shadow:none!important;
+}
+.pixelBtn.primary{
+  background:#b4934e!important;
+  border-color:#e1c77d!important;
+  color:#15120b!important;
+  font-weight:900!important;
+  box-shadow:2px 3px 0 #0009!important;
+}
+.pixelBtn.gold{
+  background:#2a2418!important;
+  border-color:#9b8049!important;
+  box-shadow:2px 2px 0 #0008!important;
+}
+.pixelBtn:hover,.choice:hover,.termBtn:hover{filter:brightness(1.08)!important}
+button:focus-visible{
+  outline:1px solid #e2c878!important;
+  outline-offset:2px!important;
+}
+.badge,
+.stateChip{
+  padding:2px 5px!important;
+  border:0!important;
+  border-left:1px solid #756744!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#c7bea9!important;
+}
+
+/* Start: title plate + selectable slips, not a landing page made of cards. */
+#startScreen .hero{
+  margin:10px 12px 2px!important;
+  background:transparent!important;
+  border:0!important;
+  border-top:1px solid #776844!important;
+  border-bottom:1px solid #776844!important;
+  box-shadow:none!important;
+}
+#startScreen .hero h1{
+  color:#f0e5cc!important;
+  text-shadow:2px 2px 0 #000!important;
+}
+#startScreen .hero p{color:#a9a18f!important}
+.sectionTitle{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  color:#cbb071!important;
+  letter-spacing:.08em!important;
+  font-size:10px!important;
+  text-transform:uppercase!important;
+}
+.sectionTitle::before{
+  content:'◆';
+  font-size:7px;
+  color:#8e7947;
+}
+.sectionTitle::after{
+  content:'';
+  height:1px;
+  flex:1;
+  background:#504731;
+}
+#startScreen .option{
+  position:relative!important;
+  min-height:96px!important;
+  background:#121510!important;
+  border:1px solid #3d3b30!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+#startScreen .option.sel{
+  background:#19180f!important;
+  border-color:#a98d50!important;
+  box-shadow:inset 3px 0 0 #c6a55c!important;
+}
+#startScreen .option.sel::after{
+  content:'SELECTED';
+  position:absolute;
+  right:6px;
+  top:5px;
+  color:#b99b57;
+  font-size:7px;
+  letter-spacing:.12em;
+}
+#startScreen .option p{color:#9e9888!important}
+
+/* Map: dark felt field with stamped route markers. */
+#mapWrap{
+  background:#101510!important;
+  border:1px solid #4a4532!important;
+  box-shadow:inset 0 0 38px #0008!important;
+}
+.node{
+  background:#171a14!important;
+  border:1px solid #5e553d!important;
+  box-shadow:2px 3px 0 #0008!important;
+  border-radius:0!important;
+}
+.node.current{
+  border-color:#c2a35d!important;
+  box-shadow:inset 3px 0 0 #c2a35d,2px 3px 0 #0008!important;
+  animation:none!important;
+}
+.node.done{opacity:.32!important}
+.node.lock{opacity:.18!important}
+#mapDeckStrip{
+  background:transparent!important;
+  border:0!important;
+  border-top:1px solid #4e4631!important;
+  box-shadow:none!important;
+}
+
+/* Battle: let cards and numbers be the decorated objects; quiet everything else. */
+#statusTop .hpPanel,
+#statusTop .midStat{
+  background:transparent!important;
+  border:0!important;
+  border-bottom:1px solid #443e2d!important;
+  box-shadow:none!important;
+}
+.hpBar{
+  height:7px!important;
+  background:#080a08!important;
+  border:1px solid #39372d!important;
+  box-shadow:none!important;
+}
+#pHpFill{background:#c5aa68!important}
+#eHpFill{background:#a84e50!important}
+#arena{
+  background:#111711!important;
+  border:1px solid #4a4633!important;
+  box-shadow:inset 0 0 50px #0009!important;
+}
+#arena::before{
+  clip-path:none!important;
+  height:100%!important;
+  background:
+    radial-gradient(ellipse at center,#26302555 0,transparent 68%),
+    repeating-linear-gradient(90deg,#ffffff03 0 1px,transparent 1px 9px)!important;
+  opacity:.55!important;
+}
+#arena::after{opacity:.1!important}
+.portrait{
+  background:#121610!important;
+  border:1px solid #5b523a!important;
+  box-shadow:2px 3px 0 #0008!important;
+}
+.intentBox{
+  background:transparent!important;
+  border:0!important;
+  border-bottom:1px solid #463f2d!important;
+  box-shadow:none!important;
+}
+.intentTitle{color:#c58d86!important}
+.stageLabel{
+  border:1px solid #554b34!important;
+  background:#141711!important;
+  box-shadow:1px 2px 0 #0008!important;
+  color:#d8ceb7!important;
+}
+.vsText{
+  color:#a99e88!important;
+  font-size:13px!important;
+  letter-spacing:.16em!important;
+}
+.slot{
+  background:transparent!important;
+  border:1px dashed #494536!important;
+  color:#746f60!important;
+}
+.slot.fill{
+  background:#11140f!important;
+  border:1px solid #61583f!important;
+  box-shadow:inset 0 -2px 0 #24231c!important;
+}
+.slot.inspecting{
+  outline:1px solid #c6a55d!important;
+  outline-offset:1px!important;
+}
+#handPanel{
+  background:transparent!important;
+  border:0!important;
+  border-top:1px solid #4f4732!important;
+  box-shadow:none!important;
+}
+.panelTitle{
+  color:#a99f8b!important;
+  letter-spacing:.06em!important;
+}
+#inspect{
+  background:#121510!important;
+  border:1px solid #5b5138!important;
+  border-top:2px solid #a88c4e!important;
+  box-shadow:3px 4px 0 #0009!important;
+}
+#inspectTitle{background:#121510!important;color:#e8dcc3!important}
+#inspectDesc{color:#bdb39f!important}
+#inspectApply{color:#cdb477!important}
+
+/* Selected cards use brass, keeping cyan out of the core visual vocabulary. */
+#handRow .card.sel,
+#handRow .card.is-selected,
+#handRow .card.exchange-selected,
+#handRow .card[data-exchange-selected="true"],
+#handRow .card[aria-pressed="true"]{
+  filter:drop-shadow(0 0 0 #000) drop-shadow(0 0 8px #c5a65d99)!important;
+}
+#handRow .card.sel::before,
+#handRow .card.is-selected::before,
+#handRow .card.exchange-selected::before,
+#handRow .card[data-exchange-selected="true"]::before,
+#handRow .card[aria-pressed="true"]::before{
+  color:#16120a!important;
+  background:#cfb267!important;
+  box-shadow:0 0 0 2px #16120a!important;
+}
+
+/* Modal/menu: one sheet, choices separated like a printed menu. */
+#overlay{background:#050705e8!important}
+.modal{
+  background:#151812!important;
+  border:1px solid #776746!important;
+  box-shadow:4px 5px 0 #000b!important;
+}
+.modal h2{
+  color:#eadfc6!important;
+  letter-spacing:.03em!important;
+  border-bottom:1px solid #5a5037!important;
+  padding-bottom:7px!important;
+}
+.modal p{color:#aaa18e!important}
+.choiceList{
+  gap:0!important;
+  border-top:1px solid #3d3a2d!important;
+}
+.choice{
+  padding:10px 8px!important;
+  border:0!important;
+  border-bottom:1px solid #3d3a2d!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.choice:hover{background:#1b1d15!important}
+.choice b{color:#e7dcc4!important}
+.choice span{color:#a99f8c!important}
+.rewardBox{
+  background:#dfd2b4!important;
+  border:1px solid #9b8a68!important;
+  box-shadow:2px 3px 0 #0007!important;
+  border-radius:0!important;
+}
+.rewardBtns button{
+  background:#cfc09e!important;
+  color:#2a251b!important;
+  border-color:#8d7d5f!important;
+}
+
+/* Compendium / market: reduce the badge-wall effect. */
+.compFixShell,
+.brmShell{
+  background:#10130f!important;
+}
+.compFixBadges{
+  gap:4px!important;
+}
+.compFixBadges span{
+  background:transparent!important;
+  border:0!important;
+  border-bottom:1px solid #6b5d3e!important;
+  border-radius:0!important;
+  padding:1px 0!important;
+  color:#9f947e!important;
+}
+.compFixItem{
+  background:transparent!important;
+  border:0!important;
+  border-bottom:1px solid #3e3a2c!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+}
+.compFixItem:hover,
+.compFixItem:focus-visible{
+  background:#171a13!important;
+  box-shadow:inset 2px 0 0 #b99a56!important;
+}
+.brmCard{
+  border-radius:0!important;
+}
+
+@media(max-width:899px){
+  #battleScreen>.topbar{
+    border-bottom:1px solid #39362a!important;
+  }
+  #statusTop{
+    background:#0d100dee!important;
+  }
+  #handPanel{
+    padding-top:7px!important;
+  }
+  #inspect{
+    left:max(10px,calc((100vw - 452px)/2 + 10px))!important;
+    right:max(10px,calc((100vw - 452px)/2 + 10px))!important;
+    bottom:max(8px,env(safe-area-inset-bottom))!important;
+  }
+}
