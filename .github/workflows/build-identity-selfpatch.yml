@@ -29,6 +29,8 @@ jobs:
         run: |
           set -o pipefail
           python scripts/build-identity-selfpatch.py 2>&1 | tee selfpatch-output.txt
+          python scripts/build-identity-postpatch.py 2>&1 | tee postpatch-output.txt
+          node -e "console.log('field keys',Object.keys(require('./encounter-rules.js').FIELD_DEFINITIONS))" | tee field-debug.txt
       - name: Run tests
         shell: bash
         run: |
@@ -49,6 +51,8 @@ jobs:
           path: |
             repair-output.txt
             selfpatch-output.txt
+            postpatch-output.txt
+            field-debug.txt
             test-output.txt
             browser-output.txt
             run-start-v2.js
