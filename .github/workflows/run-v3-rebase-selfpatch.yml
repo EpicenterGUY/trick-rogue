@@ -21,8 +21,22 @@ jobs:
           node-version: 22
       - name: Apply latest-main compatibility patch
         run: python scripts/run-v3-rebase-patch.py
-      - name: Run full tests
-        run: npm test
+      - name: Run full tests and capture output
+        shell: bash
+        run: |
+          set +e
+          npm test 2>&1 | tee test-output.txt
+          TEST_EXIT=${PIPESTATUS[0]}
+          echo "TEST_EXIT=$TEST_EXIT" >> "$GITHUB_ENV"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: run-v3-test-output
+          path: test-output.txt
+          if-no-files-found: error
+      - name: Fail if tests failed
+        shell: bash
+        run: exit "$TEST_EXIT"
       - name: Run mobile browser smoke
         env:
           TRICK_BROWSER_SMOKE: '1'
