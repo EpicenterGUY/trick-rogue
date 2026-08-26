@@ -63,7 +63,7 @@ async function finishEventNode(cdp,id){
 async function restAtCamp(cdp,id){
   await clickNode(cdp,id,`${id} 캠프`);
   await waitFor(cdp,"document.getElementById('overlay').classList.contains('show')&&document.querySelector('#modal h2')?.textContent==='캠프'",{label:`${id} camp modal`});
-  await clickElement(cdp,"[...document.querySelectorAll('#modal .choice b')].find(b=>b.textContent.trim()==='휴식')",`${id} 캠프 휴식`,{hitTest:true});
+  await clickElement(cdp,"document.querySelector('#modal .choice')",`${id} 캠프 휴식`,{hitTest:true,xRatio:.25,yRatio:.25});
   await waitFor(cdp,"run.currentNodeId===null&&document.getElementById('mapScreen').classList.contains('active')",{label:`${id} camp completion`});
 }
 
