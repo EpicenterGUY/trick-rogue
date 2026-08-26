@@ -83,7 +83,13 @@ test('캐시아웃·트럼프 포지·교환 보험·있는 그대로는 최신 
 test('선지급·위로금·마지막 한 수는 회귀하지 않는다',()=>{
   assert.deepEqual(pairs(runCard('pack02.advance_payment','on_trick_win')),[['damage_enemy',6]]);assert.deepEqual(pairs(runCard('pack02.advance_payment','on_showdown_score')),[['showdown_power',-5]]);
   assert.deepEqual(pairs(runCard('pack02.consolation_prize','on_trick_loss')),[['gain_chips',2]]);assert.equal(runCard('pack02.consolation_prize','on_trick_draw').calls.length,0);
-  assert.deepEqual(pairs(runCard('pack02.last_word','on_showdown_score',{slotIndex:4})),[['showdown_power',9]]);assert.equal(runCard('pack02.last_word','on_showdown_score',{slotIndex:3}).calls.length,0);
+  const lastWord=Cards.createDefinitionCard('pack02.last_word',{uid:'last-word'}),baseCalls=[],winCalls=[];
+  Effects.run('on_showdown_score',lastWord,{card:lastWord,battle:{setIndex:1,trick:5},setIndex:1,trick:5,slotIndex:4,perform:(a,v)=>baseCalls.push([a,v])});
+  assert.deepEqual(baseCalls,[['showdown_power',5]]);
+  Effects.run('on_trick_win',lastWord,{card:lastWord,battle:{setIndex:1,trick:5},setIndex:1,trick:5,slotIndex:4,perform:()=>{}});
+  Effects.run('on_showdown_score',lastWord,{card:lastWord,battle:{setIndex:1,trick:5},setIndex:1,trick:5,slotIndex:4,perform:(a,v)=>winCalls.push([a,v])});
+  assert.deepEqual(winCalls,[['showdown_power',5],['showdown_power',5]]);
+  assert.equal(runCard('pack02.last_word','on_showdown_score',{slotIndex:3}).calls.length,0);
 });
 
 test('검은 탄환 메타데이터와 런 경제 태그는 실제 즉시 피해 효과와 일치한다',()=>{const bullet=Cards.CARD_DEFINITION_BY_ID['pack01.black_bullet'];assert.ok(bullet.terms.includes('피해'));assert.equal(bullet.terms.includes('우세'),false);const tags=Economy.gameplayTagsForDefinition(bullet);assert.ok(tags.includes('damage'));assert.equal(tags.includes('advantage'),false)});

@@ -13,6 +13,12 @@
     return root?.battle||null;
   }
   function currentSet(context={}){return Number(context.setIndex??context.set??context.battle?.setIndex??context.battle?.set??1)}
+  function currentTrick(context={}){return Number(context.trick??context.trickIndex??context.battle?.trick??context.battle?.trickIndex??1)}
+  function trickKey(context={}){return`${currentSet(context)}:${currentTrick(context)}`}
+  function chipExchangeUsedThisTrick(context={}){
+    const state=activeBattle(context),key=state?.chipEconomy?.lastExchangeKey;
+    return!!key&&key===trickKey({...context,battle:state});
+  }
   function memoryFor(card){
     if(!card||typeof card!=='object')return null;
     if(!card[MEMORY_KEY]||typeof card[MEMORY_KEY]!=='object')card[MEMORY_KEY]={};
@@ -64,6 +70,7 @@
   }
   function installActions(api){
     if(!api?.registerActionHandler)return false;
+    ensureAction(api,'set_card_memory',(context,value,effect)=>setMemory(context.card,effect.memoryKey||'marked',value===undefined?1:value,context));
     ensureAction(api,'spend_all_chips',(context,_value,effect)=>{
       const state=activeBattle(context);if(!state)return null;
       const balance=Math.max(0,Number(state.chipEconomy?.balance??state.chip)||0);
@@ -84,7 +91,9 @@
     });
     ensureAction(api,'randomize_trick_rank',(context,_value,effect)=>{
       const state=activeBattle(context),card=context.card;if(!state||!card)return null;
-      const min=Math.max(2,Math.floor(Number(effect.minRank)||2)),max=Math.max(min,Math.floor(Number(effect.maxRank)||12));
+      const baseMin=Math.max(2,Math.floor(Number(effect.minRank)||2)),max=Math.max(baseMin,Math.floor(Number(effect.maxRank)||12));
+      const boostedMin=Math.max(baseMin,Math.min(max,Math.floor(Number(effect.boostedMinRank)||baseMin)));
+      const min=chipExchangeUsedThisTrick({...context,battle:state})?boostedMin:baseMin;
       const rng=typeof context.random==='function'?context.random:Math.random;
       const roll=Math.min(max,min+Math.floor(Math.max(0,Math.min(.999999999999,Number(rng())||0))*(max-min+1)));
       const printed=Number(card.printedRank??card.rank);if(!Number.isFinite(printed))return null;
@@ -201,9 +210,13 @@
     },
     {
       id:'pack02.last_word',name:'마지막 한 수',short:'마지막 한 수',suit:'D',rank:8,
-      description:'5번 쇼다운 슬롯 — 쇼다운 위력 +9.',
-      terms:['쇼다운 슬롯','쇼다운','최종 위력'],image:'assets/cards/pack01/ambush_observer.png',packId:'pack02',art:'placeholder_last_word',
-      effects:[{trigger:'on_showdown_score',action:'showdown_power',value:9,condition:'slot_is',conditionValue:5,duration:'set'}]
+      description:'5번 쇼다운 슬롯 — 쇼다운 위력 +5. 이 카드로 5번째 트릭에서 승리했다면 추가 +5.',
+      terms:['트릭','쇼다운 슬롯','쇼다운','최종 위력'],image:'assets/cards/pack01/ambush_observer.png',packId:'pack02',art:'placeholder_last_word',
+      effects:[
+        {trigger:'on_trick_win',action:'set_card_memory',value:1,memoryKey:'won_fifth_trick',condition:'trick_is',conditionValue:5,duration:'set'},
+        {trigger:'on_showdown_score',action:'showdown_power',value:5,condition:'slot_is',conditionValue:5,duration:'set'},
+        {trigger:'on_showdown_score',action:'showdown_power',value:5,condition:'all',conditions:[{condition:'slot_is',conditionValue:5},{condition:'card_memory_at_least',memoryKey:'won_fifth_trick',conditionValue:1}],duration:'set'}
+      ]
     },
     {
       id:'pack02.receipt',name:'영수증',short:'영수증',suit:'D',rank:2,
@@ -222,9 +235,9 @@
     },
     {
       id:'pack02.loaded_die',name:'사기 주사위',short:'사기 주사위',suit:'D',rank:6,
-      description:'낼 때 — 이번 트릭에서 트럼프 보너스 적용 전 숫자를 2~12 중 무작위 하나로 바꾼다. 쇼다운에서는 인쇄 숫자 6으로 계산한다.',
-      terms:['트릭','적용 숫자','쇼다운','인쇄값'],image:'assets/cards/pack01/dirty_gambler.png',packId:'pack02',art:'placeholder_loaded_die',
-      effects:[{trigger:'on_play',action:'randomize_trick_rank',minRank:2,maxRank:12,memoryKey:'loaded_die_roll',duration:'trick'}]
+      description:'낼 때 — 트럼프 보너스 적용 전 숫자를 2~12 중 무작위로 바꾼다. 이번 트릭에 칩 손패 교환을 사용했다면 대신 7~12에서 굴린다. 쇼다운은 인쇄 숫자 6.',
+      terms:['트릭','칩','손패','적용 숫자','쇼다운','인쇄값'],image:'assets/cards/pack01/dirty_gambler.png',packId:'pack02',art:'placeholder_loaded_die',
+      effects:[{trigger:'on_play',action:'randomize_trick_rank',minRank:2,boostedMinRank:7,maxRank:12,memoryKey:'loaded_die_roll',duration:'trick'}]
     }
   ];
 });

@@ -69,7 +69,7 @@ test('거울은 2번 이후 슬롯에서 바로 이전 쇼다운 카드의 무�
   assert.equal(noCopy.card.showdownSuit,undefined);
 });
 
-test('사기 주사위는 트럼프 보너스 전 트릭 숫자를 2~12로 바꾸고 쇼다운 숫자 6은 보존한다',()=>{
+test('사기 주사위는 기본적으로 트럼프 보너스 전 트릭 숫자를 2~12로 바꾸고 쇼다운 숫자 6은 보존한다',()=>{
   const lowBattle=battleState();
   const low=execute('pack02.loaded_die','on_play',{battle:lowBattle,random:()=>0});
   assert.equal(low.battle.mods.plus,-4);
@@ -83,4 +83,17 @@ test('사기 주사위는 트럼프 보너스 전 트릭 숫자를 2~12로 바�
   assert.equal(high.card.cardEffectMemory.loaded_die_roll.value,12);
   assert.equal(BattleCore.resolveTrickValue(high.card,'D',{cardRankModifier:high.battle.mods.plus}).finalValue,15,'트럼프 +3은 무작위 숫자 뒤에 별도 적용');
   assert.equal(BattleCore.showdownValue(high.card,'Rank'),6);
+});
+
+test('사기 주사위는 같은 트릭에 칩 손패 교환을 사용했다면 7~12에서 굴리고 다음 트릭에는 다시 2~12로 돌아간다',()=>{
+  const boostedBattle=battleState({chip:3,chipEconomy:{balance:3,lastBaseWinKey:null,lastExchangeKey:'1:1',exchanges:1}});
+  const boosted=execute('pack02.loaded_die','on_play',{battle:boostedBattle,random:()=>0});
+  assert.equal(boosted.battle.mods.plus,1,'인쇄 6에서 최소 굴림 7로 +1');
+  assert.equal(boosted.card.cardEffectMemory.loaded_die_roll.value,7);
+  assert.equal(BattleCore.resolveTrickValue(boosted.card,null,{cardRankModifier:boosted.battle.mods.plus}).finalValue,7);
+
+  const nextTrickBattle=battleState({trick:2,chip:3,chipEconomy:{balance:3,lastBaseWinKey:null,lastExchangeKey:'1:1',exchanges:1}});
+  const nextTrick=execute('pack02.loaded_die','on_play',{battle:nextTrickBattle,random:()=>0});
+  assert.equal(nextTrick.card.cardEffectMemory.loaded_die_roll.value,2,'이전 트릭 교환은 하한 상승에 사용하지 않는다');
+  assert.equal(nextTrick.battle.mods.plus,-4);
 });
