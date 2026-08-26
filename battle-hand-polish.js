@@ -5,6 +5,14 @@
   const versusEl=()=>document.getElementById('versus');
   let pendingPlayedUid=null;
 
+  /* A reward can request close twice (reward handler + completeNode). Keep one close timer so a new modal can cancel it safely. */
+  const coreCloseOverlay=closeOverlay;
+  closeOverlay=function(...args){
+    const overlay=document.getElementById('overlay');
+    if(overlay?.classList.contains('closing'))return;
+    return coreCloseOverlay(...args);
+  };
+
   function pileCenter(id,fallbackRect){
     const el=document.getElementById(id);
     const r=el?.getBoundingClientRect?.()||fallbackRect;
