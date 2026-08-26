@@ -63,9 +63,16 @@ async function finishEventNode(cdp,id){
 async function restAtCamp(cdp,id){
   await clickNode(cdp,id,`${id} 캠프`);
   await waitFor(cdp,"document.getElementById('overlay').classList.contains('show')&&document.querySelector('#modal h2')?.textContent==='캠프'",{label:`${id} camp modal`});
-  await clickElement(cdp,"document.querySelector('#modal .choice')",`${id} 캠프 휴식`,{hitTest:true,xRatio:.25,yRatio:.25});
-  await sleep(250);
-  await waitFor(cdp,"run.currentNodeId===null&&document.getElementById('mapScreen').classList.contains('active')",{label:`${id} camp completion`});
+  const restSelector="[...document.querySelectorAll('#modal .choice')].find(b=>b.querySelector('b')?.textContent.trim()==='휴식')";
+  const done=`run.currentNodeId===null&&document.getElementById('mapScreen').classList.contains('active')`;
+  await sleep(180);
+  const deadline=Date.now()+3500;
+  while(Date.now()<deadline&&!(await evaluate(cdp,done))){
+    const exists=await evaluate(cdp,`!!(${restSelector})`);
+    if(exists)await clickElement(cdp,restSelector,`${id} 캠프 휴식`,{hitTest:true,xRatio:.25,yRatio:.25});
+    await sleep(180);
+  }
+  await waitFor(cdp,done,{label:`${id} camp completion`});
 }
 
 async function leaveShop(cdp,id){
