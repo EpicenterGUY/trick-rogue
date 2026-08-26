@@ -55,7 +55,7 @@
   #handPanel.pixel{margin:0 7px 2px!important;padding:2px 5px 0!important}
   #handPanel .panelTitle{height:14px!important;padding:0 5px!important;margin:0!important;font-size:7px!important;line-height:14px!important}
   #handRow{min-height:126px!important;padding:7px 0 0!important}
-  #handRow .card{min-width:84px!important;width:84px!important;height:124px!important;margin-left:-10px!important}
+  #handRow .card{min-width:84px!important;width:84px!important;height:124px!important;margin-left:-6px!important;transform:translateX(var(--fan-x,0px)) translateY(var(--fan-y,0px)) rotate(0deg)!important;touch-action:manipulation}
   #handRow .card.sel,#handRow .card.sel:hover{transform:translateX(var(--fan-x,0px)) translateY(calc(var(--fan-y,0px) - 10px)) rotate(0deg) scale(1.045)!important}
 
   #inspect.pixel{margin:0 7px 6px!important;min-height:54px!important;max-height:92px!important;padding:6px 6px 6px 8px!important;grid-template-columns:minmax(0,1fr) 76px!important}

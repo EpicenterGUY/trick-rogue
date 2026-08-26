@@ -31,6 +31,8 @@ test('덱/버림 HUD와 손패는 세로 공간을 줄인 전투 자원 바로 �
   assert.match(css,/\.pileStack\{width:27px/);
   assert.match(css,/#handRow\{min-height:126px/);
   assert.match(css,/#handRow \.card\{min-width:84px/);
+  assert.match(css,/#handRow \.card\{[^}]*margin-left:-6px/);
+  assert.match(css,/#handRow \.card\{[^}]*rotate\(0deg\)/);
 });
 
 test('battle-layout은 전투씬 v2 런타임을 로드한다',()=>{
