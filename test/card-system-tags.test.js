@@ -17,15 +17,6 @@ function definitionById(id){
     || null;
 }
 
-function currentDefinitions(){
-  const seen=new Set();
-  return[
-    ...(Cards.ALL_CARD_DEFINITIONS||[]),
-    ...(Migrated.ACTIVE_CARD_DEFINITIONS||[]),
-    ...Pack01
-  ].filter(definition=>definition?.id&&!seen.has(definition.id)&&(seen.add(definition.id),true));
-}
-
 test('시스템 태그는 빌드 계열과 분리된 단일 레지스트리를 가진다',()=>{
   const ids=SystemTags.tagIds();
   assert.equal(ids.length,new Set(ids).size);
@@ -78,14 +69,17 @@ test('새 카드가 systemTags를 명시하면 자동 추론과 합쳐지고 미
   assert.equal(SystemTags.inferDefinitionTags(invalid).includes('not_a_real_tag'),false);
 });
 
-test('장기 확장용 RNG·부채·생성·변환·메모리 태그는 미리 등록하되 기존 카드에 자동 주입하지 않는다',()=>{
+test('장기 확장용 예약 태그는 등록하되 이름이나 설명만으로 자동 부여하지 않는다',()=>{
   for(const id of ['rng','debt','generation','transform','memory','hp_cost']){
     assert.equal(SystemTags.isKnownTag(id),true,id);
     assert.equal(SystemTags.tagDefinition(id).reserved,true,id);
   }
-  const current=currentDefinitions().flatMap(SystemTags.inferDefinitionTags);
-  assert.equal(current.includes('debt'),false,'기존 효과를 이름만 보고 부채로 재분류하지 않는다');
-  assert.equal(current.includes('generation'),false,'기존 효과를 임의로 생성 태그로 재분류하지 않는다');
+  const debtByNameOnly={id:'test.debt-name',name:'부도수표',description:'부채를 진 카드',terms:['부채'],effects:[]};
+  const generationByTextOnly={id:'test.generation-text',name:'공구함',description:'카드를 생성한다',terms:['생성'],effects:[]};
+  assert.equal(SystemTags.inferDefinitionTags(debtByNameOnly).includes('debt'),false,'부채라는 이름/설명만으로 태그를 추론하지 않는다');
+  assert.equal(SystemTags.inferDefinitionTags(generationByTextOnly).includes('generation'),false,'생성이라는 이름/설명만으로 태그를 추론하지 않는다');
+  assert.ok(SystemTags.inferDefinitionTags({...debtByNameOnly,systemTags:['debt']}).includes('debt'),'명시한 예약 태그는 정상 적용한다');
+  assert.ok(SystemTags.inferDefinitionTags({...generationByTextOnly,systemTags:['generation']}).includes('generation'),'명시한 예약 태그는 정상 적용한다');
 });
 
 test('순수 카드와 지역 친화도는 기존 보상 규칙을 유지한다',()=>{
