@@ -9,6 +9,7 @@
   const STAGE='RUN-V3';
   const EVENT_TYPES=Object.freeze(['choice','minigame','special']);
   const GENERAL_REGION='general';
+  const EVENT_DAMAGE_MIN_HP=1;
   let installed=false;
 
   function flowApi(runtimeRoot=root){return runtimeRoot?.RunFlowV2||(typeof require==='function'?require('./run-flow-v2.js'):null)}
@@ -126,7 +127,7 @@
     if(!action||typeof action!=='object')return{ok:false,reason:'invalid_action'};const type=action.type;
     if(type==='gain_gold'){const before=finite(runState.gold);runState.gold=Math.max(0,before+finite(action.amount));return{ok:true,type,before,after:runState.gold}}
     if(type==='heal'){const before=finite(runState.hp),maxHp=Math.max(before,finite(runState.maxHp,before));runState.hp=Math.min(maxHp,before+Math.max(0,finite(action.amount)));return{ok:true,type,before,after:runState.hp}}
-    if(type==='damage_player'){const before=finite(runState.hp);runState.hp=Math.max(1,before-Math.max(0,finite(action.amount)));return{ok:true,type,before,after:runState.hp}}
+    if(type==='damage_player'){const before=finite(runState.hp);runState.hp=Math.max(EVENT_DAMAGE_MIN_HP,before-Math.max(0,finite(action.amount)));return{ok:true,type,before,after:runState.hp,nonLethal:true,minHp:EVENT_DAMAGE_MIN_HP}}
     if(type==='add_card'){const card=addGeneratedCard(runState,action,{runtimeRoot,salt});return{ok:true,type,card}}
     if(type==='remove_card'){const deck=array(runState.deck),index=Number.isInteger(action.index)?action.index:deck.findIndex(card=>card?.uid===action.uid||card?.cardId===action.cardId);if(index<0||index>=deck.length)return{ok:false,reason:'card_not_found'};return{ok:true,type,card:deck.splice(index,1)[0]}}
     if(type==='upgrade_card'){const deck=array(runState.deck),card=action.card||deck[Number(action.index)];if(!card)return{ok:false,reason:'card_not_found'};return{ok:true,type,card:upgradeCard(card,runtimeRoot)}}
@@ -173,7 +174,10 @@
     else{const nextEvent=future.find(item=>item.type==='event');data=nextEvent?{id:nextEvent.id,eventTag:nextEvent.regionPlan?.eventTag||null,branchLabel:nextEvent.branchLabel||null}:null}
     return applyAction(runState,{type:'reveal_route',kind,data},{node,salt:`route:${kind}`});
   }
-  function magicBoxModel(runState,runtimeRoot=root){const card=array(runState.deck)[0]||generatedCard(runState,'magic-hint',runtimeRoot),rank=finite(card.rank),red=card.suit==='H'||card.suit==='D';return{hintCard:clone(card),rank,red}}
+  function magicBoxModel(runState,runtimeRoot=root){
+    const deck=array(runState.deck),state=ensureEventState(runState),rng=deterministicRng(runState,`magic-hint:${runState.runStage||1}:${runState.actId||'act'}:${state.history.length}`,runtimeRoot),card=deck.length?deck[Math.floor(rng()*deck.length)]:generatedCard(runState,'magic-hint',runtimeRoot),rank=finite(card.rank),red=card.suit==='H'||card.suit==='D';
+    return{hintCard:clone(card),rank,red};
+  }
   function signalScanModel(runState){const intel=finite(runState.enemyForecast||runState.enemyInformation?.forecastLevel||0);return{intel,extraHint:intel>0}}
   function specialChoice(runState,node,definition,choiceId,{runtimeRoot=root}={}){
     if(definition.id==='lost_and_found'){
@@ -226,7 +230,7 @@
       const model=ensureEventState(runState).activeEvent?.dynamic;return`<div class="choice"><b>힌트 카드 · ${escapeHtml(cardName(model?.hintCard))}</b><span>숫자 상자는 9 이상, 무늬 상자는 ♥/♦일 때 보상이 커진다.</span></div><button class="choice" data-event-choice="safe"><b>안전 상자</b><span>확정 소량 보상</span></button><button class="choice" data-event-choice="number"><b>숫자 상자</b><span>힌트 숫자가 9 이상이면 대박</span></button><button class="choice" data-event-choice="suit"><b>무늬 상자</b><span>힌트가 붉은 무늬면 카드까지 획득</span></button>`;
     }
     if(definition.id==='signal_scan'){
-      const extra=ensureEventState(runState).activeEvent?.dynamic?.extraHint;return`${extra?'<div class="choice"><b>정찰 보정 활성</b><span>미확인 신호의 보상이 더 선명하게 보인다.</span></div>':''}<button class="choice" data-event-choice="safe"><b>안전 신호</b><span>확정 소량 보상</span></button><button class="choice" data-event-choice="risk"><b>위험 신호</b><span>큰 보상 · 체력 2 소모</span></button><button class="choice" data-event-choice="unknown"><b>미확인 신호</b><span>${extra?'정찰 정보로 추가 카드까지 기대 가능':'중간 보상'}</span></button>`;
+      const extra=ensureEventState(runState).activeEvent?.dynamic?.extraHint;return`${extra?'<div class="choice"><b>정찰 보정 활성</b><span>미확인 신호의 보상이 더 선명하게 보인다.</span></div>':''}<button class="choice" data-event-choice="safe"><b>안전 신호</b><span>확정 소량 보상</span></button><button class="choice" data-event-choice="risk"><b>위험 신호</b><span>큰 보상 · 체력 2 소모 (비치명 · 최소 HP ${EVENT_DAMAGE_MIN_HP})</span></button><button class="choice" data-event-choice="unknown"><b>미확인 신호</b><span>${extra?'정찰 정보로 추가 카드까지 기대 가능':'중간 보상'}</span></button>`;
     }
     return array(definition.choices).map(choice=>`<button class="choice" data-event-choice="${escapeHtml(choice.id)}"><b>${escapeHtml(choice.label)}</b></button>`).join('');
   }
@@ -239,7 +243,7 @@
     if(state.id==='supply_heist')return`<p>현재 ${state.step} / ${state.maxStep}단계 · 다음 단계로 갈수록 위험 증가</p><button class="choice" data-minigame-action="continue"><b>계속</b><span>보상을 늘리고 위험을 감수한다.</span></button><button class="choice" data-minigame-action="withdraw"><b>철수</b><span>현재 확보분을 가지고 끝낸다.</span></button>`;
     if(state.id==='stage_layout'){
       const slots=state.slots.map((cardIndex,index)=>`<button class="choice" data-stage-slot="${index}"><b>${index+1}번 슬롯</b><span>${cardIndex==null?'비어 있음':escapeHtml(cardName(state.cards[cardIndex]))}</span></button>`).join('');
-      const cards=state.cards.map((card,index)=>`<button class="choice" data-stage-card="${index}"><b>${escapeHtml(cardName(card))}</b><span>${state.slots.includes(index)?'배치됨':'카드 선택'}</span></button>`).join('');return`<p>조건: 가장 높은 숫자를 3번 슬롯 · 같은 무늬 한 쌍 이상 인접</p><div class="choiceList">${cards}</div><hr><div class="choiceList">${slots}</div>`;
+      const cards=state.cards.map((card,index)=>`<button class="choice" data-stage-card="${index}"><b>${escapeHtml(cardName(card))}</b><span>${state.slots.includes(index)?'배치됨':'카드 선택'}</span></button>`).join('');return`<p>조건: 가장 높은 숫자를 3번 슬롯 · 같은 무늬 인접 조건</p><div class="choiceList">${cards}</div><hr><div class="choiceList">${slots}</div>`;
     }
     return`<p>${escapeHtml(def.instructions)}</p>`;
   }
@@ -270,5 +274,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<100)setTimeout(attempt,25);else console.warn('[run-events] 이벤트 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false}
 
-  return{STAGE,EVENT_TYPES,EVENT_DEFINITIONS,GENERAL_REGION,flowApi,minigameApi,economyApi,relicApi,activeRun,clone,escapeHtml,finite,array,cardName,regionVisitTarget,remainingRegionVisits,canUseLostAndFound,validateEventDefinition,validateEventRegistry,eventDefinition,ensureEventState,contextRegionIds,currentEventTags,eventEligible,eventWeight,eventCandidates,deterministicRng,weightedEventPick,eventSalt,selectEvent,record,generatedCard,addGeneratedCard,upgradeCard,acquireRelic,applyAction,applyActions,storeCard,returnStoredCards,handleRunHook,eventContext,startEvent,revealRoute,magicBoxModel,signalScanModel,specialChoice,finishEvent,chooseEvent,chooseMinigame,choiceHtml,minigameHtml,showModal,renderActiveEvent,bindEventUi,showEventNode,forceEvent,forceMinigame,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,EVENT_TYPES,EVENT_DEFINITIONS,GENERAL_REGION,EVENT_DAMAGE_MIN_HP,flowApi,minigameApi,economyApi,relicApi,activeRun,clone,escapeHtml,finite,array,cardName,regionVisitTarget,remainingRegionVisits,canUseLostAndFound,validateEventDefinition,validateEventRegistry,eventDefinition,ensureEventState,contextRegionIds,currentEventTags,eventEligible,eventWeight,eventCandidates,deterministicRng,weightedEventPick,eventSalt,selectEvent,record,generatedCard,addGeneratedCard,upgradeCard,acquireRelic,applyAction,applyActions,storeCard,returnStoredCards,handleRunHook,eventContext,startEvent,revealRoute,magicBoxModel,signalScanModel,specialChoice,finishEvent,chooseEvent,chooseMinigame,choiceHtml,minigameHtml,showModal,renderActiveEvent,bindEventUi,showEventNode,forceEvent,forceMinigame,installBrowser,installWhenReady,resetForTests};
 });
