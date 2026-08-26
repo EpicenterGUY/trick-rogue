@@ -15,9 +15,11 @@ function battleState(){
     statuses:{player:{},enemy:{}},reservations:[],setHistory:{wins:0,losses:0,draws:0}
   };
 }
+function signed(value){return Number(value)>0?`+${Number(value)}`:`${Number(value)}`}
 
-test('7.5-O 필드 5종은 구식 우세 필드 대신 트럼프·손패·최종값 규칙을 가진다',()=>{
+test('7.5-O 필드 8종은 트럼프·손패·최종값 규칙을 가진다',()=>{
   const fields=TrumpFields.FIELD_DEFINITIONS;
+  assert.equal(Object.keys(fields).length,8);
   assert.equal(fields.resonance_floor.label,'과충전 구역');
   assert.equal(fields.resonance_floor.rulesOverride.trumpBonus,5);
   assert.equal(fields.thin_signal.label,'감쇠 지대');
@@ -28,6 +30,9 @@ test('7.5-O 필드 5종은 구식 우세 필드 대신 트럼프·손패·최종
   assert.equal(fields.narrow_table.rulesOverride.maxHandModifier,-1);
   assert.equal(fields.inversion_zone.label,'뒤집힌 세계');
   assert.equal(fields.inversion_zone.rulesOverride.lowFinalValueWins,true);
+  assert.equal(fields.loaded_table.rulesOverride.trumpBonus,4);
+  assert.equal(fields.wide_table.rulesOverride.trumpBonus,2);
+  assert.equal(fields.royal_signal.rulesOverride.trumpBonus,6);
   const source=JSON.stringify(fields);
   assert.doesNotMatch(source,/advantageMargin|showdownAdvantagePower|lowRankWinsWhenSameTrumpState/);
   assert.deepEqual(EncounterRules.validateFieldRegistry(),[]);
@@ -91,20 +96,45 @@ test('좁은 테이블에서도 다음 트릭 한정 손패 +1은 필드 기본�
   assert.equal(TacticMigrationSupport.effectiveHandCapacity(state,{set:1,trick:2}),3);
 });
 
-test('브라우저 계산·트럼프 HUD·카드 상세도 활성 필드의 +5를 같은 값으로 표시한다',()=>{
+test('브라우저 판정·HUD·카드 상세·트럼프 설명은 활성 필드의 0~+6 값을 같은 값으로 표시한다',()=>{
   BattleCore.resetBrowserTrumpAdapterForTests();
+  const modalParagraph={textContent:''},termSpan={textContent:''};
+  const termButton={querySelector(selector){if(selector==='b')return{textContent:'트럼프'};if(selector==='span')return termSpan;return null}};
   const elements={trumpText:{textContent:'♠'},inspectApply:{textContent:''}};
-  const document={getElementById(id){return elements[id]||null},querySelector(){return null},querySelectorAll(){return[]}};
+  const document={
+    getElementById(id){return elements[id]||null},
+    querySelector(selector){return selector==='#modal p'?modalParagraph:null},
+    querySelectorAll(selector){return selector==='#modal .choice'?[termButton]:[]}
+  };
   const root={
     document,BattleCore,battle:battleState(),
     effective(card){return BattleCore.effectiveCard(card)},compare(){return 0},
-    renderBattle(){elements.trumpText.textContent='♠'},inspectCard(){elements.inspectApply.textContent='인쇄 ♠3 · 트럼프'},showTerm(){},showTerms(){},damageEnemy(){return 0}
+    renderBattle(){elements.trumpText.textContent='♠'},
+    inspectCard(){elements.inspectApply.textContent='인쇄 ♠3 · 트럼프'},
+    showTerm(){modalParagraph.textContent='구버전 트럼프 설명'},showTerms(){termSpan.textContent='구버전 요약'},damageEnemy(){return 0}
   };
-  root.battle.trump='S';EncounterRules.initializeBattle(root.battle);EncounterRules.setField(root.battle,'resonance_floor');
+  root.battle.trump='S';EncounterRules.initializeBattle(root.battle);
   BattleCore.installBrowserTrumpAdapter(root);TrumpFields.installBrowserRuntime(root);
-  assert.equal(root.compare({suit:'S',rank:3},{suit:'H',rank:7}),1);
-  root.renderBattle();assert.equal(elements.trumpText.textContent,'♠ +5');
-  root.inspectCard({suit:'S',rank:3},false);assert.match(elements.inspectApply.textContent,/트럼프 \+5/);assert.match(elements.inspectApply.textContent,/최종 8/);
+
+  const cases=[
+    [null,3],
+    ['outlaw_zone',0],
+    ['thin_signal',1],
+    ['wide_table',2],
+    ['loaded_table',4],
+    ['resonance_floor',5],
+    ['royal_signal',6]
+  ];
+  for(const [fieldId,bonus] of cases){
+    if(fieldId)EncounterRules.setField(root.battle,fieldId);else EncounterRules.clearField(root.battle);
+    const label=signed(bonus);
+    assert.equal(TrumpFields.trumpBonusForState(root.battle),bonus);
+    assert.equal(BattleCore.resolveTrickValue({suit:'S',rank:3},'S',{trumpBonus:bonus}).finalValue,3+bonus);
+    root.renderBattle();assert.equal(elements.trumpText.textContent,`♠ ${label}`);
+    root.inspectCard({suit:'S',rank:3},false);assert.ok(elements.inspectApply.textContent.includes(`트럼프 ${label}`));assert.ok(elements.inspectApply.textContent.includes(`최종 ${3+bonus}`));
+    root.showTerm('트럼프');assert.ok(modalParagraph.textContent.includes(`현재 전투에서는 트릭 적용 숫자 ${label}`));
+    root.showTerms();assert.ok(termSpan.textContent.includes(`현재 ${label}`));
+  }
 });
 
 test('브라우저 로더는 조우 규칙 뒤 7.5-O 필드 규칙을 먼저 연결하고 기존 런 필드로 이어진다',()=>{
