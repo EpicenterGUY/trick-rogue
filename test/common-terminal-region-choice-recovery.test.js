@@ -118,6 +118,19 @@ test('맵 상단 고정 잔광 구역 제목은 실제 현재 지역 이름으�
   assert.doesNotMatch(logo.innerHTML,/잔광 구역/);
 });
 
+test('지역 선택 상태는 이전 actId보다 우선해 맵 상단에 지역 선택으로 표시한다',()=>{
+  const run=stuckRegionRun('region_theater'),logo={innerHTML:''},badge={innerHTML:'',title:''},grid={dataset:{}},doc={
+    getElementById(id){if(id==='mapActBadge')return badge;if(id==='mapGrid')return grid;return null},
+    querySelector(selector){return selector==='#mapScreen .topbar .logo'?logo:null},
+    querySelectorAll(){return[]}
+  };
+  run.runFlow.phase='region_choice';run.runFlow.pendingRegionOfferIds=['region_observatory','region_frontier'];
+  RunFlow.decorateMap({run,document:doc});
+  assert.match(logo.innerHTML,/지역 선택/);
+  assert.doesNotMatch(logo.innerHTML,/유랑극장/);
+  assert.equal(badge.innerHTML,'지역 선택');
+});
+
 test('renderMap 래퍼는 첫 지역 보스가 막힌 저장을 그리면 두 번째 지역 선택 모달을 연다',()=>{
   const run=stuckRegionRun('region_theater',{rewardOnly:true}),calls=[],root={...runtime(),run,renderMap(){calls.push('render')},showModal(html){calls.push(html)},document:{getElementById(){return null},querySelector(){return null},querySelectorAll(){return[]}}};
   assert.equal(RunFlow.wrapRenderMap(root),true);
