@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Repair selfpatch target
+        run: python scripts/fix-selfpatch-trait.py
       - name: Apply build identity overhaul
         run: python scripts/build-identity-selfpatch.py
       - name: Run tests
