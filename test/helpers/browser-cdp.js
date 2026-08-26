@@ -101,7 +101,7 @@ async function waitFor(cdp,expression,{timeout=10000,label=expression}={}){
 function selectorExpression(selector){return`document.querySelector(${JSON.stringify(selector)})`}
 function targetExpression(target){
   const text=String(target||'').trim();
-  if(text.startsWith('#')||text.startsWith('.')||text.startsWith('['))return selectorExpression(text);
+  if(text.startsWith('#')||text.startsWith('.')||(text.startsWith('[')&&!text.startsWith('[...')))return selectorExpression(text);
   return text;
 }
 
