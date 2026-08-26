@@ -3,9 +3,14 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const Cards=require('../cards.js');
+const Pack01=require('../card-packs/pack01.js');
 const BuildTags=require('../card-build-tags.js');
 const SystemTags=require('../card-system-tags.js');
 const Economy=require('../run-economy-v2.js');
+
+function definitionById(id){
+  return Cards.CARD_DEFINITION_BY_ID?.[id]||Cards.ALL_CARD_DEFINITIONS?.find(definition=>definition.id===id)||Pack01.find(definition=>definition.id===id)||null;
+}
 
 test('시스템 태그는 빌드 계열과 분리된 단일 레지스트리를 가진다',()=>{
   const ids=SystemTags.tagIds();
@@ -35,7 +40,9 @@ test('기존 카드 자동 추론 결과는 시스템 태그 레지스트리를 
     'pack01.scheduled_delivery':['damage','reservation']
   };
   for(const [id,required] of Object.entries(cases)){
-    const definition=Cards.CARD_DEFINITION_BY_ID[id],direct=SystemTags.inferDefinitionTags(definition),economy=Economy.gameplayTagsForDefinition(definition);
+    const definition=definitionById(id);
+    assert.ok(definition,`${id}: definition missing`);
+    const direct=SystemTags.inferDefinitionTags(definition),economy=Economy.gameplayTagsForDefinition(definition);
     assert.deepEqual(economy,direct,id);
     for(const tag of required)assert.ok(direct.includes(tag),`${id}:${tag}`);
   }
@@ -71,8 +78,8 @@ test('순수 카드와 지역 친화도는 기존 보상 규칙을 유지한다'
   const pure=Economy.candidateFromPure({suit:'S',rank:7});
   assert.deepEqual(pure.gameplayTags,['pure']);
   assert.equal(Economy.candidateAffinity(pure,'region_theater'),0);
-  const reverse=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.reverse']);
-  const scout=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.scout']);
+  const reverse=Economy.candidateFromDefinition(definitionById('core.reverse'));
+  const scout=Economy.candidateFromDefinition(definitionById('core.scout'));
   assert.ok(Economy.candidateAffinity(reverse,'region_theater')>0);
   assert.equal(Economy.candidateAffinity(reverse,'region_observatory'),0);
   assert.ok(Economy.candidateAffinity(scout,'region_observatory')>0);
