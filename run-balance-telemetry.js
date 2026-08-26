@@ -13,8 +13,8 @@
 
   function numeric(value,fallback=0){const number=Number(value);return Number.isFinite(number)?number:fallback}
   function clock(runtimeRoot=defaultRoot){return typeof runtimeRoot?.performance?.now==='function'?runtimeRoot.performance.now():Date.now()}
-  function activeRun(runtimeRoot=defaultRoot){try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return runtimeRoot?.run||null}
-  function activeBattle(runtimeRoot=defaultRoot){try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}return runtimeRoot?.battle||null}
+  function activeRun(runtimeRoot=defaultRoot){if(runtimeRoot?.run)return runtimeRoot.run;try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return null}
+  function activeBattle(runtimeRoot=defaultRoot){if(runtimeRoot?.battle)return runtimeRoot.battle;try{if(typeof battle!=='undefined'&&battle)return battle}catch(_error){}return null}
   function blankNodeCounts(){return{battle:0,event:0,camp:0,shop:0,elite:0,boss:0}}
   function blankBattleTypeCounts(){return{battle:0,elite:0,boss:0}}
   function createStats(now=Date.now()){
@@ -93,7 +93,7 @@
   function enrichResult(runState,result){const summary=buildBalanceSummary(runState);if(result&&typeof result==='object')result.balance=summary;if(runState?.runResult&&typeof runState.runResult==='object')runState.runResult.balance=summary;return summary}
   function renderBalanceRows(runtimeRoot=defaultRoot,summary){
     const doc=runtimeRoot?.document;if(!doc?.querySelector)return false;const list=doc.querySelector('#modal .choiceList');if(!list)return false;
-    list.querySelectorAll?.('[data-m5-balance]')?.forEach?.(node=>node.remove?.());const before=[...list.querySelectorAll?.('button')||[]].find(button=>(button.textContent||'').includes('새 런'))||null;
+    list.querySelectorAll?.('[data-m5-balance]')?.forEach?.(node=>node.remove?.());const buttons=list.querySelectorAll?[...list.querySelectorAll('button')]:[];const before=buttons.find(button=>(button.textContent||'').includes('새 런'))||null;
     for(const text of balanceRows(summary)){const row=doc.createElement('div');row.className='choice';row.setAttribute('data-m5-balance','true');const bold=doc.createElement('b');bold.textContent=text;row.appendChild(bold);list.insertBefore(row,before)}return true;
   }
 
