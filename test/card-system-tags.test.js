@@ -96,7 +96,7 @@ test('순수 카드와 지역 친화도는 기존 보상 규칙을 유지한다'
 test('run economy는 더 이상 자체 태그 switch를 소유하지 않고 CardSystemTags에 위임한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','run-economy-v2.js'),'utf8');
   assert.match(source,/require\('\.\/card-system-tags\.js'\)/);
-  assert.match(source,/systemTagApi/);
+  assert.match(source,/systemTagsApi/);
   assert.match(source,/inferDefinitionTags/);
   assert.doesNotMatch(source,/case'damage_enemy':tags\.add\('damage'\)/);
 });
