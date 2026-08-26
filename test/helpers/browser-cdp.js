@@ -117,9 +117,25 @@ async function clickElement(cdp,target,label,{scroll=true,hitTest=false,xRatio=.
     const found=await evaluate(cdp,`(()=>{const el=${expression};if(!el)return false;el.scrollIntoView({block:'center',inline:'center',behavior:'instant'});return true})()`);
     assert.equal(found,true,`${label} element should exist before scroll`);await sleep(70);
   }
-  const point=await pointFor(cdp,expression,{xRatio,yRatio});
+  const layoutDeadline=Date.now()+2000;let point=null;
+  while(Date.now()<layoutDeadline){
+    point=await pointFor(cdp,expression,{xRatio,yRatio});
+    if(point?.visible&&!point.disabled)break;
+    await sleep(60);
+  }
   assert.ok(point,`${label} element should exist`);assert.equal(point.visible,true,`${label} should be visible`);assert.equal(point.disabled,false,`${label} should be enabled`);
-  if(hitTest){const receives=await evaluate(cdp,`(()=>{const el=${expression},hit=document.elementFromPoint(${point.x},${point.y});return!!(el&&hit&&(hit===el||el.contains(hit)))})()`);assert.equal(receives,true,`${label} should receive the click`)}
+  if(hitTest){
+    const hitDeadline=Date.now()+1200;let receives=false;
+    while(Date.now()<hitDeadline){
+      point=await pointFor(cdp,expression,{xRatio,yRatio});
+      if(point?.visible&&!point.disabled){
+        receives=await evaluate(cdp,`(()=>{const el=${expression},hit=document.elementFromPoint(${point.x},${point.y});return!!(el&&hit&&(hit===el||el.contains(hit)))})()`);
+        if(receives)break;
+      }
+      await sleep(60);
+    }
+    assert.equal(receives,true,`${label} should receive the click`);
+  }
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x,y:point.y});
   await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x:point.x,y:point.y,button:'left',clickCount:1});
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x,y:point.y,button:'left',clickCount:1});
