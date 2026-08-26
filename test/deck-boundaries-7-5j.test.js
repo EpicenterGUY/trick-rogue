@@ -154,8 +154,8 @@ test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 정보·시작 정체성�
   assert.match(runStartBlock,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
   assert.match(runStartBlock,/addEventListener\?\.\('load',loadRunFlowV2/);
   assert.match(flowBlock,/loadScript\('run-flow-v2\.js','trick-run-flow-v2-runtime'\)/);
-  assert.match(flowBlock,/if\(root\.RunFlowV2\)\{loadRunEconomyV2\(\);return;\}/);
-  assert.match(flowBlock,/addEventListener\?\.\('load',loadRunEconomyV2/);
+  assert.match(flowBlock,/if\(root\.RunFlowV2\)\{loadRunMinigames\(\);return;\}/);
+  assert.match(flowBlock,/addEventListener\?\.\('load',loadRunMinigames/);
   assert.match(economyBlock,/loadScript\('run-economy-v2\.js','trick-run-economy-v2-runtime'\)/);
   assert.match(economyBlock,/if\(root\.RunEconomyV2\)\{finishRunEconomyV2\(\);return;\}/);
   assert.match(tempoBlock,/if\(root\.EncounterTempo\)\{loadDeckBoundaries\(\);return;\}/);

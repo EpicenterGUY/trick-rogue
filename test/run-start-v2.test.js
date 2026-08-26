@@ -193,7 +193,7 @@ test('8-A 시작 정체성 뒤 8-B 런 흐름과 8-C 경제 계층을 거쳐 최
   assert.match(source,/loadScript\('run-start-v2\.js','trick-run-start-v2-runtime'/);
   assert.match(source,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
   assert.match(source,/loadScript\('run-flow-v2\.js','trick-run-flow-v2-runtime'/);
-  assert.match(source,/if\(root\.RunFlowV2\)\{loadRunEconomyV2\(\);return;\}/);
+  assert.match(source,/if\(root\.RunFlowV2\)\{loadRunMinigames\(\);return;\}/);
   assert.match(source,/loadScript\('run-economy-v2\.js','trick-run-economy-v2-runtime'/);
   assert.match(source,/if\(root\.RunEconomyV2\)\{finishRunEconomyV2\(\);return;\}/);
 });
