@@ -1,0 +1,38 @@
+name: Battle scene v2 self patch
+
+on:
+  push:
+    branches: [chatgpt/battle-scene-v2-20260826]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/battle-scene-v2-20260826
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Attach battle scene v2
+        run: python scripts/attach-battle-scene-v2.py
+      - name: Run tests
+        run: npm test
+      - name: Run mobile browser smoke
+        env:
+          TRICK_BROWSER_SMOKE: '1'
+        run: node --test test/browser-smoke-v1.test.js
+      - name: Commit attachment
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add battle-layout.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "feat: load focused battle scene v2"
+          git push origin HEAD:chatgpt/battle-scene-v2-20260826
