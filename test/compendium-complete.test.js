@@ -71,3 +71,14 @@ test('카드 선택 상세 UI와 모바일 전체 화면 스크롤 구조를 함
   assert.match(css,/\.compFixDetail\{/);
   assert.match(css,/\.compFixList\{flex:1;min-height:0;overflow-y:auto/);
 });
+
+test('도감 상세는 긴 카드 원문의 앞뒤 규칙을 모두 보존한다',()=>{
+  const item=Bridge.decorateCardItem(Compendium.cardCatalog().find(x=>x.id==='pack02.river_ticket'),{deck:[]});
+  assert(item);
+  assert.ok(item.description.length>60);
+  const detail=Bridge.detailHtml(item);
+  assert.match(detail,/리버 적중/);
+  assert.match(detail,/\+12/);
+  assert.match(detail,/-4/);
+  assert.match(detail,/후보가 없었다면 페널티 없음/);
+});
