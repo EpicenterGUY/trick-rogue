@@ -81,8 +81,20 @@
 ];
 });
 
+// 브라우저 엔트리(index.html)는 역사적으로 pack01만 카드 레지스트리보다 먼저 로드한다.
+// 레지스트리가 만들어지기 전에 나머지 카드 정의를 parser-blocking 순서로 선로딩해,
+// Node(require)와 실제 브라우저의 CARD_DEFINITIONS가 서로 달라지지 않게 한다.
 (function(root){
-  if(typeof document==='undefined'||root.PACK02_CARDS||document.querySelector('script[data-trick-pack02-bootstrap]'))return;
-  if(document.readyState!=='loading')return;
-  document.write('<script src="card-packs/pack02.js" data-trick-pack02-bootstrap="true"></script>');
+  if(typeof module!=='undefined'||typeof document==='undefined'||document.readyState!=='loading')return;
+  const dependencies=[
+    ['PACK02_CARDS','card-packs/pack02.js','trick-pack02-bootstrap'],
+    ['PACK03_CARDS','card-packs/pack03.js','trick-pack03-bootstrap'],
+    ['BOSS_SIGNATURE_CARDS','card-packs/boss-signatures.js','trick-boss-signature-bootstrap'],
+    ['PACK04_CARDS','card-packs/pack04.js','trick-pack04-bootstrap']
+  ];
+  const html=dependencies
+    .filter(([globalName,,dataset])=>!root[globalName]&&!document.querySelector(`script[data-${dataset}]`))
+    .map(([,src,dataset])=>`<script src="${src}" data-${dataset}="true"><\/script>`)
+    .join('');
+  if(html)document.write(html);
 })(typeof globalThis!=='undefined'?globalThis:this);
