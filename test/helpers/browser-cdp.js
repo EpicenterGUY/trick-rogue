@@ -105,18 +105,19 @@ function targetExpression(target){
   return text;
 }
 
-async function pointFor(cdp,target){
-  const expression=targetExpression(target);
-  return evaluate(cdp,`(()=>{const el=${expression};if(!el)return null;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{x:r.left+r.width/2,y:r.top+r.height/2,width:r.width,height:r.height,visible:r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',disabled:!!el.disabled}})()`);
+function clampRatio(value,fallback=.5){const number=Number(value);return Number.isFinite(number)?Math.max(0,Math.min(1,number)):fallback}
+async function pointFor(cdp,target,{xRatio=.5,yRatio=.5}={}){
+  const expression=targetExpression(target),x=clampRatio(xRatio),y=clampRatio(yRatio);
+  return evaluate(cdp,`(()=>{const el=${expression};if(!el)return null;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{x:r.left+r.width*${x},y:r.top+r.height*${y},width:r.width,height:r.height,visible:r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none',disabled:!!el.disabled}})()`);
 }
 
-async function clickElement(cdp,target,label,{scroll=true,hitTest=false}={}){
+async function clickElement(cdp,target,label,{scroll=true,hitTest=false,xRatio=.5,yRatio=.5}={}){
   const expression=targetExpression(target);
   if(scroll){
     const found=await evaluate(cdp,`(()=>{const el=${expression};if(!el)return false;el.scrollIntoView({block:'center',inline:'center',behavior:'instant'});return true})()`);
     assert.equal(found,true,`${label} element should exist before scroll`);await sleep(70);
   }
-  const point=await pointFor(cdp,expression);
+  const point=await pointFor(cdp,expression,{xRatio,yRatio});
   assert.ok(point,`${label} element should exist`);assert.equal(point.visible,true,`${label} should be visible`);assert.equal(point.disabled,false,`${label} should be enabled`);
   if(hitTest){const receives=await evaluate(cdp,`(()=>{const el=${expression},hit=document.elementFromPoint(${point.x},${point.y});return!!(el&&hit&&(hit===el||el.contains(hit)))})()`);assert.equal(receives,true,`${label} should receive the click`)}
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x,y:point.y});
