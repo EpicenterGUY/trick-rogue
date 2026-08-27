@@ -73,10 +73,15 @@
     const script=loadScript('run-economy-v2.js','trick-run-economy-v2-runtime');
     if(script?.dataset?.loaded==='true')finishRunEconomyV2();else script?.addEventListener?.('load',finishRunEconomyV2,{once:true});
   }
-  function loadCasinoRegionM9(){
-    if(root.CasinoRegionM9){loadRunEconomyV2();return;}
-    const script=loadScript('casino-region-m9.js','trick-casino-region-m9-runtime');
+  function loadRedWardRegionM9(){
+    if(root.RedWardRegionM9){loadRunEconomyV2();return;}
+    const script=loadScript('red-ward-region-m9.js','trick-red-ward-region-m9-runtime');
     if(script?.dataset?.loaded==='true')loadRunEconomyV2();else script?.addEventListener?.('load',loadRunEconomyV2,{once:true});
+  }
+  function loadCasinoRegionM9(){
+    if(root.CasinoRegionM9){loadRedWardRegionM9();return;}
+    const script=loadScript('casino-region-m9.js','trick-casino-region-m9-runtime');
+    if(script?.dataset?.loaded==='true')loadRedWardRegionM9();else script?.addEventListener?.('load',loadRedWardRegionM9,{once:true});
   }
   function loadContentExpansion9C(){
     if(root.ContentExpansion9C){loadCasinoRegionM9();return;}
