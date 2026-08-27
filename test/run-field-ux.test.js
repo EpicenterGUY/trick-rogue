@@ -71,7 +71,7 @@ test('M8 브라우저 UI 계약은 보유/예약/설치용 실제 클릭 표식�
   assert.match(source,/data-run-field-owned/);
   assert.match(source,/data-run-field-queue/);
   assert.match(source,/data-run-field-slot/);
-  assert.match(source,/data-run-field-installation/);
+  assert.match(source,/dataset\.runFieldInstallation/);
   assert.match(source,/교체 예약/);
   assert.match(source,/플레이어 필드 설치/);
 });
