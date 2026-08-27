@@ -16,5 +16,26 @@ jobs:
           node-version: 22
       - name: Run M9 casino regression
         run: node --test test/casino-region-m9.test.js
-      - name: Run full test suite sequentially
-        run: node --test --test-concurrency=1
+      - name: Group A - battle through fold
+        id: group_a
+        continue-on-error: true
+        run: node --test --test-concurrency=1 test/b*.test.js test/c*.test.js test/d*.test.js test/e*.test.js test/f*.test.js
+      - name: Group B - game through pure
+        id: group_b
+        continue-on-error: true
+        run: node --test --test-concurrency=1 test/g*.test.js test/k*.test.js test/l*.test.js test/m*.test.js test/o*.test.js test/p*.test.js
+      - name: Group C - relic through run
+        id: group_c
+        continue-on-error: true
+        run: node --test --test-concurrency=1 test/r*.test.js
+      - name: Group D - showdown through unified
+        id: group_d
+        continue-on-error: true
+        run: node --test --test-concurrency=1 test/s*.test.js test/t*.test.js test/u*.test.js
+      - name: Fail if a group failed
+        if: always()
+        run: |
+          test "${{ steps.group_a.outcome }}" = success
+          test "${{ steps.group_b.outcome }}" = success
+          test "${{ steps.group_c.outcome }}" = success
+          test "${{ steps.group_d.outcome }}" = success
