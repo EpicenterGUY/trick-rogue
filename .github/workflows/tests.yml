@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  ios-timing:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,50 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test test/ios-trick-timing.test.js
-
-  legacy-af:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'ios-trick-timing.test.js' | sort | grep -E '/[a-f][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  legacy-gm:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'ios-trick-timing.test.js' | sort | grep -E '/[g-m][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  legacy-nz:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'ios-trick-timing.test.js' | sort | grep -E '/[n-z][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  validate-cards:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm run validate:cards
+      - run: npm test
