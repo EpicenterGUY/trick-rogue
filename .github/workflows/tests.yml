@@ -30,17 +30,34 @@ jobs:
           node --test --test-concurrency=1 "${files[@]}"
 
   tests-fm:
+    name: fm-${{ matrix.test }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - fold-experiment-8-e.test.js
+          - game-like-battle-ui.test.js
+          - game-ui-v1.test.js
+          - keyword-action-button-browser.test.js
+          - keyword-action-button-guard.test.js
+          - latest-rules-regression-7-5r.test.js
+          - legacy-content-cleanup-7-5p.test.js
+          - lost-and-found-p0.test.js
+          - m4-weird-cards-batch2.test.js
+          - m4-weird-cards-batch3.test.js
+          - m4-weird-cards-batch4.test.js
+          - migrated-tactic-cards.test.js
+          - mobile-battle-hud-m3.test.js
+          - mobile-map-layout-m3.test.js
+          - mobile-ui-cleanup.test.js
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run F-M tests
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'run-balance-telemetry.test.js' | sort | grep -E '/[f-m][^/]*\.test\.js$')
-          node --test --test-concurrency=1 "${files[@]}"
+      - run: node --test --test-concurrency=1 test/${{ matrix.test }}
 
   tests-nr:
     runs-on: ubuntu-latest
