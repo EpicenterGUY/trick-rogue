@@ -80,6 +80,19 @@ test('카지노 이벤트의 다음 전투 칩은 최대 5로 누적되고 한 �
   assert.equal(battle.chips,5);
 });
 
+test('카지노 이벤트 액션 중에도 런 상태 객체 정체성을 유지하고 완료 시 activeEvent를 비운다',()=>{
+  const node={id:'k1',type:'event',regionPlan:{regionId:'region_casino',eventTag:'gambling'}};
+  const run={actId:'region_casino',runFlow:{currentRegionId:'region_casino'},casinoM9:{activeEvent:{eventId:'sunken_roulette',nodeId:'k1'},eventHistory:[],nextBattleChips:0}};
+  const before=Casino.ensureRunState(run),completed=[];
+  const result=Casino.chooseCasinoEvent(run,node,'safe',{runtimeRoot:{completeNode(current){completed.push(current.id)},sfx(){}}});
+  assert.equal(result.ok,true);
+  assert.equal(run.casinoM9,before,'ensureRunState가 기존 상태 객체를 교체하면 안 된다');
+  assert.equal(run.casinoM9.activeEvent,null);
+  assert.equal(run.casinoM9.eventHistory.length,1);
+  assert.equal(run.casinoM9.nextBattleChips,1);
+  assert.deepEqual(completed,['k1']);
+});
+
 test('M6 카드 시스템 태그와 M9 지역 보상 성향이 같은 레지스트리를 사용한다',()=>{
   assert.deepEqual(CardSystemTags.REGION_REWARD_TAGS.region_casino,['칩','적용값 감소','적용값 증가','우세 개입','예약']);
   const profile=RunFlow.regionProfile('region_casino');
