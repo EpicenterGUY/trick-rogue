@@ -4,15 +4,17 @@
     typeof module!=='undefined'?require('./cards.js'):root,
     typeof module!=='undefined'?require('./run-flow-v2.js'):root.RunFlowV2,
     typeof module!=='undefined'?require('./relics.js'):root.RelicSystem,
-    typeof module!=='undefined'?require('./run-start-v2.js'):root.RunStartV2
+    typeof module!=='undefined'?require('./run-start-v2.js'):root.RunStartV2,
+    typeof module!=='undefined'?require('./card-system-tags.js'):root.CardSystemTags
   );
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else{
     root.RunEconomyV2=api;
     if(typeof document!=='undefined')api.installWhenReady(root);
   }
-})(typeof globalThis!=='undefined'?globalThis:this,function(root,Cards,RunFlowV2,RelicSystem,RunStartV2){
+})(typeof globalThis!=='undefined'?globalThis:this,function(root,Cards,RunFlowV2,RelicSystem,RunStartV2,SystemTags){
   const STAGE='8-C';
+  const SYSTEM_TAG_STAGE=SystemTags?.VERSION||'M6-1';
   const CARD_OFFER_COUNT=3;
   const MAX_UPGRADE_LEVEL=1;
   const UPGRADE_TRICK_BONUS=1;
@@ -22,10 +24,10 @@
   const SHOP_REMOVE_COST=45;
   const MIN_DECK_SIZE=5;
   const BATTLE_GOLD_BY_TYPE=Object.freeze({battle:20,elite:40,boss:70});
-  const REGION_REWARD_TAGS=Object.freeze({
-    region_theater:Object.freeze(['field','variant','trick_rule','trump','showdown_value','copy','risk','advantage']),
-    region_observatory:Object.freeze(['information','hand_control','draw','reservation','slot','river']),
-    region_frontier:Object.freeze(['chip','damage','status','defense','trick_win','low_rank','sustain'])
+  const REGION_REWARD_TAGS=SystemTags?.REGION_REWARD_TAGS||Object.freeze({
+    region_theater:Object.freeze(['적용값 증가','적용값 감소','우세 개입','쇼다운 개입','계약']),
+    region_observatory:Object.freeze(['예측','손패','예약','족보']),
+    region_frontier:Object.freeze(['직접 피해','회복','보호막','칩','상태'])
   });
 
   let installed=false;
@@ -84,95 +86,32 @@
     return state.boostedDefinitionIds.includes(candidate.definitionId)?Math.max(1,finite(candidate.signatureWeight,2.5)):1;
   }
 
-  function addTagsForAction(tags,action){
-    switch(action){
-      case'damage_enemy':tags.add('damage');break;
-      case'heal_player':tags.add('sustain');break;
-      case'gain_chips':tags.add('chip');break;
-      case'gain_shield':tags.add('defense');tags.add('status');break;
-      case'apply_enemy_bleed':tags.add('damage');tags.add('status');break;
-      case'increase_enemy_forecast':case'reveal_next_enemy_card':tags.add('information');break;
-      case'increase_effective_rank':case'increase_next_trick_rank':tags.add('rank_control');break;
-      case'showdown_power':tags.add('showdown');break;
-      case'reserve_next_win_damage':tags.add('reservation');tags.add('damage');break;
-      case'set_next_trick_suit_to_trump':tags.add('trump');tags.add('trick_rule');tags.add('suit_control');break;
-      case'set_reverse_compare':tags.add('variant');tags.add('trick_rule');break;
-      case'set_last_showdown_suit_to_trump':tags.add('trump');tags.add('showdown_value');tags.add('suit_control');break;
-      case'increase_last_showdown_rank':tags.add('showdown_value');tags.add('rank_control');break;
-      case'grant_next_trick_hand_capacity':tags.add('hand_control');tags.add('draw');break;
-      case'discard_secondary_target':tags.add('hand_control');break;
-      case'draw_cards':tags.add('hand_control');tags.add('draw');break;
-    }
-    const text=String(action||'');
-    if(text.includes('field'))tags.add('field');
-    if(text.includes('slot'))tags.add('slot');
-    if(text.includes('forecast')||text.includes('reveal'))tags.add('information');
-  }
-  function addTagsForCondition(tags,condition){
-    switch(condition){
-      case'chips_spent':tags.add('chip');tags.add('hand_control');break;
-      case'effective_rank_at_most':tags.add('low_rank');break;
-      case'effective_suit_is_trump':tags.add('trump');break;
-      case'river_hit':tags.add('river');break;
-      case'slot_is':case'slot_at_least':tags.add('slot');break;
-      case'player_has_advantage':case'enemy_has_advantage':tags.add('advantage');break;
-      case'set_wins_at_least':tags.add('trick_win');break;
-      case'pure_card_in_hand':case'pure_card_in_showdown':tags.add('pure');break;
-      case'printed_equals_trick':case'unmodified_trick_value':tags.add('original_value');break;
-    }
-  }
-  function addTagsForTrigger(tags,trigger){
-    switch(trigger){
-      case'on_trick_win':tags.add('trick_win');break;
-      case'on_trick_loss':tags.add('trick_loss');break;
-      case'on_trick_draw':tags.add('trick_draw');break;
-      case'after_card_slotted':tags.add('slot');break;
-      case'before_showdown':case'on_showdown_score':case'after_showdown_result':tags.add('showdown');break;
-      case'before_damage':case'after_damage':tags.add('defense');break;
-    }
-  }
-  function addTagsForHandler(tags,handler){
-    if(handler==='repeat_last_named_numeric'){tags.add('copy');tags.add('variant')}
-    if(handler==='deplete_battery_in_hand')tags.add('risk');
-    const text=String(handler||'');if(text.includes('field'))tags.add('field');if(text.includes('slot'))tags.add('slot');
-  }
-  function addTagsForTerm(tags,term){
-    const text=String(term||'');
-    if(text.includes('필드'))tags.add('field');
-    if(text.includes('트럼프'))tags.add('trump');
-    if(text.includes('예측')||text.includes('정보'))tags.add('information');
-    if(text.includes('예약'))tags.add('reservation');
-    if(text.includes('손패')||text.includes('드로우')||text.includes('버림')||text.includes('교환'))tags.add('hand_control');
-    if(text.includes('드로우'))tags.add('draw');
-    if(text.includes('칩'))tags.add('chip');
-    if(text.includes('출혈')||text.includes('상태'))tags.add('status');
-    if(text.includes('보호막'))tags.add('defense');
-    if(text.includes('쇼다운 슬롯'))tags.add('slot');
-    if(text.includes('쇼다운값'))tags.add('showdown_value');
-    if(text.includes('우세'))tags.add('advantage');
-    if(text.includes('리버'))tags.add('river');
-    if(text.includes('순수'))tags.add('pure');
-    if(text.includes('피해'))tags.add('damage');
-    if(text.includes('회복'))tags.add('sustain');
-  }
-  function gameplayTagsForDefinition(definition){
+  function addResolvedTags(tags,resolved){for(const tag of resolved||[])tags?.add?.(tag);return tags}
+  function inferPartial(partial){return typeof SystemTags?.tagsForDefinition==='function'?SystemTags.tagsForDefinition(partial):[]}
+  function addTagsForAction(tags,action){return addResolvedTags(tags,inferPartial({effects:[{action}]}))}
+  function addTagsForCondition(tags,condition){return addResolvedTags(tags,inferPartial({effects:[{condition}]}))}
+  function addTagsForTrigger(tags,trigger){return addResolvedTags(tags,inferPartial({effects:[{trigger}]}))}
+  function addTagsForHandler(tags,handler){return addResolvedTags(tags,inferPartial({effects:[{handler}]}))}
+  function addTagsForTerm(tags,term){return addResolvedTags(tags,inferPartial({terms:[term],effects:[]}))}
+  function systemTagsForDefinition(definition){
     if(!definition||typeof definition!=='object')return[];
-    const tags=new Set(),effects=Array.isArray(definition.effects)?definition.effects:[];
-    for(const effect of effects){addTagsForTrigger(tags,effect?.trigger);addTagsForAction(tags,effect?.action);addTagsForCondition(tags,effect?.condition);addTagsForHandler(tags,effect?.handler)}
-    for(const term of definition.terms||[])addTagsForTerm(tags,term);
-    if(definition.targeting?.zone==='hand')tags.add('hand_control');
-    return[...tags].sort();
+    if(Array.isArray(definition.systemTags)&&definition.systemTags.length)return[...definition.systemTags];
+    return typeof SystemTags?.tagsForDefinition==='function'?SystemTags.tagsForDefinition(definition):[];
   }
+  const gameplayTagsForDefinition=systemTagsForDefinition;
   function regionThemeTags(regionId){return new Set(REGION_REWARD_TAGS[regionId]||[])}
   function candidateAffinity(candidate,regionId){
-    if(!candidate||!regionId)return 0;const preferred=regionThemeTags(regionId);return(candidate.gameplayTags||[]).reduce((score,tag)=>score+(preferred.has(tag)?1:0),0);
+    if(!candidate||!regionId)return 0;const tags=candidate.systemTags||candidate.gameplayTags||[];
+    if(typeof SystemTags?.affinity==='function')return SystemTags.affinity(tags,regionId);
+    const preferred=regionThemeTags(regionId);return tags.reduce((score,tag)=>score+(preferred.has(tag)?1:0),0);
   }
 
   function definitionList(api=Cards){return Array.isArray(api?.ALL_CARD_DEFINITIONS)?api.ALL_CARD_DEFINITIONS:[]}
   function candidateFromDefinition(definition){
-    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',gameplayTags:gameplayTagsForDefinition(definition),signatureBossId:definition.signatureBossId||null,signatureRegionId:definition.signatureRegionId||null,signatureWeight:finite(definition.signatureWeight,1)};
+    const systemTags=systemTagsForDefinition(definition);
+    return{key:`def:${definition.id}`,kind:'definition',definitionId:definition.id,name:definition.name||definition.id,suit:definition.suit,rank:Number(definition.rank),description:definition.description||definition.text||'',rarity:definition.rarity||'common',systemTags,gameplayTags:systemTags,signatureBossId:definition.signatureBossId||null,signatureRegionId:definition.signatureRegionId||null,signatureWeight:finite(definition.signatureWeight,1)};
   }
-  function candidateFromPure(card){return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common',gameplayTags:['pure']}}
+  function candidateFromPure(card){const systemTags=['족보'];return{key:`pure:${card.suit}${card.rank}`,kind:'pure',definitionId:null,name:'순수 카드',suit:card.suit,rank:Number(card.rank),description:'고유 효과가 없는 순수 카드. 족보 구성과 순수 카드 시너지에 사용한다.',rarity:'common',systemTags,gameplayTags:systemTags}}
   function candidateCatalog(api=Cards){
     const definitions=definitionList(api).map(candidateFromDefinition);
     const slots=typeof api?.createBaseCardSlots==='function'?api.createBaseCardSlots():[];
@@ -213,7 +152,7 @@
   }
   function chooseFromPool(pool,used,rng,runState=null){const available=pool.filter(item=>!used.has(item.key));if(!available.length)return null;if(!runState)return available[Math.floor(safeRngValue(rng)*available.length)]||available[0];const weighted=available.map(item=>({item,weight:candidateRewardWeight(item,runState)})),total=weighted.reduce((sum,entry)=>sum+entry.weight,0);let cursor=safeRngValue(rng)*total;for(const entry of weighted){cursor-=entry.weight;if(cursor<0)return entry.item}return weighted.at(-1)?.item||available[0]}
   function decorateOfferCandidate(candidate,pools){
-    const matchedTags=pools.regionId?(candidate.gameplayTags||[]).filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
+    const tags=candidate.systemTags||candidate.gameplayTags||[],matchedTags=pools.regionId?tags.filter(tag=>regionThemeTags(pools.regionId).has(tag)):[];
     return{...candidate,sourceCategory:matchedTags.length?'theme':'neutral',regionId:pools.regionId,matchedTags};
   }
   function generateCommonOpeningOffer(pools,count,rng){
@@ -384,5 +323,5 @@
   function installWhenReady(runtimeRoot=root){if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25);else console.warn('[run-economy-v2] 보상/캠프/상점 런타임을 찾지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true}
   function resetForTests(){installed=false;originalShowReward=null;originalShowCamp=null;originalShowShop=null;uidCounter=0}
 
-  return{STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,ensureBossSignatureState,signatureDefinitions,unlockBossSignatures,isSignatureUnlocked,candidateRewardWeight,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
+  return{STAGE,SYSTEM_TAG_STAGE,CARD_OFFER_COUNT,MAX_UPGRADE_LEVEL,UPGRADE_TRICK_BONUS,CAMP_HEAL_RATIO,SHOP_CARD_COST,SHOP_RELIC_COST,SHOP_REMOVE_COST,MIN_DECK_SIZE,BATTLE_GOLD_BY_TYPE,REGION_REWARD_TAGS,activeRun,cardsApi,flowApi,relicApi,startApi,ensureEconomyState,record,ensureBossSignatureState,signatureDefinitions,unlockBossSignatures,isSignatureUnlocked,candidateRewardWeight,addTagsForAction,addTagsForCondition,addTagsForTrigger,addTagsForHandler,addTagsForTerm,systemTagsForDefinition,gameplayTagsForDefinition,regionThemeTags,candidateAffinity,definitionList,candidateFromDefinition,candidateFromPure,candidateCatalog,isCommonOpening,commonOpeningDefinitionIds,commonOpeningCatalog,isThemeCandidate,regionIdFor,rewardWeightsFor,rewardPools,decorateOfferCandidate,generateCommonOpeningOffer,generateCardOffer,deterministicRng,ensureRewardOffer,rewardClaim,instantiateCandidate,claimCardReward,skipCardReward,cardEffects,cardUpgradeLevel,canUpgradeCard,upgradeCard,campHeal,upgradeCampCard,createShopState,buyShopCard,buyShopRelic,canRemoveCard,removeShopCard,cardName,candidateName,showBattleCardReward,takeRewardFromUi,skipRewardFromUi,showCampV2,campHealFromUi,showCampUpgradeFromUi,upgradeCampCardFromUi,showCampFromUi,showShopV2,buyShopCardFromUi,buyShopRelicFromUi,showShopRemoveFromUi,removeShopCardFromUi,showShopFromUi,leaveShopFromUi,wrapBeginRun,wrapShowReward,wrapShowCamp,wrapShowShop,installBrowser,installWhenReady,resetForTests};
 });
