@@ -16,7 +16,7 @@ jobs:
           node-version: 22
       - run: node --test --test-concurrency=1 test/card-system-tags-m6.test.js test/run-economy-v2.test.js
 
-  tests-ae:
+  tests-ab:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -24,9 +24,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run A-E tests
+      - name: Run A-B tests
         run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[a-e][^/]*\.test\.js$')
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[a-b][^/]*\.test\.js$')
+          node --test --test-concurrency=1 "${files[@]}"
+
+  tests-c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run C tests
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/c[^/]*\.test\.js$')
+          node --test --test-concurrency=1 "${files[@]}"
+
+  tests-de:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run D-E tests
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[d-e][^/]*\.test\.js$')
           node --test --test-concurrency=1 "${files[@]}"
 
   tests-fm:
