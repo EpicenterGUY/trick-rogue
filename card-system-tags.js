@@ -101,7 +101,7 @@
   function decorateDefinition(definition){
     if(!definition||typeof definition!=='object')return definition;
     const systemTags=Object.freeze(tagsForDefinition(definition));
-    return Object.freeze({...definition,systemTags});
+    return{...definition,systemTags};
   }
   function decorateDefinitions(definitions=[]){return Object.freeze((definitions||[]).map(decorateDefinition))}
   function validateDefinition(definition){
