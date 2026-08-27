@@ -92,6 +92,6 @@ test('선지급·위로금·마지막 한 수는 회귀하지 않는다',()=>{
   assert.equal(runCard('pack02.last_word','on_showdown_score',{slotIndex:3}).calls.length,0);
 });
 
-test('검은 탄환 메타데이터와 런 경제 태그는 실제 즉시 피해 효과와 일치한다',()=>{const bullet=Cards.CARD_DEFINITION_BY_ID['pack01.black_bullet'];assert.ok(bullet.terms.includes('피해'));assert.equal(bullet.terms.includes('우세'),false);const tags=Economy.gameplayTagsForDefinition(bullet);assert.ok(tags.includes('damage'));assert.equal(tags.includes('advantage'),false)});
+test('검은 탄환 메타데이터와 M6 시스템 태그는 실제 즉시 피해 효과와 일치한다',()=>{const bullet=Cards.CARD_DEFINITION_BY_ID['pack01.black_bullet'];assert.ok(bullet.terms.includes('피해'));assert.equal(bullet.terms.includes('우세'),false);const tags=Economy.systemTagsForDefinition(bullet);assert.ok(tags.includes('직접 피해'));assert.equal(tags.includes('우세 개입'),false)});
 test('효과 카드 소스는 폐기 규칙을 다시 만들지 않는다',()=>{const sources=['pack02.js','pack03.js','pack04.js'].map(file=>fs.readFileSync(path.join(__dirname,'..','card-packs',file),'utf8')).join('\n');assert.doesNotMatch(sources,/tacticDeck|tacticHand|전술\s*덱|전술\s*손패/);assert.doesNotMatch(sources,/trump.*auto.*win|트럼프.*자동.*승리|한쪽.*트럼프.*승리/i);assert.doesNotMatch(sources,/advantageMargin|showdownAdvantagePower|우세\s*무늬\s*개수/)});
 test('카탈로그는 단일 효과 카드 풀을 유지한다',()=>{const registry=fs.readFileSync(path.join(__dirname,'..','card-packs','index.js'),'utf8');assert.match(registry,/EFFECT_CARD_DEFINITIONS/);assert.equal(Catalog.CARD_PACK_LIST.length,1);assert.equal(Catalog.CARD_PACK_LIST[0].id,'all-effects')});
