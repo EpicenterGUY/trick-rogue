@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 22
       - run: node --test test/effect-card-catalog.test.js
-  remaining:
+  remaining-a-l:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -32,4 +32,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test $(find test -maxdepth 1 -name '*.test.js' ! -name 'effect-card-70-batch1.test.js' ! -name 'effect-card-catalog.test.js' -print)
+      - run: node --test $(find test -maxdepth 1 -name '[a-l]*.test.js' ! -name 'effect-card-70-batch1.test.js' ! -name 'effect-card-catalog.test.js' -print)
+  remaining-m-z:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test $(find test -maxdepth 1 -name '[m-z]*.test.js' -print)
