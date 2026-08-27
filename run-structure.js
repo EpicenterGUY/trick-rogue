@@ -40,6 +40,10 @@
     region_casino:Object.freeze([
       Object.freeze({id:'vip_room',label:'VIP 룸',tags:Object.freeze(['chip','gambling','risk','low_rank'])}),
       Object.freeze({id:'underground_table',label:'지하 도박장',tags:Object.freeze(['reverse','debt','river','gambling'])})
+    ]),
+    region_red_ward:Object.freeze([
+      Object.freeze({id:'emergency_room',label:'응급실',tags:Object.freeze(['heal','shield','triage','hp'])}),
+      Object.freeze({id:'isolation_ward',label:'격리동',tags:Object.freeze(['status','bleed','risk','hp'])})
     ])
   });
   const ACT_DEFINITIONS=Object.freeze({
@@ -53,6 +57,7 @@
     region_observatory:regionAct('region_observatory','안개 관측소','o',REGION_BRANCHES.region_observatory),
     region_frontier:regionAct('region_frontier','황야 전선','w',REGION_BRANCHES.region_frontier),
     region_casino:regionAct('region_casino','침몰 카지노','k',REGION_BRANCHES.region_casino),
+    region_red_ward:regionAct('region_red_ward','붉은 병동','r',REGION_BRANCHES.region_red_ward),
     gateway:frozenAct({id:'gateway',index:3,name:'최종 관문',entryNodeIds:['g0'],requiresBoss:false,nodes:[
       frozenNode('g0','event',1,0,['g1','g2']),
       frozenNode('g1','battle',0,1,['g3']),
@@ -98,7 +103,7 @@
   function createActProgress(actId='act1',registry=ACT_DEFINITIONS){const definition=actDefinition(actId,registry);if(!definition)throw new TypeError(`Unknown act: ${String(actId)}`);return{actId:definition.id,actIndex:definition.index,actName:definition.name,map:createActMap(actId,registry),available:new Set(definition.entryNodeIds),completed:new Set(),currentNodeId:null,lastCompletedNodeId:null,runComplete:false}}
   function actSnapshot(runState){return{actId:runState.actId,actIndex:runState.actIndex,completed:[...toSet(runState.completed)],lastCompletedNodeId:runState.lastCompletedNodeId||null}}
   function applyActToRun(runState,actId='act1',{registry=ACT_DEFINITIONS,recordPrevious=true}={}){if(!runState||typeof runState!=='object')throw new TypeError('runState is required');const definition=actDefinition(actId,registry);if(!definition)throw new TypeError(`Unknown act: ${String(actId)}`);if(!Array.isArray(runState.actHistory))runState.actHistory=[];if(recordPrevious&&runState.actId&&runState.actId!==actId)runState.actHistory.push(actSnapshot(runState));Object.assign(runState,createActProgress(actId,registry));return runState}
-  function ensureRunProgress(runState,{registry=ACT_DEFINITIONS,defaultActId='act1'}={}){if(!runState||typeof runState!=='object')throw new TypeError('runState is required');const actId=runState.actId||defaultActId,definition=actDefinition(actId,registry);if(!definition)throw new TypeError(`Unknown act: ${String(actId)}`);runState.actId=definition.id;runState.actIndex=runState.actIndex??definition.index;runState.actName=definition.name;if(!Array.isArray(runState.map)||!runState.map.length)runState.map=createActMap(actId,registry);else runState.map=runState.map.map(cloneNode);runState.completed=toSet(runState.completed);runState.available=runState.available==null?new Set(definition.entryNodeIds):toSet(runState.available);if(!Array.isArray(runState.actHistory))runState.actHistory=[];if(!('currentNodeId' in runState))runState.currentNodeId=null;if(!('lastCompletedNodeId' in runState))runState.lastCompletedNodeId=null;if(!('runComplete' in runState))runState.runComplete=false;return runState}
+  function ensureRunProgress(runState,{registry=ACT_DEFINITIONS,defaultActId='act1'}={}){if(!runState||typeof runState!=='object')throw new TypeError('runState is required');const actId=runState.actId||defaultActId,definition=actDefinition(actId,registry);if(!definition)throw new TypeError(`Unknown act: ${String(actId)}`);runState.actId=definition.id;runState.actIndex=runState.runIndex??definition.index;runState.actIndex=runState.actIndex??definition.index;runState.actName=definition.name;if(!Array.isArray(runState.map)||!runState.map.length)runState.map=createActMap(actId,registry);else runState.map=runState.map.map(cloneNode);runState.completed=toSet(runState.completed);runState.available=runState.available==null?new Set(definition.entryNodeIds):toSet(runState.available);if(!Array.isArray(runState.actHistory))runState.actHistory=[];if(!('currentNodeId' in runState))runState.currentNodeId=null;if(!('lastCompletedNodeId' in runState))runState.lastCompletedNodeId=null;if(!('runComplete' in runState))runState.runComplete=false;return runState}
   function nodeById(runState,nodeOrId){const id=typeof nodeOrId==='string'?nodeOrId:nodeOrId?.id;return(runState?.map||[]).find(node=>node.id===id)||null}
   function canEnterNode(runState,nodeOrId){const node=nodeById(runState,nodeOrId);return!!node&&toSet(runState?.available).has(node.id)&&!toSet(runState?.completed).has(node.id)}
   function markNodeEntered(runState,nodeOrId){const node=nodeById(runState,nodeOrId);if(!node||!canEnterNode(runState,node))return false;runState.currentNodeId=node.id;return true}
