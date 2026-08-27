@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  batch1:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,21 +14,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Batch 1 effect cards
-        id: batch1
-        continue-on-error: true
-        run: node --test test/effect-card-70-batch1.test.js
-      - name: Effect catalog regression
-        id: catalog
-        continue-on-error: true
-        run: node --test test/effect-card-catalog.test.js
-      - name: Remaining tests
-        id: remaining
-        continue-on-error: true
-        run: node --test $(find test -maxdepth 1 -name '*.test.js' ! -name 'effect-card-70-batch1.test.js' ! -name 'effect-card-catalog.test.js' -print)
-      - name: Fail if diagnostics failed
-        if: always()
-        run: |
-          test "${{ steps.batch1.outcome }}" = success
-          test "${{ steps.catalog.outcome }}" = success
-          test "${{ steps.remaining.outcome }}" = success
+      - run: node --test test/effect-card-70-batch1.test.js
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test test/effect-card-catalog.test.js
+  remaining:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test $(find test -maxdepth 1 -name '*.test.js' ! -name 'effect-card-70-batch1.test.js' ! -name 'effect-card-catalog.test.js' -print)
