@@ -168,10 +168,15 @@
     const script=loadScript('relics.js','trick-relic-system-runtime');
     if(script?.dataset?.loaded==='true')loadStatusSystem();else script?.addEventListener?.('load',loadStatusSystem,{once:true});
   }
-  function loadRunFieldsRuntime(){
-    if(root.RunFields){loadRelics();return;}
-    const script=loadScript('run-fields.js','trick-run-fields-runtime');
+  function loadRunFieldUx(){
+    if(root.RunFieldUX){loadRelics();return;}
+    const script=loadScript('run-field-ux.js','trick-run-field-ux-runtime');
     if(script?.dataset?.loaded==='true')loadRelics();else script?.addEventListener?.('load',loadRelics,{once:true});
+  }
+  function loadRunFieldsRuntime(){
+    if(root.RunFields){loadRunFieldUx();return;}
+    const script=loadScript('run-fields.js','trick-run-fields-runtime');
+    if(script?.dataset?.loaded==='true')loadRunFieldUx();else script?.addEventListener?.('load',loadRunFieldUx,{once:true});
   }
   function loadRunFields(){
     if(root.TrumpFields){loadRunFieldsRuntime();return;}
