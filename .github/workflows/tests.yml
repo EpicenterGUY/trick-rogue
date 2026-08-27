@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  m6:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,107 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test --test-concurrency=1 test/card-system-tags-m6.test.js test/run-economy-v2.test.js
-
-  tests-ab:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Run A-B tests
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[a-b][^/]*\.test\.js$')
-          node --test --test-concurrency=1 "${files[@]}"
-
-  tests-c:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Run C tests
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/c[^/]*\.test\.js$')
-          node --test --test-concurrency=1 "${files[@]}"
-
-  tests-de:
-    name: de-${{ matrix.test }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - deck-boundaries-7-5j.test.js
-          - dev-m2-runtime.test.js
-          - dev-tools.test.js
-          - e2e-8-f.test.js
-          - effect-card-catalog.test.js
-          - effect-owner-lifecycle.test.js
-          - effects.test.js
-          - encounter-rules.test.js
-          - encounter-tempo-7-5e.test.js
-          - encounter-trump-layering-7-5r.test.js
-          - enemy-behavior.test.js
-          - enemy-content-9-b.test.js
-          - enemy-information-7-5k.test.js
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test --test-concurrency=1 test/${{ matrix.test }}
-
-  tests-fm:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Run F-M tests
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[f-m][^/]*\.test\.js$')
-          node --test --test-concurrency=1 "${files[@]}"
-
-  tests-nr:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Run N-R tests
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[n-r][^/]*\.test\.js$')
-          node --test --test-concurrency=1 "${files[@]}"
-
-  tests-sz:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Run S-Z tests
-        run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort | grep -E '/[s-z][^/]*\.test\.js$')
-          node --test --test-concurrency=1 "${files[@]}"
-
-  validate-cards:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm run validate:cards
+      - run: npm test
