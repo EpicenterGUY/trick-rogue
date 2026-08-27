@@ -161,7 +161,13 @@
     return{contentId:contentDef.id,profileId:contentDef.behavior.id,patternId:pattern.id,card,intent:{title:card.enemyIntent,detail:card.enemyIntentDetail,reason:card.enemyIntentReason,personality:contentDef.behavior.personality.archetype},weights:EnemyBehavior.patternWeightTable(contentDef.behavior.patterns,normalized)};
   }
   function ensureRunState(runState){
-    if(!runState||typeof runState!=='object')return null;const current=runState.casinoM9&&typeof runState.casinoM9==='object'?runState.casinoM9:{};runState.casinoM9={...current,version:STAGE,nextBattleChips:Math.max(0,Math.min(PENDING_CHIP_CAP,Math.floor(Number(current.nextBattleChips)||0))),eventHistory:Array.isArray(current.eventHistory)?current.eventHistory:[],activeEvent:current.activeEvent&&typeof current.activeEvent==='object'?current.activeEvent:null};return runState.casinoM9;
+    if(!runState||typeof runState!=='object')return null;
+    const current=runState.casinoM9&&typeof runState.casinoM9==='object'?runState.casinoM9:(runState.casinoM9={});
+    current.version=STAGE;
+    current.nextBattleChips=Math.max(0,Math.min(PENDING_CHIP_CAP,Math.floor(Number(current.nextBattleChips)||0)));
+    current.eventHistory=Array.isArray(current.eventHistory)?current.eventHistory:[];
+    current.activeEvent=current.activeEvent&&typeof current.activeEvent==='object'?current.activeEvent:null;
+    return current;
   }
   function reserveNextBattleChips(runState,amount){const state=ensureRunState(runState);if(!state)return{ok:false,reason:'no_run'};const before=state.nextBattleChips,requested=Math.max(0,Math.floor(Number(amount)||0));state.nextBattleChips=Math.min(PENDING_CHIP_CAP,before+requested);return{ok:true,before,after:state.nextBattleChips,gained:state.nextBattleChips-before,cap:PENDING_CHIP_CAP}}
   function consumePendingChips(runState,battleState,{chipApi=ChipEconomy}={}){
@@ -227,7 +233,7 @@
   function installWhenReady(runtimeRoot=defaultRoot){
     if(typeof document==='undefined')return false;let attempts=0;const attempt=()=>{installBrowserRuntime(runtimeRoot);installLateWrappers(runtimeRoot);if(combatInstalled&&eventInstalled&&presentationInstalled)return;if(attempts++<120)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[M9 casino] 런타임 연결을 완료하지 못했습니다.')};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else attempt();return true;
   }
-  function resetForTests(){combatInstalled=false;eventInstalled=false;presentationInstalled=false}
+  function resetForTests(){combatInstalled=false,eventInstalled=false,presentationInstalled=false}
 
   return{STAGE,REGION_ID,PENDING_CHIP_CAP,CONTENT,EVENT_DEFINITIONS,activeRun,activeBattle,isCasinoNode,content,contentIdForNode,prepareNode,contentForState,phaseFor,cloneEffect,makeRuleOwner,syncContentEncounter,applyBattleContent,validateContent,buildEnemyCard,chooseContentPlay,ensureRunState,reserveNextBattleChips,consumePendingChips,wrapGenEnemyCard,wrapStartBattle,wrapDamageEnemy,eventForNode,lowCard,applyEventAction,chooseCasinoEvent,casinoEventHtml,showCasinoEvent,wrapShowEvent,syncPresentation,wrapPresentation,injectStyle,installBrowserRuntime,installLateWrappers,installWhenReady,resetForTests};
 });
