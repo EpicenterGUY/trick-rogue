@@ -90,13 +90,18 @@ test('M6 카드 시스템 태그와 M9 지역 보상 성향이 같은 레지스�
 
 test('브라우저 로더는 9-C 기반 콘텐츠 뒤 카지노 런타임을 실제로 적재한 다음 경제/전투 UI 체인으로 진행한다',()=>{
   const source=fs.readFileSync(path.join(ROOT,'enemy-behavior.js'),'utf8');
-  const contentIndex=source.indexOf("loadScript('content-expansion-9-c.js','trick-content-expansion-9-c-runtime')");
-  const casinoIndex=source.indexOf("loadScript('casino-region-m9.js','trick-casino-region-m9-runtime')");
-  const economyIndex=source.indexOf("loadScript('run-economy-v2.js','trick-run-economy-v2-runtime')");
-  assert.ok(contentIndex>=0,'9-C 콘텐츠 런타임 로더가 있어야 한다');
-  assert.ok(casinoIndex>contentIndex,'카지노 런타임은 9-C 이벤트 래퍼 뒤에 로드되어야 한다');
-  assert.ok(economyIndex>=0,'런 경제 로더가 있어야 한다');
-  assert.match(source,/function loadContentExpansion9C\(\)/);
-  assert.match(source,/function loadCasinoRegionM9\(\)/);
+  const contentStart=source.indexOf('function loadContentExpansion9C()');
+  const casinoStart=source.indexOf('function loadCasinoRegionM9()');
+  const runEventsStart=source.indexOf('function loadRunEvents()');
+  const economyStart=source.indexOf('function loadRunEconomyV2()');
+  assert.ok(contentStart>=0,'9-C 콘텐츠 런타임 로더가 있어야 한다');
+  assert.ok(casinoStart>=0,'카지노 런타임 로더가 있어야 한다');
+  assert.ok(runEventsStart>=0&&economyStart>=0,'기존 런 이벤트/경제 로더가 있어야 한다');
+  const contentLoader=source.slice(contentStart,runEventsStart);
+  const casinoLoader=source.slice(casinoStart,contentStart);
+  assert.match(contentLoader,/loadScript\('content-expansion-9-c\.js','trick-content-expansion-9-c-runtime'\)/);
+  assert.match(contentLoader,/loadCasinoRegionM9\(\)/,'9-C 로드 완료 후 카지노 런타임으로 이어져야 한다');
+  assert.match(casinoLoader,/loadScript\('casino-region-m9\.js','trick-casino-region-m9-runtime'\)/);
+  assert.match(casinoLoader,/loadRunEconomyV2\(\)/,'카지노 로드 완료 후 런 경제 체인으로 이어져야 한다');
   assert.match(source,/if\(root\.RunEvents\)\{loadContentExpansion9C\(\);return;\}/);
 });
