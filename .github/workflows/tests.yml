@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  preview:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,4 +14,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
+      - name: Run public trick preview tests
+        run: node --test test/trick-outcome-preview.test.js
+
+  remaining:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run remaining Node tests
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'trick-outcome-preview.test.js' | sort)
+          node --test "${files[@]}"
+      - name: Validate effect cards
+        run: npm run validate:cards
