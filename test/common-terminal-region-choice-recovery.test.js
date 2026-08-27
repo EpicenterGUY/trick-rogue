@@ -79,9 +79,10 @@ test('첫 일반지역 보스가 완료됐는데 phase=region에 남으면 두 �
   assert.equal(result.next,'region_choice');
   assert.equal(run.runFlow.phase,'region_choice');
   assert.deepEqual(run.runFlow.completedRegionIds,['region_theater']);
-  assert.equal(run.runFlow.pendingRegionOfferIds.length,4);
+  assert.equal(run.runFlow.pendingRegionOfferIds.length,5);
   assert.ok(!run.runFlow.pendingRegionOfferIds.includes('region_theater'));
   assert.ok(run.runFlow.pendingRegionOfferIds.includes('region_red_ward'));
+  assert.ok(run.runFlow.pendingRegionOfferIds.includes('region_scrap_market'));
   assert.equal(run.currentNodeId,null);
   assert.equal(run.runComplete,false);
 });
@@ -125,7 +126,7 @@ test('지역 선택 상태는 이전 actId보다 우선해 맵 상단에 지역 
     querySelector(selector){return selector==='#mapScreen .topbar .logo'?logo:null},
     querySelectorAll(){return[]}
   };
-  run.runFlow.phase='region_choice';run.runFlow.pendingRegionOfferIds=['region_observatory','region_frontier','region_casino','region_red_ward'];
+  run.runFlow.phase='region_choice';run.runFlow.pendingRegionOfferIds=['region_observatory','region_frontier','region_casino','region_red_ward','region_scrap_market'];
   RunFlow.decorateMap({run,document:doc});
   assert.match(logo.innerHTML,/지역 선택/);
   assert.doesNotMatch(logo.innerHTML,/유랑극장/);

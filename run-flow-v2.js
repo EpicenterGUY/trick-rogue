@@ -58,6 +58,15 @@
       eventWeights:Object.freeze({general:0.20,medical:0.45,risk:0.20,status:0.15}),
       eventLabels:Object.freeze({general:'공용',medical:'의료',risk:'위험',status:'상태'}),
       rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
+    }),
+    region_scrap_market:Object.freeze({
+      id:'region_scrap_market',name:'폐품 시장',icon:'⚙',tone:'해체와 재조립',risk:'구성형',systems:'순수 · 손패 · 변환 · 덱 재구성',
+      desc:'쓸모없는 카드를 부품으로 보고 덱의 밀도를 다시 설계하는 시장. 순수 카드와 쇼다운 재료의 가치를 바꾸는 선택이 중심이다.',
+      enemyWeights:Object.freeze({standard:0.25,salvager:0.35,modifier:0.25,hoarder:0.15}),
+      enemyLabels:Object.freeze({standard:'일반',salvager:'해체',modifier:'개조',hoarder:'수집'}),
+      eventWeights:Object.freeze({general:0.20,salvage:0.40,rebuild:0.25,risk:0.15}),
+      eventLabels:Object.freeze({general:'공용',salvage:'해체',rebuild:'재조립',risk:'위험'}),
+      rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
     })
   });
 

@@ -133,7 +133,8 @@ if(!ENABLED){
     assert.ok(final.completed.includes('region_red_ward'));
     assert.equal(final.branches[0],'emergency_room');
     assert.ok(final.wardEvents>=1,'at least one red ward event should resolve');
-    assert.equal(final.offers.length,4,'four unvisited regions should remain after red ward');
+    assert.equal(final.offers.length,5,'five unvisited regions should remain after red ward');
+    assert.ok(final.offers.includes('region_scrap_market'),'scrap market should be offered after red ward');
     assert.ok(!final.offers.includes('region_red_ward'));
     assert.deepEqual(runtimeErrors,[],'browser runtime exceptions should be empty');
   }finally{

@@ -44,6 +44,10 @@
     region_red_ward:Object.freeze([
       Object.freeze({id:'emergency_room',label:'응급실',tags:Object.freeze(['heal','shield','triage','hp'])}),
       Object.freeze({id:'isolation_ward',label:'격리동',tags:Object.freeze(['status','bleed','risk','hp'])})
+    ]),
+    region_scrap_market:Object.freeze([
+      Object.freeze({id:'dismantling_yard',label:'해체장',tags:Object.freeze(['pure','remove','salvage','deck_rebuild'])}),
+      Object.freeze({id:'reassembly_shop',label:'재조립소',tags:Object.freeze(['transform','modify','hand','deck_rebuild'])})
     ])
   });
   const ACT_DEFINITIONS=Object.freeze({
@@ -58,6 +62,7 @@
     region_frontier:regionAct('region_frontier','황야 전선','w',REGION_BRANCHES.region_frontier),
     region_casino:regionAct('region_casino','침몰 카지노','k',REGION_BRANCHES.region_casino),
     region_red_ward:regionAct('region_red_ward','붉은 병동','r',REGION_BRANCHES.region_red_ward),
+    region_scrap_market:regionAct('region_scrap_market','폐품 시장','s',REGION_BRANCHES.region_scrap_market),
     gateway:frozenAct({id:'gateway',index:3,name:'최종 관문',entryNodeIds:['g0'],requiresBoss:false,nodes:[
       frozenNode('g0','event',1,0,['g1','g2']),
       frozenNode('g1','battle',0,1,['g3']),
