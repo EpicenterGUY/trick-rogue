@@ -52,6 +52,7 @@ test('지역 보상 프로필과 카드 후보는 같은 공식 태그 집합만
     assert.ok(tags.length>0);
     assert.ok(tags.every(tag=>SystemTags.TAGS.includes(tag)));
   }
+  assert.deepEqual(SystemTags.REGION_REWARD_TAGS.region_red_ward,['회복','보호막','상태','직접 피해','예약']);
   const catalog=Economy.candidateCatalog(Cards);
   for(const candidate of catalog){
     assert.ok(Array.isArray(candidate.systemTags));
@@ -64,10 +65,12 @@ test('지역 보상 프로필과 카드 후보는 같은 공식 태그 집합만
 test('지역 친화도는 systemTags만으로 계산되어 임시 옛 태그에 의존하지 않는다',()=>{
   const frontier={systemTags:['직접 피해'],gameplayTags:['information']};
   const observatory={systemTags:['예측'],gameplayTags:['damage']};
+  const ward={systemTags:['회복','상태'],gameplayTags:['medical']};
   assert.ok(Economy.candidateAffinity(frontier,'region_frontier')>0);
   assert.equal(Economy.candidateAffinity(frontier,'region_observatory'),0);
   assert.ok(Economy.candidateAffinity(observatory,'region_observatory')>0);
   assert.equal(Economy.candidateAffinity(observatory,'region_frontier'),0);
+  assert.ok(Economy.candidateAffinity(ward,'region_red_ward')>0);
 });
 
 test('브라우저 카드 레지스트리는 카드 정의 생성 전에 M6 태그 런타임을 부트스트랩한다',()=>{
