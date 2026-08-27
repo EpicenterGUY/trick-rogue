@@ -3,6 +3,7 @@ const Cards=require('./cards.js');
 const CardSystemTags=require('./card-system-tags.js');
 
 const VERSION='M7-1';
+const M7_BASELINE_REGION_IDS=Object.freeze(['region_theater','region_observatory','region_frontier']);
 const ROLE_TAGS=Object.freeze({
   trickControl:Object.freeze(['적용값 증가','적용값 감소','우세 개입']),
   handInformation:Object.freeze(['손패','예측']),
@@ -44,9 +45,10 @@ function identityCoverage(starter,cardsApi=Cards){
   const matchedTags=[...new Set(rows.flatMap(row=>row.systemTags.filter(tag=>preferred.includes(tag))))];
   return{preferred:[...preferred],matchedTags,cards:rows.filter(row=>matchesAny(row.systemTags,preferred)).map(row=>row.id)};
 }
-function regionCoverage(starter,cardsApi=Cards){
+function regionCoverage(starter,cardsApi=Cards,regionIds=M7_BASELINE_REGION_IDS){
   const rows=effectRows(starter,cardsApi),regions={};
-  for(const[regionId,tags]of Object.entries(CardSystemTags.REGION_REWARD_TAGS)){
+  for(const regionId of regionIds){
+    const tags=CardSystemTags.REGION_REWARD_TAGS[regionId]||[];
     const cards=rows.filter(row=>matchesAny(row.systemTags,tags)).map(row=>row.id);
     const tagMatches=rows.reduce((total,row)=>total+CardSystemTags.affinity(row.systemTags,regionId),0);
     regions[regionId]={label:REGION_LABELS[regionId]||regionId,cards,count:cards.length,tagMatches};
@@ -79,12 +81,12 @@ function pairwiseEffectOverlap(starters=RunStart.STARTERS){
   }
   return results;
 }
-function auditOpeningPool(cardsApi=Cards){
+function auditOpeningPool(cardsApi=Cards,regionIds=M7_BASELINE_REGION_IDS){
   const ids=RunStart.commonCardPoolIds(cardsApi),rows=ids.map(id=>({id,definition:definitionFor(id,cardsApi)})).map(row=>({...row,systemTags:systemTagsForDefinition(row.definition)}));
   const roles={};
   for(const[role,tags]of Object.entries(ROLE_TAGS))roles[role]=rows.filter(row=>matchesAny(row.systemTags,tags)).map(row=>row.id);
   const regions={};
-  for(const regionId of Object.keys(CardSystemTags.REGION_REWARD_TAGS))regions[regionId]=rows.filter(row=>CardSystemTags.affinity(row.systemTags,regionId)>0).map(row=>row.id);
+  for(const regionId of regionIds)regions[regionId]=rows.filter(row=>CardSystemTags.affinity(row.systemTags,regionId)>0).map(row=>row.id);
   const errors=[];
   for(const[role,cards]of Object.entries(roles))if(!cards.length)errors.push(`common opening pool: missing ${ROLE_LABELS[role]}`);
   for(const[regionId,cards]of Object.entries(regions))if(!cards.length)errors.push(`common opening pool: no bridge to ${REGION_LABELS[regionId]||regionId}`);
@@ -95,7 +97,7 @@ function auditRegistry(cardsApi=Cards,starters=RunStart.STARTERS){
   if(starters.length!==4)errors.push(`M7 expects 4 exposed starters, got ${starters.length}`);
   errors.push(...starterReports.flatMap(report=>report.errors),...openingPool.errors);
   for(const pair of overlap)if(pair.count>2)errors.push(`${pair.left}/${pair.right}: starter effect overlap ${pair.count} > 2`);
-  return{version:VERSION,starterReports,openingPool,overlap,errors};
+  return{version:VERSION,baselineRegionIds:[...M7_BASELINE_REGION_IDS],starterReports,openingPool,overlap,errors};
 }
 
-module.exports={VERSION,ROLE_TAGS,ROLE_LABELS,REGION_LABELS,STARTER_IDENTITY_TAGS,definitionFor,systemTagsForDefinition,effectRows,matchesAny,roleCoverage,identityCoverage,regionCoverage,auditStarter,pairwiseEffectOverlap,auditOpeningPool,auditRegistry};
+module.exports={VERSION,M7_BASELINE_REGION_IDS,ROLE_TAGS,ROLE_LABELS,REGION_LABELS,STARTER_IDENTITY_TAGS,definitionFor,systemTagsForDefinition,effectRows,matchesAny,roleCoverage,identityCoverage,regionCoverage,auditStarter,pairwiseEffectOverlap,auditOpeningPool,auditRegistry};

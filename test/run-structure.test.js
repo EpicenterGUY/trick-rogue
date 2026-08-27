@@ -42,13 +42,14 @@ test('액트 맵 생성은 정의를 복제해서 런타임 수정이 원본 데
   assert.equal(RunStructure.ACT_DEFINITIONS.act1.nodes[0].lane,1);
 });
 
-test('세 지역은 각각 두 내부 분기 메타데이터를 가진다',()=>{
-  assert.deepEqual(Object.keys(RunStructure.REGION_BRANCHES),['region_theater','region_observatory','region_frontier']);
+test('등록된 네 지역은 각각 두 내부 분기 메타데이터를 가진다',()=>{
+  assert.deepEqual(Object.keys(RunStructure.REGION_BRANCHES),['region_theater','region_observatory','region_frontier','region_casino']);
   for(const [regionId,branches] of Object.entries(RunStructure.REGION_BRANCHES)){
     assert.equal(branches.length,2);assert.equal(new Set(branches.map(branch=>branch.id)).size,2);
     const map=RunStructure.createActMap(regionId),entries=map.filter(node=>node.branchEntry);
     assert.equal(entries.length,2);assert.deepEqual(new Set(entries.map(node=>node.branchId)),new Set(branches.map(branch=>branch.id)));
   }
+  assert.deepEqual(RunStructure.REGION_BRANCHES.region_casino.map(branch=>branch.label),['VIP 룸','지하 도박장']);
 });
 
 test('최종 관문은 별도 지역이 아닌 보스 없는 결산용 분기 액트로 존재한다',()=>{

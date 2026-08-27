@@ -24,4 +24,4 @@ jobs:
       - name: Run RUN V3 browser E2E
         env:
           TRICK_RUN_V3_E2E: '1'
-        run: node --test --test-concurrency=1 test/run-v3-browser-e2e-v2.test.js
+        run: node --test --test-concurrency=1 test/run-v3-browser-e2e-v2.test.js test/casino-region-m9-browser-load.test.js test/casino-region-m9-full-run-browser.test.js
