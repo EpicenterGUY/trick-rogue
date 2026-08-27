@@ -14,4 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
+      - name: Run Node tests
+        run: node --test --test-concurrency=1
+      - name: Validate effect cards
+        run: npm run validate:cards
