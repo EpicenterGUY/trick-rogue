@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  preview:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,62 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test test/trick-outcome-preview.test.js
-
-  tests-ae:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'trick-outcome-preview.test.js' | sort | grep -E '/[a-e][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  tests-fm:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'trick-outcome-preview.test.js' | sort | grep -E '/[f-m][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  tests-nr:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'trick-outcome-preview.test.js' | sort | grep -E '/[n-r][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  tests-sz:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: |
-          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'trick-outcome-preview.test.js' | sort | grep -E '/[s-z][^/]*\.test\.js$')
-          node --test "${files[@]}"
-
-  validate-cards:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm run validate:cards
+      - run: npm test
