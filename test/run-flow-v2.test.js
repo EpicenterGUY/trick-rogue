@@ -13,7 +13,7 @@ function runtime(){
   };
 }
 
-test('RUN V3 레지스트리는 공통지역·네 지역·최종 관문·최종지역을 유효한 맵으로 가진다',()=>{
+test('RUN V3 레지스트리는 공통지역·다섯 지역·최종 관문·최종지역을 유효한 맵으로 가진다',()=>{
   assert.deepEqual(RunStructure.validateActRegistry(),[]);
   const common=RunStructure.ACT_DEFINITIONS.common;assert.equal(common.nodes.length,5);assert.deepEqual(common.nodes.map(node=>node.type),['battle','event','battle','camp','elite']);assert.equal(common.nodes.at(-1).next.length,0);
   for(const id of RunFlow.regionIds()){const act=RunStructure.ACT_DEFINITIONS[id];assert.equal(act.nodes.length,7);assert.equal(act.nodes.at(-1).type,'boss');assert.equal(act.nodes.filter(node=>node.branchEntry).length,2)}
@@ -21,14 +21,19 @@ test('RUN V3 레지스트리는 공통지역·네 지역·최종 관문·최종�
   assert.equal(RunStructure.ACT_DEFINITIONS.final.nodes.at(-1).type,'boss');
 });
 
-test('지역 프로필은 4개로 확장되고 공용 60~70% / 지역 30~40% 보상 가중치를 지킨다',()=>{
-  assert.equal(RunFlow.regionIds().length,4);assert.ok(RunFlow.regionIds().includes('region_casino'));assert.deepEqual(RunFlow.validateRegionProfiles({RunStructure}),[]);
+test('지역 프로필은 5개로 확장되고 공용 60~70% / 지역 30~40% 보상 가중치를 지킨다',()=>{
+  assert.equal(RunFlow.regionIds().length,5);assert.ok(RunFlow.regionIds().includes('region_casino'));assert.ok(RunFlow.regionIds().includes('region_red_ward'));assert.deepEqual(RunFlow.validateRegionProfiles({RunStructure}),[]);
   for(const profile of Object.values(RunFlow.REGION_PROFILES)){assert.ok(profile.systems);assert.ok(profile.rewardWeights.neutral>=.6&&profile.rewardWeights.neutral<=.7);assert.ok(profile.rewardWeights.theme>=.3&&profile.rewardWeights.theme<=.4);assert.equal(Number(RunFlow.weightTotal(profile.enemyWeights).toFixed(6)),1);assert.equal(Number(RunFlow.weightTotal(profile.eventWeights).toFixed(6)),1)}
 });
 
 test('침몰 카지노는 VIP 룸 / 지하 도박장 두 내부 분기와 핵심 시스템 비교 문구를 가진다',()=>{
   const branches=RunFlow.regionBranches('region_casino',{RunStructure});assert.deepEqual(branches.map(branch=>branch.label),['VIP 룸','지하 도박장']);
   const profile=RunFlow.regionProfile('region_casino');assert.equal(profile.systems,'칩 · 낮은 숫자 · 반전');assert.match(RunFlow.regionOptionHtml(profile),/핵심 · 칩 · 낮은 숫자 · 반전/);assert.match(RunFlow.regionOptionHtml(profile),/위험도 고변동/);
+});
+
+test('붉은 병동은 응급실 / 격리동 두 내부 분기와 생존·상태 핵심 시스템을 비교 표시한다',()=>{
+  const branches=RunFlow.regionBranches('region_red_ward',{RunStructure});assert.deepEqual(branches.map(branch=>branch.label),['응급실','격리동']);
+  const profile=RunFlow.regionProfile('region_red_ward');assert.equal(profile.systems,'회복 · 보호막 · 출혈 · 상태');assert.match(RunFlow.regionOptionHtml(profile),/핵심 · 회복 · 보호막 · 출혈 · 상태/);assert.match(RunFlow.regionOptionHtml(profile),/위험도 소모형/);
 });
 
 test('새 런은 공통지역 STAGE 1 / 8에서 시작하고 덱·스타터·특성은 보존한다',()=>{
@@ -41,13 +46,13 @@ test('구 8-B runFlow 상태는 배열과 방문 이력을 잃지 않고 RUN V3�
   assert.equal(flow.version,'RUN-V3');assert.deepEqual(flow.visitedRegionIds,['region_theater']);assert.equal(flow.history[0].type,'old');assert.deepEqual(flow.visitedRegionBranches,[]);assert.deepEqual(flow.journeyHistory,[]);assert.equal(run.runStage,2);
 });
 
-test('공통지역 종료 뒤 첫 지역 선택은 현재 등록된 네 지역을 모두 제시한다',()=>{
-  const run={runFlow:RunFlow.createFlowState(),actId:'common'};const offers=RunFlow.beginRegionChoice(run,{reason:'common_complete'});assert.equal(offers.length,4);assert.deepEqual(new Set(offers),new Set(RunFlow.regionIds()));assert.equal(run.runFlow.phase,'region_choice');assert.equal(run.runFlow.choiceRound,1);
+test('공통지역 종료 뒤 첫 지역 선택은 현재 등록된 다섯 지역을 모두 제시한다',()=>{
+  const run={runFlow:RunFlow.createFlowState(),actId:'common'};const offers=RunFlow.beginRegionChoice(run,{reason:'common_complete'});assert.equal(offers.length,5);assert.deepEqual(new Set(offers),new Set(RunFlow.regionIds()));assert.equal(run.runFlow.phase,'region_choice');assert.equal(run.runFlow.choiceRound,1);
 });
 
-test('침몰 카지노를 첫 지역으로 고르면 STAGE 2가 되고 7노드 맵과 선택 이력이 남는다',()=>{
-  const root=runtime(),run={runSeed:777,actId:'common',map:RunStructure.createActMap('common'),available:new Set(['c4']),completed:new Set(),actHistory:[],runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);const result=RunFlow.chooseRegion(run,'region_casino',{runtimeRoot:root});
-  assert.equal(result.ok,true);assert.equal(run.runStage,2);assert.equal(run.actId,'region_casino');assert.equal(run.actName,'침몰 카지노');assert.equal(run.actIndex,1);assert.deepEqual(run.runFlow.visitedRegionIds,['region_casino']);assert.equal(run.map.length,7);assert.ok(run.map.every(node=>node.regionPlan?.regionId==='region_casino'));assert.ok(run.runFlow.history.some(entry=>entry.type==='region_selected'&&entry.regionId==='region_casino'));
+test('붉은 병동을 첫 지역으로 고르면 STAGE 2가 되고 7노드 맵과 선택 이력이 남는다',()=>{
+  const root=runtime(),run={runSeed:777,actId:'common',map:RunStructure.createActMap('common'),available:new Set(['c4']),completed:new Set(),actHistory:[],runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);const result=RunFlow.chooseRegion(run,'region_red_ward',{runtimeRoot:root});
+  assert.equal(result.ok,true);assert.equal(run.runStage,2);assert.equal(run.actId,'region_red_ward');assert.equal(run.actName,'붉은 병동');assert.equal(run.actIndex,1);assert.deepEqual(run.runFlow.visitedRegionIds,['region_red_ward']);assert.equal(run.map.length,7);assert.ok(run.map.every(node=>node.regionPlan?.regionId==='region_red_ward'));assert.ok(run.runFlow.history.some(entry=>entry.type==='region_selected'&&entry.regionId==='region_red_ward'));
 });
 
 test('지역 노드의 적·이벤트 경향은 같은 런 시드에서 결정적으로 고정되고 보상 혼합을 함께 가진다',()=>{
@@ -61,16 +66,16 @@ test('내부 분기 선택은 STAGE 3/6으로 진행하며 방문 분기와 jour
 });
 
 test('카드군이나 시작 지역은 다른 지역 선택을 막는 클래스 게이트가 아니다',()=>{
-  const run={starterId:'sniper',runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);assert.deepEqual(new Set(run.runFlow.pendingRegionOfferIds),new Set(RunFlow.regionIds()));assert.equal(RunFlow.chooseRegion(run,'region_casino',{runtimeRoot:runtime()}).ok,true);
+  const run={starterId:'sniper',runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);assert.deepEqual(new Set(run.runFlow.pendingRegionOfferIds),new Set(RunFlow.regionIds()));assert.equal(RunFlow.chooseRegion(run,'region_red_ward',{runtimeRoot:runtime()}).ok,true);
 });
 
-test('첫 지역 보스를 끝내면 이미 방문한 지역을 제외한 다음 세 지역 선택으로 이어진다',()=>{
-  const root=runtime(),run={runSeed:1,runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);RunFlow.chooseRegion(run,'region_casino',{runtimeRoot:root});const boss=run.map.find(node=>node.type==='boss');run.available=new Set([boss.id]);run.currentNodeId=boss.id;RunFlow.setRunStage(run,4);const result=RunFlow.completeRegionBoss(run,boss,{runtimeRoot:root});assert.equal(result.next,'region_choice');assert.equal(run.runFlow.phase,'region_choice');assert.equal(run.runFlow.pendingRegionOfferIds.length,3);assert.ok(!run.runFlow.pendingRegionOfferIds.includes('region_casino'));assert.deepEqual(run.runFlow.completedRegionIds,['region_casino']);
+test('첫 지역 보스를 끝내면 이미 방문한 지역을 제외한 다음 네 지역 선택으로 이어진다',()=>{
+  const root=runtime(),run={runSeed:1,runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);RunFlow.chooseRegion(run,'region_casino',{runtimeRoot:root});const boss=run.map.find(node=>node.type==='boss');run.available=new Set([boss.id]);run.currentNodeId=boss.id;RunFlow.setRunStage(run,4);const result=RunFlow.completeRegionBoss(run,boss,{runtimeRoot:root});assert.equal(result.next,'region_choice');assert.equal(run.runFlow.phase,'region_choice');assert.equal(run.runFlow.pendingRegionOfferIds.length,4);assert.ok(!run.runFlow.pendingRegionOfferIds.includes('region_casino'));assert.deepEqual(run.runFlow.completedRegionIds,['region_casino']);
 });
 
 test('두 번째 지역 보스 뒤에는 두 지역 흔적을 섞은 STAGE 7 최종 관문으로 전환한다',()=>{
-  const root=runtime(),run={runSeed:2,runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);RunFlow.chooseRegion(run,'region_casino',{runtimeRoot:root});let branch=run.map.find(node=>node.branchEntry);RunFlow.recordBranchSelection(run,branch,{runtimeRoot:root});let boss=run.map.find(node=>node.type==='boss');run.available=new Set([boss.id]);run.currentNodeId=boss.id;RunFlow.completeRegionBoss(run,boss,{runtimeRoot:root});RunFlow.chooseRegion(run,'region_observatory',{runtimeRoot:root});branch=run.map.find(node=>node.branchEntry);RunFlow.recordBranchSelection(run,branch,{runtimeRoot:root});boss=run.map.find(node=>node.type==='boss');run.available=new Set([boss.id]);run.currentNodeId=boss.id;const result=RunFlow.completeRegionBoss(run,boss,{runtimeRoot:root});
-  assert.equal(result.next,'gateway');assert.equal(run.actId,'gateway');assert.equal(run.runStage,7);assert.equal(run.runFlow.phase,'gateway');assert.deepEqual(RunFlow.gatewayPlan(run).sourceRegionIds,['region_casino','region_observatory']);assert.ok(run.map.every(node=>node.regionPlan.sourceRegionIds.length===2));assert.equal(run.runComplete,false);
+  const root=runtime(),run={runSeed:2,runFlow:RunFlow.createFlowState()};RunFlow.beginRegionChoice(run);RunFlow.chooseRegion(run,'region_casino',{runtimeRoot:root});let branch=run.map.find(node=>node.branchEntry);RunFlow.recordBranchSelection(run,branch,{runtimeRoot:root});let boss=run.map.find(node=>node.type==='boss');run.available=new Set([boss.id]);run.currentNodeId=boss.id;RunFlow.completeRegionBoss(run,boss,{runtimeRoot:root});RunFlow.chooseRegion(run,'region_red_ward',{runtimeRoot:root});branch=run.map.find(node=>node.branchEntry);RunFlow.recordBranchSelection(run,branch,{runtimeRoot:root});boss=run.map.find(node=>node.type==='boss');run.available=new Set([boss.id]);run.currentNodeId=boss.id;const result=RunFlow.completeRegionBoss(run,boss,{runtimeRoot:root});
+  assert.equal(result.next,'gateway');assert.equal(run.actId,'gateway');assert.equal(run.runStage,7);assert.equal(run.runFlow.phase,'gateway');assert.deepEqual(RunFlow.gatewayPlan(run).sourceRegionIds,['region_casino','region_red_ward']);assert.ok(run.map.every(node=>node.regionPlan.sourceRegionIds.length===2));assert.equal(run.runComplete,false);
 });
 
 test('최종 관문 완료 뒤 STAGE 8 최종지역으로 전환되고 최종 보스는 기존 런 종료 경로에 남는다',()=>{
@@ -81,14 +86,15 @@ test('지역 선택 중에는 맵 노드 진입을 막고 선택 완료 후 다�
   RunFlow.resetForTests();const root=runtime();root.run={runFlow:RunFlow.createFlowState(),actId:'common'};root.run.runFlow.phase='region_choice';root.calls=[];root.enterNode=function(node){this.calls.push(node.id);return true};RunFlow.wrapEnterNode(root);assert.equal(root.enterNode({id:'c0'}),false);assert.deepEqual(root.calls,[]);root.run.runFlow.phase='common';assert.equal(root.enterNode({id:'c0'}),true);assert.deepEqual(root.calls,['c0']);
 });
 
-test('런타임 로더는 런 흐름 뒤 미니게임 → 이벤트 → 9-C → 카지노 → 경제 계층 순서로 붙인다',()=>{
+test('런타임 로더는 런 흐름 뒤 미니게임 → 이벤트 → 9-C → 카지노 → 붉은 병동 → 경제 계층 순서로 붙인다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  const flowStart=source.indexOf('function loadRunFlowV2()'),miniStart=source.indexOf('function loadRunMinigames()'),eventStart=source.indexOf('function loadRunEvents()'),contentStart=source.indexOf('function loadContentExpansion9C()'),casinoStart=source.indexOf('function loadCasinoRegionM9()'),economyStart=source.indexOf('function loadRunEconomyV2()'),startStart=source.indexOf('function loadRunStartV2()');
-  assert.ok(economyStart>=0&&casinoStart>economyStart&&contentStart>casinoStart&&eventStart>contentStart&&miniStart>eventStart&&flowStart>miniStart&&startStart>flowStart,'함수 선언 순서는 체인 역순이어도 호출 체인은 flow→minigame→event→9-C→casino→economy여야 한다');
-  const flowBlock=source.slice(flowStart,startStart),miniBlock=source.slice(miniStart,flowStart),eventBlock=source.slice(eventStart,miniStart),contentBlock=source.slice(contentStart,eventStart),casinoBlock=source.slice(casinoStart,contentStart);
+  const flowStart=source.indexOf('function loadRunFlowV2()'),miniStart=source.indexOf('function loadRunMinigames()'),eventStart=source.indexOf('function loadRunEvents()'),contentStart=source.indexOf('function loadContentExpansion9C()'),casinoStart=source.indexOf('function loadCasinoRegionM9()'),redWardStart=source.indexOf('function loadRedWardRegionM9()'),economyStart=source.indexOf('function loadRunEconomyV2()'),startStart=source.indexOf('function loadRunStartV2()');
+  assert.ok(economyStart>=0&&redWardStart>economyStart&&casinoStart>redWardStart&&contentStart>casinoStart&&eventStart>contentStart&&miniStart>eventStart&&flowStart>miniStart&&startStart>flowStart,'함수 선언 순서는 체인 역순이어도 호출 체인은 flow→minigame→event→9-C→casino→redWard→economy여야 한다');
+  const flowBlock=source.slice(flowStart,startStart),miniBlock=source.slice(miniStart,flowStart),eventBlock=source.slice(eventStart,miniStart),contentBlock=source.slice(contentStart,eventStart),casinoBlock=source.slice(casinoStart,contentStart),redWardBlock=source.slice(redWardStart,casinoStart);
   assert.match(flowBlock,/run-flow-v2\.js/);assert.match(flowBlock,/loadRunMinigames/);
   assert.match(miniBlock,/run-minigames\.js/);assert.match(miniBlock,/loadRunEvents/);
   assert.match(eventBlock,/run-events\.js/);assert.match(eventBlock,/loadContentExpansion9C/);
   assert.match(contentBlock,/content-expansion-9-c\.js/);assert.match(contentBlock,/loadCasinoRegionM9/);
-  assert.match(casinoBlock,/casino-region-m9\.js/);assert.match(casinoBlock,/loadRunEconomyV2/);
+  assert.match(casinoBlock,/casino-region-m9\.js/);assert.match(casinoBlock,/loadRedWardRegionM9/);
+  assert.match(redWardBlock,/red-ward-region-m9\.js/);assert.match(redWardBlock,/loadRunEconomyV2/);
 });

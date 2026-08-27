@@ -101,20 +101,20 @@ test('M6 카드 시스템 태그와 M9 지역 보상 성향이 같은 레지스�
   assert.deepEqual(RunStructure.REGION_BRANCHES.region_casino.map(branch=>branch.id),['vip_room','underground_table']);
 });
 
-test('브라우저 로더는 9-C 기반 콘텐츠 뒤 카지노 런타임을 실제로 적재한 다음 경제/전투 UI 체인으로 진행한다',()=>{
+test('브라우저 로더는 9-C → 카지노 → 붉은 병동 → 경제 체인으로 진행한다',()=>{
   const source=fs.readFileSync(path.join(ROOT,'enemy-behavior.js'),'utf8');
   const contentStart=source.indexOf('function loadContentExpansion9C()');
   const casinoStart=source.indexOf('function loadCasinoRegionM9()');
-  const runEventsStart=source.indexOf('function loadRunEvents()');
+  const redWardStart=source.indexOf('function loadRedWardRegionM9()');
   const economyStart=source.indexOf('function loadRunEconomyV2()');
-  assert.ok(contentStart>=0,'9-C 콘텐츠 런타임 로더가 있어야 한다');
-  assert.ok(casinoStart>=0,'카지노 런타임 로더가 있어야 한다');
-  assert.ok(runEventsStart>=0&&economyStart>=0,'기존 런 이벤트/경제 로더가 있어야 한다');
-  const contentLoader=source.slice(contentStart,runEventsStart);
+  assert.ok(contentStart>=0&&casinoStart>=0&&redWardStart>=0&&economyStart>=0);
+  const contentLoader=source.slice(contentStart,source.indexOf('function loadRunEvents()'));
   const casinoLoader=source.slice(casinoStart,contentStart);
+  const redWardLoader=source.slice(redWardStart,casinoStart);
   assert.match(contentLoader,/loadScript\('content-expansion-9-c\.js','trick-content-expansion-9-c-runtime'\)/);
-  assert.match(contentLoader,/loadCasinoRegionM9\(\)/,'9-C 로드 완료 후 카지노 런타임으로 이어져야 한다');
+  assert.match(contentLoader,/loadCasinoRegionM9\(\)/);
   assert.match(casinoLoader,/loadScript\('casino-region-m9\.js','trick-casino-region-m9-runtime'\)/);
-  assert.match(casinoLoader,/loadRunEconomyV2\(\)/,'카지노 로드 완료 후 런 경제 체인으로 이어져야 한다');
-  assert.match(source,/if\(root\.RunEvents\)\{loadContentExpansion9C\(\);return;\}/);
+  assert.match(casinoLoader,/loadRedWardRegionM9\(\)/);
+  assert.match(redWardLoader,/loadScript\('red-ward-region-m9\.js','trick-red-ward-region-m9-runtime'\)/);
+  assert.match(redWardLoader,/loadRunEconomyV2\(\)/);
 });

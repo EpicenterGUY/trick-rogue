@@ -49,6 +49,15 @@
       eventWeights:Object.freeze({general:0.20,gambling:0.45,risk:0.20,river:0.15}),
       eventLabels:Object.freeze({general:'공용',gambling:'도박',risk:'위험',river:'리버'}),
       rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
+    }),
+    region_red_ward:Object.freeze({
+      id:'region_red_ward',name:'붉은 병동',icon:'✚',tone:'생존과 상태 관리',risk:'소모형',systems:'회복 · 보호막 · 출혈 · 상태',
+      desc:'피해를 버티는 것 자체가 자원이 되는 병동. 회복과 보호막으로 출혈·상태 압박을 견디며 위험한 선택을 버틴다.',
+      enemyWeights:Object.freeze({standard:0.20,bleeder:0.35,armored:0.25,infected:0.20}),
+      enemyLabels:Object.freeze({standard:'일반',bleeder:'출혈',armored:'보호',infected:'감염'}),
+      eventWeights:Object.freeze({general:0.20,medical:0.45,risk:0.20,status:0.15}),
+      eventLabels:Object.freeze({general:'공용',medical:'의료',risk:'위험',status:'상태'}),
+      rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
     })
   });
 
