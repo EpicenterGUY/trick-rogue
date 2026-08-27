@@ -16,5 +16,5 @@ jobs:
           node-version: 22
       - name: Run M9 casino regression
         run: node --test test/casino-region-m9.test.js
-      - name: Run full test suite
-        run: npm test
+      - name: Run full test suite sequentially
+        run: node --test --test-concurrency=1
