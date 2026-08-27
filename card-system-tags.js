@@ -14,7 +14,8 @@
     region_observatory:Object.freeze(['예측','손패','예약','족보']),
     region_frontier:Object.freeze(['직접 피해','회복','보호막','칩','상태']),
     region_casino:Object.freeze(['칩','적용값 감소','적용값 증가','우세 개입','예약']),
-    region_red_ward:Object.freeze(['회복','보호막','상태','직접 피해','예약'])
+    region_red_ward:Object.freeze(['회복','보호막','상태','직접 피해','예약']),
+    region_scrap_market:Object.freeze(['족보','손패','쇼다운 개입','적용값 증가','적용값 감소'])
   });
 
   const ACTION_TAGS=Object.freeze({
