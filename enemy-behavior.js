@@ -73,10 +73,20 @@
     const script=loadScript('run-economy-v2.js','trick-run-economy-v2-runtime');
     if(script?.dataset?.loaded==='true')finishRunEconomyV2();else script?.addEventListener?.('load',finishRunEconomyV2,{once:true});
   }
-  function loadRunEvents(){
-    if(root.RunEvents){loadRunEconomyV2();return;}
-    const script=loadScript('run-events.js','trick-run-events-runtime');
+  function loadCasinoRegionM9(){
+    if(root.CasinoRegionM9){loadRunEconomyV2();return;}
+    const script=loadScript('casino-region-m9.js','trick-casino-region-m9-runtime');
     if(script?.dataset?.loaded==='true')loadRunEconomyV2();else script?.addEventListener?.('load',loadRunEconomyV2,{once:true});
+  }
+  function loadContentExpansion9C(){
+    if(root.ContentExpansion9C){loadCasinoRegionM9();return;}
+    const script=loadScript('content-expansion-9-c.js','trick-content-expansion-9-c-runtime');
+    if(script?.dataset?.loaded==='true')loadCasinoRegionM9();else script?.addEventListener?.('load',loadCasinoRegionM9,{once:true});
+  }
+  function loadRunEvents(){
+    if(root.RunEvents){loadContentExpansion9C();return;}
+    const script=loadScript('run-events.js','trick-run-events-runtime');
+    if(script?.dataset?.loaded==='true')loadContentExpansion9C();else script?.addEventListener?.('load',loadContentExpansion9C,{once:true});
   }
   function loadRunMinigames(){
     if(root.RunMinigames){loadRunEvents();return;}
