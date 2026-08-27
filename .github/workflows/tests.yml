@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 22
       - run: node --test test/effect-card-70-batch1.test.js
-  remaining-s:
+  remaining-t:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -23,8 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test $(find test -maxdepth 1 -name 's*.test.js' -print)
-  remaining-t-z:
+      - run: node --test $(find test -maxdepth 1 -name 't*.test.js' -print)
+  remaining-u-z:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -32,4 +32,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test $(find test -maxdepth 1 -name '[t-z]*.test.js' -print)
+      - run: node --test $(find test -maxdepth 1 -name '[u-z]*.test.js' -print)
