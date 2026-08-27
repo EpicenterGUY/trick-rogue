@@ -41,13 +41,13 @@ test('RUN V3은 새 런부터 최종 보스까지 1~8 스테이지를 정확히 
   assert.equal(RunFlow.setRunStage(run,99),8);
 });
 
-test('첫 방문 지역은 두 번째 선택에서 제외되고 지역 분기와 journey history가 저장된다',()=>{
+test('첫 방문 지역은 두 번째 선택에서 제외되고 남은 세 지역과 분기/journey history가 저장된다',()=>{
   const {root,run}=seedRun(12);RunFlow.beginRegionChoice(run);RunFlow.chooseRegion(run,'region_frontier',{runtimeRoot:root});
   const selected=RunFlow.recordBranchSelection(run,run.map.find(node=>node.branchId==='supply_route'),{runtimeRoot:root});
   assert.equal(selected.ok,true);assert.deepEqual(run.runFlow.visitedRegionBranches.map(({regionId,branchId})=>({regionId,branchId})),[{regionId:'region_frontier',branchId:'supply_route'}]);
   assert.equal(run.runFlow.journeyHistory[0].branchLabel,'보급로');
   completeCurrentRegionBoss(run,root);
-  assert.equal(run.runFlow.pendingRegionOfferIds.includes('region_frontier'),false);assert.equal(run.runFlow.pendingRegionOfferIds.length,2);
+  assert.equal(run.runFlow.pendingRegionOfferIds.includes('region_frontier'),false);assert.equal(run.runFlow.pendingRegionOfferIds.length,3);assert.ok(run.runFlow.pendingRegionOfferIds.includes('region_casino'));
 });
 
 test('두 지역 방문 뒤 최종 관문은 두 지역 태그와 journey history에 접근할 수 있다',()=>{
