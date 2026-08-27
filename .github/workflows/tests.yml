@@ -14,7 +14,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run Node tests
-        run: node --test --test-concurrency=1
+      - name: Run M5 telemetry tests
+        run: node --test --test-concurrency=1 test/run-balance-telemetry.test.js
+      - name: Run remaining Node tests
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'run-balance-telemetry.test.js' | sort)
+          node --test --test-concurrency=1 "${files[@]}"
       - name: Validate effect cards
         run: npm run validate:cards
