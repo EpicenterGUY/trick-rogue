@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  batch1:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,22 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test test/effect-card-70-batch1.test.js
-  tactic:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test $(find test -maxdepth 1 -name 'tactic*.test.js' -print)
-  trick-trump:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test test/trick-outcome-preview.test.js test/trick-value-pipeline-7-5h.test.js test/trump-default-bonus.test.js test/trump-fields-7-5o.test.js
+      - run: npm test
