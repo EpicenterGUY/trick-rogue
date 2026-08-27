@@ -22,10 +22,15 @@
     if(root.GameUI)return;
     loadScript('game-ui.js','trick-game-ui-runtime');
   }
-  function loadRunBalanceTelemetry(){
-    if(root.RunBalanceTelemetry){loadGameUi();return;}
-    const script=loadScript('run-balance-telemetry.js','trick-run-balance-telemetry-runtime');
+  function loadLegacyRegionsM9(){
+    if(root.LegacyRegionsM9){loadGameUi();return;}
+    const script=loadScript('legacy-regions-m9.js','trick-legacy-regions-m9-runtime');
     if(script?.dataset?.loaded==='true')loadGameUi();else script?.addEventListener?.('load',loadGameUi,{once:true});
+  }
+  function loadRunBalanceTelemetry(){
+    if(root.RunBalanceTelemetry){loadLegacyRegionsM9();return;}
+    const script=loadScript('run-balance-telemetry.js','trick-run-balance-telemetry-runtime');
+    if(script?.dataset?.loaded==='true')loadLegacyRegionsM9();else script?.addEventListener?.('load',loadLegacyRegionsM9,{once:true});
   }
   function loadBattleLayoutFinal(){
     if(root.BattleLayout){loadRunBalanceTelemetry();return;}
@@ -53,9 +58,9 @@
     loadFoldExperiment();
   }
   function loadShowdownSlotManipulation(){
-    if(root.ShowdownSlotManipulation){finishShowdownSlotManipulation();return;}
+    if(root.ShowdownSlotManipulation){finishFoldExperiment();return;}
     const script=loadScript('showdown-slot-manipulation.js','trick-showdown-slot-manipulation-runtime');
-    if(script?.dataset?.loaded==='true')finishShowdownSlotManipulation();else script?.addEventListener?.('load',finishShowdownSlotManipulation,{once:true});
+    if(script?.dataset?.loaded==='true')finishFoldExperiment();else script?.addEventListener?.('load',finishFoldExperiment,{once:true});
   }
   function finishBattleRewardMarket(){
     loadShowdownSlotManipulation();
@@ -115,7 +120,7 @@
   }
   function loadTrickOutcomePreview(){
     if(root.TrickOutcomePreview){loadRunStartV2();return;}
-    const script=loadScript('trick-outcome-preview.js','trick-outcome-preview-runtime');
+    const script=loadScript('trick-outcome-preview.js','trick-trick-outcome-preview-runtime');
     if(script?.dataset?.loaded==='true')loadRunStartV2();else script?.addEventListener?.('load',loadRunStartV2,{once:true});
   }
   function loadEnemyInformation(){
