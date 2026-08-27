@@ -137,13 +137,14 @@ if(!ENABLED){
     await cdp.send('Page.navigate',{url});
     await waitFor(cdp,"document.readyState==='complete'",{label:'page loaded'});
     await waitFor(cdp,"typeof RunFlowV2!=='undefined'&&typeof RunStartV2!=='undefined'&&document.getElementById('startScreen').style.visibility!=='hidden'",{label:'start UI ready'});
+    await waitFor(cdp,"typeof RunBalanceTelemetry!=='undefined'&&RunBalanceTelemetry.VERSION==='M5-1'",{label:'M5 telemetry runtime'});
 
     await clickElement(cdp,"document.querySelectorAll('#charGrid .option')[1]",'승부사 스타터',{hitTest:true});
     await clickElement(cdp,"document.querySelectorAll('#packGrid .option')[1]",'두 번째 특성',{hitTest:true});
     const selected=await evaluate(cdp,"({starter:document.querySelector('#charGrid .option.sel h3')?.textContent,trait:document.querySelector('#packGrid .option.sel h3')?.textContent})");
     assert.equal(selected.starter,'승부사');assert.ok(selected.trait);
     await clickElement(cdp,"#startScreen .startBottom .primary",'런 시작',{hitTest:true});
-    await waitFor(cdp,"run?.runStage===1&&run?.actId==='common'&&run?.starterId==='gambler'&&!!run?.traitId&&document.getElementById('mapScreen').classList.contains('active')",{label:'stage 1 common'});
+    await waitFor(cdp,"run?.runStage===1&&run?.actId==='common'&&run?.starterId==='gambler'&&!!run?.traitId&&run?.balanceTelemetry?.version==='M5-1'&&document.getElementById('mapScreen').classList.contains('active')",{label:'stage 1 common with M5 telemetry'});
 
     await winBattleNode(cdp,'c0');
     await finishEventNode(cdp,'c1');
@@ -171,9 +172,13 @@ if(!ENABLED){
     await restAtCamp(cdp,'f4');
     await winBattleNode(cdp,'f5');
 
-    await waitFor(cdp,"run.runComplete===true&&run.runStage===8&&run.runResult?.outcome==='clear'&&document.querySelector('#modal h2')?.textContent==='런 클리어'",{timeout:10000,label:'run clear result'});
-    const final=await evaluate(cdp,"({stage:run.runStage,outcome:run.runResult.outcome,visited:run.runFlow.visitedRegionIds.length,completed:run.runFlow.completedRegionIds.length,branches:run.runFlow.visitedRegionBranches.length,journeys:run.runFlow.journeyHistory.length})");
-    assert.deepEqual(final,{stage:8,outcome:'clear',visited:2,completed:2,branches:2,journeys:2});
+    await waitFor(cdp,"run.runComplete===true&&run.runStage===8&&run.runResult?.outcome==='clear'&&run.runResult?.balance?.version==='M5-1'&&document.querySelector('#modal h2')?.textContent==='런 클리어'",{timeout:10000,label:'run clear result with M5 summary'});
+    const final=await evaluate(cdp,"({stage:run.runStage,outcome:run.runResult.outcome,visited:run.runFlow.visitedRegionIds.length,completed:run.runFlow.completedRegionIds.length,branches:run.runFlow.visitedRegionBranches.length,journeys:run.runFlow.journeyHistory.length,balance:run.runResult.balance,m5Rows:document.querySelectorAll('#modal [data-m5-balance]').length})");
+    assert.deepEqual({stage:final.stage,outcome:final.outcome,visited:final.visited,completed:final.completed,branches:final.branches,journeys:final.journeys},{stage:8,outcome:'clear',visited:2,completed:2,branches:2,journeys:2});
+    assert.ok(final.balance.battleCount>0,'M5 summary should include completed battles');
+    assert.ok(final.balance.nodes.total>0,'M5 summary should include entered nodes');
+    assert.equal(final.balance.regionsVisited,2,'M5 summary should preserve region visits');
+    assert.equal(final.m5Rows,5,'result modal should render five M5 summary rows');
     assert.deepEqual(runtimeErrors,[],'browser runtime exceptions should be empty');
   }finally{
     await cleanupBrowser(browser,cdp);

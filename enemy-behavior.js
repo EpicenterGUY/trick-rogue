@@ -22,10 +22,15 @@
     if(root.GameUI)return;
     loadScript('game-ui.js','trick-game-ui-runtime');
   }
-  function loadBattleLayoutFinal(){
-    if(root.BattleLayout){loadGameUi();return;}
-    const script=loadScript('battle-layout.js','trick-battle-layout-runtime');
+  function loadRunBalanceTelemetry(){
+    if(root.RunBalanceTelemetry){loadGameUi();return;}
+    const script=loadScript('run-balance-telemetry.js','trick-run-balance-telemetry-runtime');
     if(script?.dataset?.loaded==='true')loadGameUi();else script?.addEventListener?.('load',loadGameUi,{once:true});
+  }
+  function loadBattleLayoutFinal(){
+    if(root.BattleLayout){loadRunBalanceTelemetry();return;}
+    const script=loadScript('battle-layout.js','trick-battle-layout-runtime');
+    if(script?.dataset?.loaded==='true')loadRunBalanceTelemetry();else script?.addEventListener?.('load',loadRunBalanceTelemetry,{once:true});
   }
   function finishRunPersistence(){
     root.RelicSystem?.wrapShowReward?.(root);

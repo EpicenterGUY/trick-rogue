@@ -19,8 +19,8 @@ jobs:
       - name: Run mobile browser smoke
         env:
           TRICK_BROWSER_SMOKE: '1'
-        run: node --test test/browser-smoke-v1.test.js test/keyword-action-button-browser.test.js
+        run: node --test --test-concurrency=1 test/browser-smoke-v1.test.js test/keyword-action-button-browser.test.js
       - name: Run RUN V3 browser E2E
         env:
           TRICK_RUN_V3_E2E: '1'
-        run: node --test test/run-v3-browser-e2e-v2.test.js
+        run: node --test --test-concurrency=1 test/run-v3-browser-e2e-v2.test.js
