@@ -53,13 +53,14 @@ test('8-B 공통지역 마지막 관문 완료는 기존 완료 처리를 거친
   const result=root.completeNode(gate);
   assert.equal(result.ok,true);
   assert.equal(root.run.runFlow.phase,'region_choice');
-  assert.equal(root.run.runFlow.pendingRegionOfferIds.length,4);
+  assert.equal(root.run.runFlow.pendingRegionOfferIds.length,5);
   assert.equal(root.modals.length,1);
   assert.match(root.modals[0],/지역 선택/);
   assert.match(root.modals[0],/유랑극장/);
   assert.match(root.modals[0],/안개 관측소/);
   assert.match(root.modals[0],/황야 전선/);
   assert.match(root.modals[0],/침몰 카지노/);
+  assert.match(root.modals[0],/붉은 병동/);
 });
 
 test('8-B 지역 보스 완료는 구형 completeNode를 호출하지 않고 다음 지역 선택으로 전환한다',()=>{
@@ -84,7 +85,7 @@ test('8-B 지역 보스 완료는 구형 completeNode를 호출하지 않고 다
   assert.equal(result.next,'region_choice');
   assert.equal(root.legacyCalls,0);
   assert.deepEqual(root.run.runFlow.completedRegionIds,['region_frontier']);
-  assert.equal(root.run.runFlow.pendingRegionOfferIds.length,3);
+  assert.equal(root.run.runFlow.pendingRegionOfferIds.length,4);
   assert.ok(!root.run.runFlow.pendingRegionOfferIds.includes('region_frontier'));
   assert.equal(root.modals.length,1);
   assert.match(root.modals[0],/지역 선택/);
