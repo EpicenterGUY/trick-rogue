@@ -47,7 +47,7 @@ if(!ENABLED){
       enemyName:'렌즈 감시관',contentId:'observatory_lens_warden',profileId:'legacy-m9:observatory_lens_warden',enemyCardContentId:'observatory_lens_warden',ruleIds:['warden_lens_lock'],region:'region_observatory'
     });
     assert.deepEqual(await startRegionBattle(cdp,{id:'m9-frontier-armored',regionId:'region_frontier',enemyTag:'armored'}),{
-      enemyName:'전선 방벽병',contentId:'frontier_bulwark',profileId:'legacy-m9:frontier_bulwark',enemyCardContentId:'frontier_bulwark',ruleIds:['bulwark_fortify'],region:'region_frontier'
+      enemyName:'철갑 보급병',contentId:'frontier_bulwark',profileId:'legacy-m9:frontier_bulwark',enemyCardContentId:'frontier_bulwark',ruleIds:['bulwark_armor'],region:'region_frontier'
     });
 
     await evaluate(cdp,"(()=>{run.actId='region_theater';run.runFlow.currentRegionId='region_theater';const node={id:'m9-theater-event',type:'event',next:[],regionPlan:{regionId:'region_theater',eventTag:'field'}};run.available.add(node.id);showEvent(node)})()");
