@@ -36,7 +36,7 @@
       description:plan.cardText,activation:meta.activation,terms:meta.terms,effects:Object.freeze(effects),targeting:targeting?Object.freeze({...targeting}):null,
       implemented:true,category:'general',rarity:'common',legacyTacticId:legacyId,migrationStage:plan.activationStage||'7.5-P'
     };
-    return typeof SystemTags?.decorateDefinition==='function'?SystemTags.decorateDefinition(definition):Object.freeze(definition);
+    return typeof SystemTags?.decorateDefinition==='function'?Object.freeze(SystemTags.decorateDefinition(definition)):Object.freeze(definition);
   }
 
   const ACTIVE_CARD_DEFINITIONS=Object.freeze(ACTIVE_IDS.map(createDefinition));
