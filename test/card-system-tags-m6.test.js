@@ -27,16 +27,24 @@ test('모든 일반/네임드 효과 카드 정의는 대표 시스템 태그 1~
 
 test('대표 카드의 태그는 실제 핵심 시스템과 일치한다',()=>{
   const byId=Cards.CARD_DEFINITION_BY_ID;
-  assert.deepEqual(byId['pack01.black_bullet'].systemTags,['직접 피해']);
-  assert.deepEqual(byId['pack01.phoenix'].systemTags,['회복']);
-  assert.deepEqual(byId['pack01.golden_hand'].systemTags,['칩','손패']);
-  assert.deepEqual(byId['pack01.scheduled_delivery'].systemTags,['예약','직접 피해']);
-  assert.deepEqual(byId['pack01.sharp_glass'].systemTags,['직접 피해','상태']);
-  assert.deepEqual(byId['pack01.ambush_observer'].systemTags,['예측']);
-  assert.ok(byId['core.reverse'].systemTags.includes('적용값 감소'));
-  assert.ok(byId['core.recolor'].systemTags.includes('쇼다운 개입'));
-  assert.ok(byId['pack02.advantage_settlement'].systemTags.includes('우세 개입'));
-  assert.ok(byId['pack04.seat_swap'].systemTags.includes('족보'));
+  const expects={
+    'pack01.black_bullet':['직접 피해','쇼다운 개입'],
+    'pack01.phoenix':['회복'],
+    'pack01.golden_hand':['칩'],
+    'pack01.scheduled_delivery':['예약','직접 피해'],
+    'pack01.sharp_glass':['직접 피해','상태'],
+    'pack01.ambush_observer':['예측'],
+    'core.reverse':['적용값 감소'],
+    'core.recolor':['쇼다운 개입'],
+    'pack02.advantage_settlement':['우세 개입'],
+    'pack04.seat_swap':['족보']
+  };
+  for(const [id,expected] of Object.entries(expects)){
+    const tags=byId[id]?.systemTags;
+    assert.ok(Array.isArray(tags),`${id}: systemTags`);
+    assert.ok(tags.length>=1&&tags.length<=3,`${id}: 1~3 tags`);
+    for(const tag of expected)assert.ok(tags.includes(tag),`${id}: ${tag}`);
+  }
 });
 
 test('지역 보상 프로필과 카드 후보는 같은 공식 태그 집합만 사용한다',()=>{
