@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  r-support:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,44 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test --test-concurrency=1 test/relic*.test.js test/reward*.test.js test/river*.test.js test/rules*.test.js test/runtime*.test.js
-
-  run-telemetry-economy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test --test-concurrency=1 test/run-balance-telemetry.test.js test/run-economy-v2.test.js test/run-event-policy-and-magic-box.test.js
-
-  run-field-flow:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test --test-concurrency=1 test/run-field-ux*.test.js test/run-fields.test.js test/run-flow-v2*.test.js
-
-  run-structure-persistence:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test --test-concurrency=1 test/run-map-generation.test.js test/run-paths.test.js test/run-persistence-8-f.test.js test/run-results.test.js test/run-start-v2.test.js test/run-structure.test.js
-
-  run-v3:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: node --test --test-concurrency=1 test/run-v3*.test.js
+      - run: npm test
