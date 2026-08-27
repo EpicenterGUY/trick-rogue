@@ -108,10 +108,15 @@
     const script=loadScript('run-start-v2.js','trick-run-start-v2-runtime');
     if(script?.dataset?.loaded==='true')loadRunFlowV2();else script?.addEventListener?.('load',loadRunFlowV2,{once:true});
   }
-  function loadEnemyInformation(){
-    if(root.EnemyInformation){loadRunStartV2();return;}
-    const script=loadScript('enemy-information.js','trick-enemy-information-runtime');
+  function loadTrickOutcomePreview(){
+    if(root.TrickOutcomePreview){loadRunStartV2();return;}
+    const script=loadScript('trick-outcome-preview.js','trick-outcome-preview-runtime');
     if(script?.dataset?.loaded==='true')loadRunStartV2();else script?.addEventListener?.('load',loadRunStartV2,{once:true});
+  }
+  function loadEnemyInformation(){
+    if(root.EnemyInformation){loadTrickOutcomePreview();return;}
+    const script=loadScript('enemy-information.js','trick-enemy-information-runtime');
+    if(script?.dataset?.loaded==='true')loadTrickOutcomePreview();else script?.addEventListener?.('load',loadTrickOutcomePreview,{once:true});
   }
   function loadDeckBoundaries(){
     if(root.DeckBoundaries){loadEnemyInformation();return;}

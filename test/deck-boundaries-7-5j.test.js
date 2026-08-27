@@ -127,20 +127,22 @@ test('7.5-J 브라우저 쇼다운 어댑터는 5번째 트릭 직후 기존 쇼
   assert.equal(root.battle.hand.length,3);
 });
 
-test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 정보·시작 정체성·8-B 런 흐름·8-C 경제를 거쳐 최종 전투 레이아웃 전에 로드된다',()=>{
+test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 정보·공개정보 미리보기·시작 정체성·8-B 런 흐름·8-C 경제를 거쳐 최종 전투 레이아웃 전에 로드된다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   const finalStart=source.indexOf('function loadBattleLayoutFinal()');
   const economyStart=source.indexOf('function loadRunEconomyV2()');
   const flowStart=source.indexOf('function loadRunFlowV2()');
   const runStart=source.indexOf('function loadRunStartV2()');
+  const previewStart=source.indexOf('function loadTrickOutcomePreview()');
   const intelStart=source.indexOf('function loadEnemyInformation()');
   const deckStart=source.indexOf('function loadDeckBoundaries()');
   const tempoStart=source.indexOf('function loadEncounterTempo()');
   const nextAfterTempo=source.indexOf('function loadBattleLayoutFile()');
-  assert.ok(finalStart>=0&&economyStart>finalStart&&flowStart>economyStart&&runStart>flowStart&&intelStart>runStart&&deckStart>intelStart&&tempoStart>deckStart&&nextAfterTempo>tempoStart);
+  assert.ok(finalStart>=0&&economyStart>finalStart&&flowStart>economyStart&&runStart>flowStart&&previewStart>runStart&&intelStart>previewStart&&deckStart>intelStart&&tempoStart>deckStart&&nextAfterTempo>tempoStart);
   const economyBlock=source.slice(economyStart,flowStart);
   const flowBlock=source.slice(flowStart,runStart);
-  const runStartBlock=source.slice(runStart,intelStart);
+  const runStartBlock=source.slice(runStart,previewStart);
+  const previewBlock=source.slice(previewStart,intelStart);
   const intelBlock=source.slice(intelStart,deckStart);
   const deckBlock=source.slice(deckStart,tempoStart);
   const tempoBlock=source.slice(tempoStart,nextAfterTempo);
@@ -148,8 +150,11 @@ test('7.5-J 덱 경계 런타임은 전투 템포 뒤, 정보·시작 정체성�
   assert.match(deckBlock,/if\(root\.DeckBoundaries\)\{loadEnemyInformation\(\);return;\}/);
   assert.match(deckBlock,/addEventListener\?\.\('load',loadEnemyInformation/);
   assert.match(intelBlock,/loadScript\('enemy-information\.js','trick-enemy-information-runtime'\)/);
-  assert.match(intelBlock,/if\(root\.EnemyInformation\)\{loadRunStartV2\(\);return;\}/);
-  assert.match(intelBlock,/addEventListener\?\.\('load',loadRunStartV2/);
+  assert.match(intelBlock,/if\(root\.EnemyInformation\)\{loadTrickOutcomePreview\(\);return;\}/);
+  assert.match(intelBlock,/addEventListener\?\.\('load',loadTrickOutcomePreview/);
+  assert.match(previewBlock,/loadScript\('trick-outcome-preview\.js','trick-outcome-preview-runtime'\)/);
+  assert.match(previewBlock,/if\(root\.TrickOutcomePreview\)\{loadRunStartV2\(\);return;\}/);
+  assert.match(previewBlock,/addEventListener\?\.\('load',loadRunStartV2/);
   assert.match(runStartBlock,/loadScript\('run-start-v2\.js','trick-run-start-v2-runtime'\)/);
   assert.match(runStartBlock,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
   assert.match(runStartBlock,/addEventListener\?\.\('load',loadRunFlowV2/);

@@ -157,7 +157,7 @@ test('공통지역 보상 선택은 공용 효과 카드를 실제 일반 효과
   assert.equal(result.ok,true);
   assert.equal(run.deck.length,before+1);
   assert.equal(run.deck.at(-1).definition.id,'core.scout');
-  assert.equal(run.deck.at(-1).named,null);
+  assert.equal(root.run.deck.at(-1).named,null);
   assert.equal(calls.close,1);
   assert.equal(calls.complete,1);
 });
@@ -180,17 +180,21 @@ test('브라우저 beginRun 어댑터는 기존 런 초기화 뒤 공용 시작 
   assert.equal(root.rendered,1);
 });
 
-test('8-A 시작 정체성 뒤 8-B 런 흐름과 8-C 경제 계층을 거쳐 최종 전투 레이아웃을 로드한다',()=>{
+test('8-A 시작 정체성 뒤 공개정보 미리보기·8-B 런 흐름과 8-C 경제 계층을 거쳐 최종 전투 레이아웃을 로드한다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
   assert.match(source,/enemy-information\.js/);
+  assert.match(source,/trick-outcome-preview\.js/);
   assert.match(source,/run-start-v2\.js/);
   assert.match(source,/run-flow-v2\.js/);
   assert.match(source,/run-economy-v2\.js/);
   assert.match(source,/battle-layout\.js/);
+  assert.match(source,/function loadTrickOutcomePreview\(\)/);
   assert.match(source,/function loadRunStartV2\(\)/);
   assert.match(source,/function loadRunFlowV2\(\)/);
   assert.match(source,/function loadRunEconomyV2\(\)/);
-  assert.match(source,/if\(root\.EnemyInformation\)\{loadRunStartV2\(\);return;\}/);
+  assert.match(source,/if\(root\.EnemyInformation\)\{loadTrickOutcomePreview\(\);return;\}/);
+  assert.match(source,/loadScript\('trick-outcome-preview\.js','trick-outcome-preview-runtime'/);
+  assert.match(source,/if\(root\.TrickOutcomePreview\)\{loadRunStartV2\(\);return;\}/);
   assert.match(source,/loadScript\('run-start-v2\.js','trick-run-start-v2-runtime'/);
   assert.match(source,/if\(root\.RunStartV2\)\{loadRunFlowV2\(\);return;\}/);
   assert.match(source,/loadScript\('run-flow-v2\.js','trick-run-flow-v2-runtime'/);
