@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  m9-casino:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -14,28 +14,44 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run M9 casino regression
-        run: node --test test/casino-region-m9.test.js
-      - name: Group A - battle through fold
-        id: group_a
-        continue-on-error: true
-        run: node --test --test-concurrency=1 test/b*.test.js test/c*.test.js test/d*.test.js test/e*.test.js test/f*.test.js
-      - name: Group B - game through pure
-        id: group_b
-        continue-on-error: true
-        run: node --test --test-concurrency=1 test/g*.test.js test/k*.test.js test/l*.test.js test/m*.test.js test/o*.test.js test/p*.test.js
-      - name: Group C - relic through run
-        id: group_c
-        continue-on-error: true
-        run: node --test --test-concurrency=1 test/r*.test.js
-      - name: Group D - showdown through unified
-        id: group_d
-        continue-on-error: true
-        run: node --test --test-concurrency=1 test/s*.test.js test/t*.test.js test/u*.test.js
-      - name: Fail if a group failed
-        if: always()
-        run: |
-          test "${{ steps.group_a.outcome }}" = success
-          test "${{ steps.group_b.outcome }}" = success
-          test "${{ steps.group_c.outcome }}" = success
-          test "${{ steps.group_d.outcome }}" = success
+      - run: node --test test/casino-region-m9.test.js
+
+  group-a:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test --test-concurrency=1 test/b*.test.js test/c*.test.js test/d*.test.js test/e*.test.js test/f*.test.js
+
+  group-b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test --test-concurrency=1 test/g*.test.js test/k*.test.js test/l*.test.js test/m*.test.js test/o*.test.js test/p*.test.js
+
+  group-c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test --test-concurrency=1 test/r*.test.js
+
+  group-d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test --test-concurrency=1 test/s*.test.js test/t*.test.js test/u*.test.js
