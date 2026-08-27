@@ -58,7 +58,7 @@ test('붉은 병동 이벤트는 의료·위험·상태·공용 4종이며 모�
   for(const event of events){
     assert.equal(event.choices.length,2,event.id);
     assert.ok(event.choices.every(choice=>choice.id&&choice.label&&choice.actions.length>=1),event.id);
-    assert.match(Ward.redWardEventHtml(event),new RegExp(`data-red-ward-m9-event=\\"${event.id}\\"`));
+    assert.match(Ward.redWardEventHtml(event),new RegExp(`data-red-ward-m9-event=\"${event.id}\"`));
   }
 });
 
@@ -84,7 +84,7 @@ test('M6 보상 태그와 병동 지역 프로필/분기가 같은 지역 ID를 
   assert.deepEqual(RunStructure.REGION_BRANCHES.region_red_ward.map(branch=>branch.id),['emergency_room','isolation_ward']);
 });
 
-test('브라우저 로더는 카지노 뒤 붉은 병동을 적재한 다음 경제 체인으로 진행한다',()=>{
+test('브라우저 로더는 카지노 뒤 붉은 병동과 폐품 시장을 거쳐 경제 체인으로 진행한다',()=>{
   const source=fs.readFileSync(path.join(ROOT,'enemy-behavior.js'),'utf8');
   const redWardStart=source.indexOf('function loadRedWardRegionM9()');
   const casinoStart=source.indexOf('function loadCasinoRegionM9()');
@@ -93,6 +93,6 @@ test('브라우저 로더는 카지노 뒤 붉은 병동을 적재한 다음 경
   const redWardLoader=source.slice(redWardStart,casinoStart);
   const casinoLoader=source.slice(casinoStart,source.indexOf('function loadContentExpansion9C()'));
   assert.match(redWardLoader,/loadScript\('red-ward-region-m9\.js','trick-red-ward-region-m9-runtime'\)/);
-  assert.match(redWardLoader,/loadRunEconomyV2\(\)/);
+  assert.match(redWardLoader,/loadScrapMarketRegionM9\(\)/);
   assert.match(casinoLoader,/loadRedWardRegionM9\(\)/);
 });
