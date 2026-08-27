@@ -30,7 +30,7 @@ if(!ENABLED){
     await waitFor(cdp,"typeof LegacyRegionsM9!=='undefined'&&LegacyRegionsM9.STAGE==='M9-LEGACY-REGIONS-1'&&typeof startBattle==='function'&&typeof showEvent==='function'",{label:'legacy region runtime'});
 
     const catalog=await evaluate(cdp,"({errors:LegacyRegionsM9.validateContent(),regions:LegacyRegionsM9.REGION_IDS,normal:Object.values(LegacyRegionsM9.CONTENT).filter(x=>x.type==='battle').length,elite:Object.values(LegacyRegionsM9.CONTENT).filter(x=>x.type==='elite').length,eventCounts:Object.fromEntries(LegacyRegionsM9.REGION_IDS.map(id=>[id,LegacyRegionsM9.combinedEventIds(id).length]))})");
-    assert.deepEqual(catalog,{errors:[],regions:['region_theater','region_observatory','region_frontier'],normal:6,elite:2,eventCounts:{region_theater:4,region_observatory:4,region_frontier:4}});
+    assert.deepEqual(catalog,{errors:[],regions:['region_theater','region_observatory','region_frontier'],normal:7,elite:2,eventCounts:{region_theater:4,region_observatory:4,region_frontier:4}});
 
     await clickElement(cdp,"document.querySelectorAll('#charGrid .option')[0]",'스타터',{hitTest:true});
     await clickElement(cdp,"document.querySelectorAll('#packGrid .option')[0]",'특성',{hitTest:true});
