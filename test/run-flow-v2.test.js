@@ -81,8 +81,14 @@ test('지역 선택 중에는 맵 노드 진입을 막고 선택 완료 후 다�
   RunFlow.resetForTests();const root=runtime();root.run={runFlow:RunFlow.createFlowState(),actId:'common'};root.run.runFlow.phase='region_choice';root.calls=[];root.enterNode=function(node){this.calls.push(node.id);return true};RunFlow.wrapEnterNode(root);assert.equal(root.enterNode({id:'c0'}),false);assert.deepEqual(root.calls,[]);root.run.runFlow.phase='common';assert.equal(root.enterNode({id:'c0'}),true);assert.deepEqual(root.calls,['c0']);
 });
 
-test('런타임 로더는 런 흐름 뒤 미니게임 → 이벤트 → 경제 계층 순서로 붙인다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');const flowStart=source.indexOf('function loadRunFlowV2()'),miniStart=source.indexOf('function loadRunMinigames()'),eventStart=source.indexOf('function loadRunEvents()'),economyStart=source.indexOf('function loadRunEconomyV2()'),startStart=source.indexOf('function loadRunStartV2()');
-  assert.ok(economyStart>=0&&eventStart>economyStart&&miniStart>eventStart&&flowStart>miniStart&&startStart>flowStart,'함수 선언 순서는 체인 역순이어도 호출 체인은 flow→minigame→event→economy여야 한다');
-  const flowBlock=source.slice(flowStart,startStart),miniBlock=source.slice(miniStart,flowStart),eventBlock=source.slice(eventStart,miniStart);assert.match(flowBlock,/run-flow-v2\.js/);assert.match(flowBlock,/loadRunMinigames/);assert.match(miniBlock,/run-minigames\.js/);assert.match(miniBlock,/loadRunEvents/);assert.match(eventBlock,/run-events\.js/);assert.match(eventBlock,/loadRunEconomyV2/);
+test('런타임 로더는 런 흐름 뒤 미니게임 → 이벤트 → 9-C → 카지노 → 경제 계층 순서로 붙인다',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
+  const flowStart=source.indexOf('function loadRunFlowV2()'),miniStart=source.indexOf('function loadRunMinigames()'),eventStart=source.indexOf('function loadRunEvents()'),contentStart=source.indexOf('function loadContentExpansion9C()'),casinoStart=source.indexOf('function loadCasinoRegionM9()'),economyStart=source.indexOf('function loadRunEconomyV2()'),startStart=source.indexOf('function loadRunStartV2()');
+  assert.ok(economyStart>=0&&casinoStart>economyStart&&contentStart>casinoStart&&eventStart>contentStart&&miniStart>eventStart&&flowStart>miniStart&&startStart>flowStart,'함수 선언 순서는 체인 역순이어도 호출 체인은 flow→minigame→event→9-C→casino→economy여야 한다');
+  const flowBlock=source.slice(flowStart,startStart),miniBlock=source.slice(miniStart,flowStart),eventBlock=source.slice(eventStart,miniStart),contentBlock=source.slice(contentStart,eventStart),casinoBlock=source.slice(casinoStart,contentStart);
+  assert.match(flowBlock,/run-flow-v2\.js/);assert.match(flowBlock,/loadRunMinigames/);
+  assert.match(miniBlock,/run-minigames\.js/);assert.match(miniBlock,/loadRunEvents/);
+  assert.match(eventBlock,/run-events\.js/);assert.match(eventBlock,/loadContentExpansion9C/);
+  assert.match(contentBlock,/content-expansion-9-c\.js/);assert.match(contentBlock,/loadCasinoRegionM9/);
+  assert.match(casinoBlock,/casino-region-m9\.js/);assert.match(casinoBlock,/loadRunEconomyV2/);
 });
