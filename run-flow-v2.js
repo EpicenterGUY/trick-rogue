@@ -15,7 +15,7 @@
 
   const REGION_PROFILES=Object.freeze({
     region_theater:Object.freeze({
-      id:'region_theater',name:'유랑극장',icon:'♬',tone:'변칙과 필드',risk:'변동 큼',
+      id:'region_theater',name:'유랑극장',icon:'♬',tone:'변칙과 필드',risk:'변동 큼',systems:'필드 · 쇼다운 · 슬롯',
       desc:'공연과 돌발 규칙이 자주 끼어드는 지역. 필드와 변칙 이벤트 쪽으로 빌드를 유도한다.',
       enemyWeights:Object.freeze({standard:0.35,trickster:0.45,pressure:0.20}),
       enemyLabels:Object.freeze({standard:'일반',trickster:'변칙',pressure:'압박'}),
@@ -24,7 +24,7 @@
       rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
     }),
     region_observatory:Object.freeze({
-      id:'region_observatory',name:'안개 관측소',icon:'◉',tone:'정보와 제어',risk:'판단형',
+      id:'region_observatory',name:'안개 관측소',icon:'◉',tone:'정보와 제어',risk:'판단형',systems:'예측 · 손패 · 정보',
       desc:'정찰과 정보 활용이 강해지는 지역. 적 의도를 읽고 손패를 조절하는 흐름을 밀어준다.',
       enemyWeights:Object.freeze({standard:0.35,observer:0.45,disruptor:0.20}),
       enemyLabels:Object.freeze({standard:'일반',observer:'관측',disruptor:'방해'}),
@@ -33,12 +33,21 @@
       rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
     }),
     region_frontier:Object.freeze({
-      id:'region_frontier',name:'황야 전선',icon:'⚑',tone:'칩과 트릭 압박',risk:'공세형',
+      id:'region_frontier',name:'황야 전선',icon:'⚑',tone:'칩과 트릭 압박',risk:'공세형',systems:'칩 · 직접 압박 · 상태',
       desc:'트릭 승리와 칩 운용을 강하게 요구하는 지역. 빠른 압박과 보급 선택이 자주 나온다.',
       enemyWeights:Object.freeze({standard:0.35,aggressive:0.45,armored:0.20}),
       enemyLabels:Object.freeze({standard:'일반',aggressive:'공세',armored:'중장'}),
       eventWeights:Object.freeze({general:0.20,supply:0.45,risk:0.35}),
       eventLabels:Object.freeze({general:'공용',supply:'보급',risk:'위험'}),
+      rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
+    }),
+    region_casino:Object.freeze({
+      id:'region_casino',name:'침몰 카지노',icon:'♢',tone:'배팅과 역전',risk:'고변동',systems:'칩 · 낮은 숫자 · 반전',
+      desc:'물에 잠긴 테이블에서 낮은 숫자와 반전 승부의 가치를 끌어올린다. 큰 보상과 손실 가능성이 함께 따라온다.',
+      enemyWeights:Object.freeze({standard:0.20,bluffer:0.35,debt_collector:0.25,reverse:0.20}),
+      enemyLabels:Object.freeze({standard:'일반',bluffer:'허세',debt_collector:'징수',reverse:'반전'}),
+      eventWeights:Object.freeze({general:0.20,gambling:0.45,risk:0.20,river:0.15}),
+      eventLabels:Object.freeze({general:'공용',gambling:'도박',risk:'위험',river:'리버'}),
       rewardWeights:Object.freeze({neutral:0.65,theme:0.35})
     })
   });
@@ -64,9 +73,9 @@
   function regionIds(){return Object.keys(REGION_PROFILES)}
   function regionBranches(regionId,runtimeRoot=root){return(runStructure(runtimeRoot)?.REGION_BRANCHES?.[regionId]||[]).map(branch=>({...branch,tags:[...(branch.tags||[])]}))}
   function validateRegionProfiles(runtimeRoot=root){
-    const errors=[],structure=runStructure(runtimeRoot);if(regionIds().length!==3)errors.push('first region offer requires exactly 3 regions');
+    const errors=[],structure=runStructure(runtimeRoot);if(regionIds().length<3)errors.push('region offer requires at least 3 regions');
     for(const profile of Object.values(REGION_PROFILES)){
-      if(!profile.id||!profile.name)errors.push('region missing id/name');if(!structure?.ACT_DEFINITIONS?.[profile.id])errors.push(`${profile.id}: missing act definition`);
+      if(!profile.id||!profile.name)errors.push('region missing id/name');if(!profile.systems)errors.push(`${profile.id}: missing core systems summary`);if(!structure?.ACT_DEFINITIONS?.[profile.id])errors.push(`${profile.id}: missing act definition`);
       if((structure?.REGION_BRANCHES?.[profile.id]||[]).length<2)errors.push(`${profile.id}: at least two region branches are required`);
       for(const [kind,weights] of [['enemy',profile.enemyWeights],['event',profile.eventWeights],['reward',profile.rewardWeights]]){const total=weightTotal(weights);if(Math.abs(total-1)>.000001)errors.push(`${profile.id}: ${kind} weights must sum to 1`)}
       const neutral=Number(profile.rewardWeights?.neutral),theme=Number(profile.rewardWeights?.theme);if(neutral<.6||neutral>.7||theme<.3||theme>.4)errors.push(`${profile.id}: reward mix must stay near 60~70 / 30~40`);
@@ -154,7 +163,7 @@
   function gatewayPlan(runState){if(runState?.actId!==GATEWAY_ACT_ID)return null;return{sourceRegionIds:[...ensureFlowState(runState).visitedRegionIds],journeyHistory:ensureFlowState(runState).journeyHistory.map(entry=>({...entry})),nodePlans:(runState.map||[]).map(node=>({id:node.id,regionPlan:node.regionPlan?{...node.regionPlan}:null}))}}
   function runFlowSummary(runState){if(!runState?.runFlow)return null;const flow=ensureFlowState(runState),profile=regionProfile(flow.currentRegionId);return{version:flow.version,stage:runState.runStage,maxStage:MAX_RUN_STAGE,phase:flow.phase,choiceRound:flow.choiceRound,visitedRegionIds:[...flow.visitedRegionIds],completedRegionIds:[...flow.completedRegionIds],visitedRegionBranches:flow.visitedRegionBranches.map(entry=>({...entry})),journeyHistory:flow.journeyHistory.map(entry=>({...entry})),currentRegionId:flow.currentRegionId,currentRegionName:profile?.name||null,pendingRegionOfferIds:[...flow.pendingRegionOfferIds],actId:runState.actId||null,actName:runState.actName||''}}
 
-  function regionOptionHtml(profile){const neutral=Math.round(Number(profile.rewardWeights.neutral)*100),theme=Math.round(Number(profile.rewardWeights.theme)*100);return`<button class="choice" onclick="RunFlowV2.chooseRegionFromUi('${profile.id}')"><b>${escapeHtml(profile.icon)} ${escapeHtml(profile.name)}</b><span>${escapeHtml(profile.desc)}<br>성향 · ${escapeHtml(profile.tone)} · ${escapeHtml(profile.risk)}<br>카드 보상 경향 · 공용 ${neutral}% / 지역 ${theme}%</span></button>`}
+  function regionOptionHtml(profile){const neutral=Math.round(Number(profile.rewardWeights.neutral)*100),theme=Math.round(Number(profile.rewardWeights.theme)*100);return`<button class="choice" onclick="RunFlowV2.chooseRegionFromUi('${profile.id}')"><b>${escapeHtml(profile.icon)} ${escapeHtml(profile.name)}</b><span>${escapeHtml(profile.desc)}<br>핵심 · ${escapeHtml(profile.systems)}<br>성향 · ${escapeHtml(profile.tone)} · 위험도 ${escapeHtml(profile.risk)}<br>카드 보상 경향 · 공용 ${neutral}% / 지역 ${theme}%</span></button>`}
   function showRegionChoice(runtimeRoot=root){const runState=activeRun(runtimeRoot);if(!runState)return false;const model=regionChoiceModel(runState);if(!model.options.length)return false;const suffix=model.round===1?'공통지역을 통과했다. 현재 덱을 보고 첫 지역을 고른다.':'지역 보스를 쓰러뜨렸다. 첫 방문 지역을 제외하고 다음 지역을 고른다.',html=`<h2 class="cyan">지역 선택</h2><p>${escapeHtml(suffix)}<br>지역은 카드 획득을 제한하지 않고 등장 경향만 바꾼다.</p><div class="choiceList">${model.options.map(regionOptionHtml).join('')}</div>`;if(typeof runtimeRoot?.showModal==='function'){runtimeRoot.showModal(html);return true}const doc=runtimeRoot?.document,modal=doc?.getElementById?.('modal'),overlay=doc?.getElementById?.('overlay');if(!modal||!overlay)return false;modal.innerHTML=html;overlay.classList.add('show');return true}
   function showGatewayTransition(runtimeRoot=root){const runState=activeRun(runtimeRoot);if(!runState)return false;const names=ensureFlowState(runState).completedRegionIds.map(id=>regionProfile(id)?.name||id).join(' + '),html=`<h2 class="gold">STAGE 7 / 8 · 최종 관문</h2><p>${escapeHtml(names)}의 흔적이 섞인 결산 구간이 열렸다.</p><div class="choiceList"><button class="choice" onclick="closeOverlay()"><b>최종 관문 확인</b><span>두 지역의 적·이벤트 태그가 함께 사용된다.</span></button></div>`;if(typeof runtimeRoot?.showModal==='function'){runtimeRoot.showModal(html);return true}return false}
   function showFinalTransition(runtimeRoot=root){const runState=activeRun(runtimeRoot);if(!runState)return false;const html='<h2 class="gold">STAGE 8 / 8 · 최종지역</h2><p>마지막 구간과 최종 보스가 열렸다.</p><div class="choiceList"><button class="choice" onclick="closeOverlay()"><b>최종지역 확인</b><span>최종 보스까지 진행한다.</span></button></div>';if(typeof runtimeRoot?.showModal==='function'){runtimeRoot.showModal(html);return true}return false}
