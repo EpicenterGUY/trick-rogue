@@ -39,7 +39,7 @@ test('트릭 승패가 끝난 뒤에만 플레이한 카드가 쇼다운 슬롯�
 test('내기 직후 카드 이동은 쇼다운 슬롯을 미리 목표로 삼거나 확대 충격을 만들지 않는다',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','battle-hand-polish.js'),'utf8');
   const start=source.indexOf('animateCardFlight=async function(card)');
-  const end=source.indexOf('/* Trick clash',start);
+  const end=source.indexOf('animateTrickResult=async function(result)',start);
   assert.ok(start>=0&&end>start);
   const flight=source.slice(start,end);
   assert.doesNotMatch(flight,/showdown-slot/);
