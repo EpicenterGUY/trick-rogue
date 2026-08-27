@@ -3,7 +3,15 @@
   const handRowEl=()=>document.getElementById('handRow');
   const arenaEl=()=>document.getElementById('arena');
   const versusEl=()=>document.getElementById('versus');
+  const CARD_COMMIT_MIN_MS=220;
+  const TRICK_RESULT_MIN_MS=980;
   let pendingPlayedUid=null;
+
+  function now(){return globalThis.performance?.now?.()??Date.now()}
+  async function keepMinimum(startedAt,minMs){
+    const remain=Math.max(0,minMs-(now()-startedAt));
+    if(remain>0)await wait(remain);
+  }
 
   /* A reward can request close twice (reward handler + completeNode). Keep one close timer so a new modal can cancel it safely. */
   const coreCloseOverlay=closeOverlay;
@@ -113,11 +121,15 @@
     if(r&&(r.bottom>innerHeight-8||r.top<0))panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   };
 
-  /* Play motion is intentionally minimal: hand -> player side. Trick clash owns the dramatic beat. */
+  /* Play motion is intentionally minimal: hand -> player side. Reduced motion removes movement, not the readable beat. */
   animateCardFlight=async function(card){
+    const startedAt=now();
     pendingPlayedUid=card?.uid||null;
     const src=document.getElementById(`card-${card.uid}`),appEl=document.getElementById('app'),vs=versusEl();
-    if(!src||!appEl||!vs||reduced())return;
+    if(!src||!appEl||!vs||reduced()){
+      await keepMinimum(startedAt,CARD_COMMIT_MIN_MS);
+      return;
+    }
     const appRect=appEl.getBoundingClientRect(),start=src.getBoundingClientRect(),field=vs.getBoundingClientRect();
     const targetX=field.left+field.width*.76-start.width/2,targetY=field.top+field.height*.53-start.height/2;
     const clone=src.cloneNode(true);clone.removeAttribute('id');clone.className='flyingCard card '+(card.named?'named':'');
@@ -126,48 +138,61 @@
     const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     try{
       await frame();
-      clone.style.transition='left 145ms cubic-bezier(.18,.82,.2,1), top 145ms cubic-bezier(.18,.82,.2,1), opacity 145ms linear';
+      clone.style.transition='left 180ms cubic-bezier(.18,.82,.2,1), top 180ms cubic-bezier(.18,.82,.2,1), opacity 180ms linear';
       clone.style.left=(targetX-appRect.left)+'px';clone.style.top=(targetY-appRect.top)+'px';clone.style.opacity='.96';
-      await wait(145);
+      await wait(180);
     }finally{
       clone.getAnimations().forEach(animation=>animation.cancel());
       src.style.visibility=originalVisibility;
       clone.remove();
+      await keepMinimum(startedAt,CARD_COMMIT_MIN_MS);
     }
   };
 
-  /* Trick clash keeps the same total tempo but gives the contact frame a stronger beat. */
+  /* Safari can resolve/cancel Web Animations early. Always reserve a readable result window. */
   animateTrickResult=async function(result){
+    const startedAt=now();
     const enemy=document.getElementById('enemyStage'),player=document.getElementById('playerStage'),vs=versusEl(),arena=arenaEl();
-    if(!enemy?.classList.contains('show')||!player?.classList.contains('show')||reduced())return;
+    if(!enemy?.classList.contains('show')||!player?.classList.contains('show')||!vs){
+      await keepMinimum(startedAt,TRICK_RESULT_MIN_MS);
+      return;
+    }
+    if(reduced()){
+      enemy.dataset.trickResult=result<0?'winner':result>0?'loser':'draw';
+      player.dataset.trickResult=result>0?'winner':result<0?'loser':'draw';
+      await keepMinimum(startedAt,TRICK_RESULT_MIN_MS);
+      delete enemy.dataset.trickResult;delete player.dataset.trickResult;
+      return;
+    }
     const enemyBox=enemy.getBoundingClientRect(),playerBox=player.getBoundingClientRect(),versusBox=vs.getBoundingClientRect();
     const center=versusBox.left+versusBox.width/2,meetingGap=17;
     const enemyMeet=center-meetingGap-(enemyBox.left+enemyBox.width/2),playerMeet=center+meetingGap-(playerBox.left+playerBox.width/2);
     const animations=[];
     try{
-      const timing={duration:170,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'};
+      const timing={duration:220,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'};
       const ea=enemy.animate([{transform:'translateX(0)'},{transform:`translateX(${enemyMeet}px)`}],timing);
       const pa=player.animate([{transform:'translateX(0)'},{transform:`translateX(${playerMeet}px)`}],timing);
-      animations.push(ea,pa);await Promise.all([ea.finished,pa.finished]);
+      animations.push(ea,pa);await Promise.allSettled([ea.finished,pa.finished]);
       vs.classList.add('cardImpact');
       if(arena){const ar=arena.getBoundingClientRect(),vr=vs.getBoundingClientRect();burstAt(vr.left-ar.left+vr.width/2,vr.top-ar.top+vr.height/2,'#f4d98f',7)}
-      await wait(72);vs.classList.remove('cardImpact');
+      await wait(120);vs.classList.remove('cardImpact');
       const winner=result>0?player:result<0?enemy:null,loser=result>0?enemy:result<0?player:null;
       const winnerMeet=result>0?playerMeet:enemyMeet,loserMeet=result>0?enemyMeet:playerMeet,loserPush=result>0?-16:16;
       const resultAnimations=[];
       if(winner)resultAnimations.push(winner.animate([
         {transform:`translateX(${winnerMeet}px) scale(1)`,filter:'brightness(1)'},
         {transform:`translateX(${winnerMeet}px) scale(1.095)`,filter:'brightness(1.18)'}
-      ],{duration:135,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'}));
+      ],{duration:180,easing:'cubic-bezier(.16,.86,.2,1)',fill:'forwards'}));
       if(loser)resultAnimations.push(loser.animate([
         {transform:`translateX(${loserMeet}px) scale(1)`,filter:'brightness(1)'},
         {transform:`translateX(${loserMeet+loserPush}px) rotate(${result>0?-2:2}deg) scale(.95)`,filter:'brightness(.44) saturate(.5)'}
-      ],{duration:135,easing:'cubic-bezier(.16,.78,.2,1)',fill:'forwards'}));
+      ],{duration:180,easing:'cubic-bezier(.16,.78,.2,1)',fill:'forwards'}));
       if(!winner){
-        resultAnimations.push(enemy.animate([{transform:`translateX(${enemyMeet}px)`},{transform:`translateX(${enemyMeet}px) scale(1.035)`}],{duration:125,fill:'forwards'}));
-        resultAnimations.push(player.animate([{transform:`translateX(${playerMeet}px)`},{transform:`translateX(${playerMeet}px) scale(1.035)`}],{duration:125,fill:'forwards'}));
+        resultAnimations.push(enemy.animate([{transform:`translateX(${enemyMeet}px)`},{transform:`translateX(${enemyMeet}px) scale(1.035)`}],{duration:170,fill:'forwards'}));
+        resultAnimations.push(player.animate([{transform:`translateX(${playerMeet}px)`},{transform:`translateX(${playerMeet}px) scale(1.035)`}],{duration:170,fill:'forwards'}));
       }
-      animations.push(...resultAnimations);await Promise.all(resultAnimations.map(a=>a.finished.catch(()=>{})));await wait(68);
+      animations.push(...resultAnimations);await Promise.allSettled(resultAnimations.map(a=>a.finished));
+      await keepMinimum(startedAt,TRICK_RESULT_MIN_MS);
     }finally{
       vs?.classList.remove('cardImpact');animations.forEach(a=>a.cancel());clearStageAnimationStyles(enemy);clearStageAnimationStyles(player);
     }
