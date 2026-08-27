@@ -1,9 +1,10 @@
 (function(root,factory){
   const migration=typeof module!=='undefined'?require('./tactic-card-migration.js'):root.TacticCardMigration;
-  const api=factory(migration);
+  const systemTags=typeof module!=='undefined'?require('./card-system-tags.js'):root.CardSystemTags;
+  const api=factory(migration,systemTags);
   if(typeof module!=='undefined')module.exports=api;
   root.MigratedTacticCards=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(Migration){
+})(typeof globalThis!=='undefined'?globalThis:this,function(Migration,SystemTags){
   const DIRECT_IDS=Object.freeze(['paint','plus2','barrier','reverse','recolor','fakeid']);
   const ACTIVE_IDS=Object.freeze(Migration?.ACTIVE_IDS?[...Migration.ACTIVE_IDS]:['paint','plus2','draw','scout','double','barrier','burn','reverse','pureboost','clean','recolor','fakeid']);
   const META=Object.freeze({
@@ -30,11 +31,12 @@
       ...(Array.isArray(effect.tiers)?{tiers:Object.freeze(effect.tiers.map(item=>Object.freeze({...item})))}:{})
     }));
     const targeting=meta.targeting||plan.targeting||null;
-    return Object.freeze({
+    const definition={
       id:meta.id,name:plan.name,short:plan.name,suit:plan.printedSuit,rank:plan.printedRank,printedSuit:plan.printedSuit,printedRank:plan.printedRank,
       description:plan.cardText,activation:meta.activation,terms:meta.terms,effects:Object.freeze(effects),targeting:targeting?Object.freeze({...targeting}):null,
       implemented:true,category:'general',rarity:'common',legacyTacticId:legacyId,migrationStage:plan.activationStage||'7.5-P'
-    });
+    };
+    return typeof SystemTags?.decorateDefinition==='function'?SystemTags.decorateDefinition(definition):Object.freeze(definition);
   }
 
   const ACTIVE_CARD_DEFINITIONS=Object.freeze(ACTIVE_IDS.map(createDefinition));
@@ -56,6 +58,7 @@
       if(!Array.isArray(card.effects)||!card.effects.length)errors.push(`${card.id}: missing effects`);
       if(card.category!=='general')errors.push(`${card.id}: must be a general card`);
       if(!card.migrationStage)errors.push(`${card.id}: missing migration stage`);
+      if(typeof SystemTags?.validateDefinition==='function')for(const issue of SystemTags.validateDefinition(card))errors.push(`${card.id}: ${issue}`);
       if(card.legacyTacticId==='burn'&&(!card.targeting||card.targeting.zone!=='hand'||card.targeting.count!==1||card.targeting.excludeSelf!==true))errors.push('core.burn: invalid hand targeting');
     }
     return errors;
