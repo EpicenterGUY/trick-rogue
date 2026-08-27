@@ -14,4 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
+      - name: Run M9 casino regression
+        run: node --test test/casino-region-m9.test.js
+      - name: Run full test suite
+        run: npm test
