@@ -12,7 +12,7 @@ test('M9 기존 3지역 보강 콘텐츠는 AI/효과 검증을 통과한다',()
   assert.equal(Legacy.STAGE,'M9-LEGACY-REGIONS-1');
   assert.deepEqual(Legacy.REGION_IDS,['region_theater','region_observatory','region_frontier']);
   assert.deepEqual(Legacy.validateContent(),[]);
-  assert.equal(Object.values(Legacy.CONTENT).filter(x=>x.type==='battle').length,6);
+  assert.equal(Object.values(Legacy.CONTENT).filter(x=>x.type==='battle').length,7);
   assert.equal(Object.values(Legacy.CONTENT).filter(x=>x.type==='elite').length,2);
 });
 
