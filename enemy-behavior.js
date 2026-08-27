@@ -58,9 +58,9 @@
     loadFoldExperiment();
   }
   function loadShowdownSlotManipulation(){
-    if(root.ShowdownSlotManipulation){finishFoldExperiment();return;}
+    if(root.ShowdownSlotManipulation){finishShowdownSlotManipulation();return;}
     const script=loadScript('showdown-slot-manipulation.js','trick-showdown-slot-manipulation-runtime');
-    if(script?.dataset?.loaded==='true')finishFoldExperiment();else script?.addEventListener?.('load',finishFoldExperiment,{once:true});
+    if(script?.dataset?.loaded==='true')finishShowdownSlotManipulation();else script?.addEventListener?.('load',finishShowdownSlotManipulation,{once:true});
   }
   function finishBattleRewardMarket(){
     loadShowdownSlotManipulation();
@@ -120,7 +120,7 @@
   }
   function loadTrickOutcomePreview(){
     if(root.TrickOutcomePreview){loadRunStartV2();return;}
-    const script=loadScript('trick-outcome-preview.js','trick-trick-outcome-preview-runtime');
+    const script=loadScript('trick-outcome-preview.js','trick-outcome-preview-runtime');
     if(script?.dataset?.loaded==='true')loadRunStartV2();else script?.addEventListener?.('load',loadRunStartV2,{once:true});
   }
   function loadEnemyInformation(){
