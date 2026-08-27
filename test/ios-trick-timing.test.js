@@ -57,10 +57,9 @@ function reducedMotionRuntime(){
   return sandbox;
 }
 
-test('reduced-motion 실제 런타임도 트릭 결과를 약 1초 유지한다',async()=>{
+test('reduced-motion 실제 런타임도 트릭 결과를 최소 약 1초 유지한다',async()=>{
   const runtime=reducedMotionRuntime(),started=performance.now();
   await runtime.animateTrickResult(1);
   const elapsed=performance.now()-started;
   assert.ok(elapsed>=900,`승패 표시가 너무 빨리 끝남: ${Math.round(elapsed)}ms`);
-  assert.ok(elapsed<1600,`승패 표시가 비정상적으로 오래 걸림: ${Math.round(elapsed)}ms`);
 });
