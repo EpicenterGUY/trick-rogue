@@ -14,4 +14,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
+      - name: Run M6 system tag tests
+        run: node --test --test-concurrency=1 test/card-system-tags-m6.test.js
+      - name: Run economy tag tests
+        run: node --test --test-concurrency=1 test/run-economy-v2.test.js
+      - name: Run remaining Node tests
+        run: |
+          mapfile -t files < <(find test -maxdepth 1 -name '*.test.js' ! -name 'card-system-tags-m6.test.js' ! -name 'run-economy-v2.test.js' | sort)
+          node --test --test-concurrency=1 "${files[@]}"
+      - name: Validate effect cards
+        run: npm run validate:cards
