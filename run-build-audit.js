@@ -1,8 +1,7 @@
 (function(root,factory){
-  const hasModule=typeof module==='object'&&module.exports;
-  const CardSystemTags=hasModule?require('./card-system-tags.js'):root.CardSystemTags;
+  const CardSystemTags=typeof module!=='undefined'&&module.exports?require('./card-system-tags.js'):root.CardSystemTags;
   const api=factory(root,CardSystemTags);
-  if(hasModule)module.exports=api;
+  if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else{
     root.RunBuildAudit=api;
     if(typeof document!=='undefined')api.installWhenReady(root);
