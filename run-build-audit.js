@@ -17,6 +17,16 @@
     Object.freeze({id:'m10-04',label:'표본 4 · 변칙',starterId:'trickster',traitId:'suit_collector',targetRegionIds:Object.freeze(['region_theater','region_casino']),targetRegionNames:Object.freeze(['유랑극장','침몰 카지노'])}),
     Object.freeze({id:'m10-05',label:'표본 5 · 정석',starterId:'common',traitId:'pure_mind',targetRegionIds:Object.freeze(['region_observatory','region_scrap_market']),targetRegionNames:Object.freeze(['안개 관측소','폐품 시장'])})
   ]);
+  const FEEL_NOTE_TYPES=Object.freeze([
+    Object.freeze({id:'no_choice',label:'고를 카드 없음'}),
+    Object.freeze({id:'auto_pick',label:'자동 선택'}),
+    Object.freeze({id:'build_pivot',label:'빌드 전환'}),
+    Object.freeze({id:'pure_card',label:'순수 카드 체감'}),
+    Object.freeze({id:'field_impact',label:'필드 체감'}),
+    Object.freeze({id:'memo',label:'자유 메모'})
+  ]);
+  const FEEL_NOTE_LIMIT=40;
+  const FEEL_NOTE_TEXT_LIMIT=180;
   let browserInstalled=false;
 
   function activeRun(runtimeRoot=defaultRoot){if(runtimeRoot?.run)return runtimeRoot.run;try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return null}
@@ -25,14 +35,32 @@
     try{return new URLSearchParams(search).get('dev')==='1'}catch(_error){return/(?:^|[?&])dev=1(?:&|$)/.test(search)}
   }
   function playtestPreset(id){return PLAYTEST_PRESETS.find(preset=>preset.id===id)||null}
+  function feelNoteType(id){return FEEL_NOTE_TYPES.find(type=>type.id===id)||null}
+  function normalizeFeelNoteText(text){return String(text??'').trim().replace(/\s+/g,' ').slice(0,FEEL_NOTE_TEXT_LIMIT)}
+  function feelNoteCounts(notes){const counts={};for(const note of notes||[]){const key=note?.type||'memo';counts[key]=(counts[key]||0)+1}return counts}
+  function playtestFeelNotes(runState){
+    const notes=Array.isArray(runState?.m10Playtest?.feelNotes)?runState.m10Playtest.feelNotes:[];
+    return notes.map(note=>({...note,visitedRegionIds:[...(note?.visitedRegionIds||[])]}));
+  }
   function playtestSummary(runState){
     const state=runState?.m10Playtest;if(!state||typeof state!=='object')return null;
-    return{presetId:state.presetId||null,label:state.label||null,starterId:state.starterId||null,traitId:state.traitId||null,targetRegionIds:[...(state.targetRegionIds||[])],targetRegionNames:[...(state.targetRegionNames||[])]};
+    const feelNotes=playtestFeelNotes(runState);
+    return{presetId:state.presetId||null,label:state.label||null,starterId:state.starterId||null,traitId:state.traitId||null,targetRegionIds:[...(state.targetRegionIds||[])],targetRegionNames:[...(state.targetRegionNames||[])],feelNotes,feelCounts:feelNoteCounts(feelNotes)};
   }
   function pairKeyForRegionIds(ids){return Array.isArray(ids)&&ids.length>=2?[...ids.slice(0,2)].sort().join('+'):null}
   function comparePlaytestTarget(playtest,regions){
     if(!playtest)return null;const targetPairKey=pairKeyForRegionIds(playtest.targetRegionIds),actualPairKey=regions?.pairKey||null;
     return{...playtest,targetPairKey,actualPairKey,matchedTargetRegions:actualPairKey&&targetPairKey?actualPairKey===targetPairKey:null};
+  }
+  function addPlaytestFeelNote(runState,typeId,noteText='',runtimeRoot=defaultRoot){
+    const state=runState?.m10Playtest;if(!state||typeof state!=='object')return{ok:false,reason:'no_playtest'};
+    const type=feelNoteType(typeId);if(!type)return{ok:false,reason:'unknown_type'};
+    const note=normalizeFeelNoteText(noteText);if(type.id==='memo'&&!note)return{ok:false,reason:'empty_note'};
+    if(!Array.isArray(state.feelNotes))state.feelNotes=[];if(state.feelNotes.length>=FEEL_NOTE_LIMIT)return{ok:false,reason:'note_limit'};
+    const visitedRegionIds=Array.isArray(runState?.runFlow?.visitedRegionIds)?[...runState.runFlow.visitedRegionIds]:[];
+    const phase=runState?.runFlow?.phase||runState?.actId||null;
+    const entry={type:type.id,label:type.label,note,visitedRegionIds,deckSize:Array.isArray(runState?.deck)?runState.deck.length:0,phase};
+    state.feelNotes.push(entry);runtimeRoot?.console?.info?.('[M10 feel note]',entry);return{ok:true,index:state.feelNotes.length-1,entry:{...entry,visitedRegionIds:[...visitedRegionIds]}};
   }
   function cardId(card){return card?.cardId||card?.definitionId||card?.definition?.id||card?.named?.id||null}
   function cardDefinition(card,runtimeRoot=defaultRoot){
@@ -80,11 +108,13 @@
   function auditRows(summary){
     const identity=summary?.identity||{},fields=summary?.fields||{},regions=summary?.regions||{},deck=summary?.deck||{},playtest=summary?.playtest||null,top=(deck.topSystemTags||[]).slice(0,5).map(entry=>`${entry.tag} ${entry.count}`).join(' · ')||'없음';
     const branches=(regions.visitedRegionBranches||[]).map(entry=>entry.branchLabel||entry.branchId).join(' → ')||'미선택',usedFields=(fields.usedFieldIds||[]).join(', ')||'없음',target=playtest?.targetRegionNames?.length?` · 목표 ${playtest.targetRegionNames.join(' → ')}`:'',match=playtest?.matchedTargetRegions===true?' · 목표 일치':playtest?.matchedTargetRegions===false?' · 목표 불일치':'';
-    return[
+    const rows=[
       `M10 정체성 · ${identity.starterName||identity.starterId||'미상'} / ${identity.traitName||identity.traitId||'미상'} · 사용 필드 ${usedFields}`,
       `M10 지역 · ${(regions.regionNames||regions.visitedRegionIds||[]).join(' → ')||'미방문'}${target}${match} · 분기 ${branches}`,
       `M10 덱 · ${deck.total||0}장 · 순수 ${deck.pure||0} / 효과 ${deck.effect||0} · 주요 태그 ${top}`
     ];
+    const notes=playtest?.feelNotes||[];if(notes.length){const counts=playtest?.feelCounts||feelNoteCounts(notes),summaryText=FEEL_NOTE_TYPES.filter(type=>counts[type.id]).map(type=>`${type.label} ${counts[type.id]}`).join(' · ');rows.push(`M10 체감 · ${notes.length}건 · ${summaryText||'분류 없음'}`)}
+    return rows;
   }
   function enrichResult(runState,result,runtimeRoot=defaultRoot){
     const summary=buildRunAudit(runState,runtimeRoot);if(result&&typeof result==='object')result.buildAudit=summary;if(runState?.runResult&&typeof runState.runResult==='object')runState.runResult.buildAudit=summary;return summary;
@@ -100,7 +130,7 @@
     runtimeRoot.beginRun();const runState=activeRun(runtimeRoot);if(!runState)return{ok:false,reason:'run_not_created'};
     const cardsApi=typeof api.cardsApiFor==='function'?api.cardsApiFor(runtimeRoot):runtimeRoot;
     try{api.applyIdentityToRun(runState,{starterId:preset.starterId,traitId:preset.traitId},cardsApi,runtimeRoot)}catch(error){runtimeRoot?.console?.warn?.('[m10] 표본 런 시작 실패',error);return{ok:false,reason:'identity_apply_failed'}}
-    runState.m10Playtest={presetId:preset.id,label:preset.label,starterId:preset.starterId,traitId:preset.traitId,targetRegionIds:[...preset.targetRegionIds],targetRegionNames:[...preset.targetRegionNames]};
+    runState.m10Playtest={presetId:preset.id,label:preset.label,starterId:preset.starterId,traitId:preset.traitId,targetRegionIds:[...preset.targetRegionIds],targetRegionNames:[...preset.targetRegionNames],feelNotes:[]};
     try{runtimeRoot?.showScreen?.('mapScreen');runtimeRoot?.renderMap?.()}catch(_error){}
     return{ok:true,presetId:preset.id,label:preset.label,targetRegionIds:[...preset.targetRegionIds],targetRegionNames:[...preset.targetRegionNames]};
   }
@@ -109,14 +139,21 @@
     const visited=Array.isArray(runState?.runFlow?.visitedRegionIds)?runState.runFlow.visitedRegionIds:[],target=(state.targetRegionNames||state.targetRegionIds||[]).join(' → ')||'미지정',actualPairKey=pairKeyForRegionIds(visited),targetPairKey=pairKeyForRegionIds(state.targetRegionIds),match=actualPairKey?(actualPairKey===targetPairKey?' · 목표 일치':' · 목표 불일치'):'';
     return`${state.label||state.presetId||'M10 표본'} · 목표 ${target} · 방문 ${visited.length}/2${match}`;
   }
+  function feelStatusText(runState){
+    const state=playtestSummary(runState);if(!state)return'체감 기록 · 표본 런을 먼저 시작';const counts=state.feelCounts||{},parts=FEEL_NOTE_TYPES.filter(type=>counts[type.id]).map(type=>`${type.label} ${counts[type.id]}`);return`체감 기록 ${state.feelNotes.length}/${FEEL_NOTE_LIMIT}${parts.length?` · ${parts.join(' · ')}`:''}`;
+  }
   function playtestLauncherHtml(){
     const buttons=PLAYTEST_PRESETS.map(preset=>`<button type="button" data-m10-playtest-preset="${preset.id}">${preset.label}<br><span>${preset.targetRegionNames.join(' + ')}</span></button>`).join('');
-    return`<b>M10 대표 5런</b><div class="devHint">스타터·특성만 고정합니다. 지역 선택은 직접 진행해 체감 판정을 보존합니다.</div><div class="devRow">${buttons}</div><div class="devHint" data-m10-playtest-status>M10 표본 미선택</div>`;
+    const feelButtons=FEEL_NOTE_TYPES.filter(type=>type.id!=='memo').map(type=>`<button type="button" data-m10-feel-type="${type.id}">${type.label}</button>`).join('');
+    return`<b>M10 대표 5런</b><div class="devHint">스타터·특성만 고정합니다. 지역 선택은 직접 진행해 체감 판정을 보존합니다.</div><div class="devRow">${buttons}</div><div class="devHint" data-m10-playtest-status>M10 표본 미선택</div><b style="display:block;margin-top:8px">M10 체감 기록</b><div class="devHint">짧은 상황 메모를 적고 분류 버튼을 누르세요. 빈칸이면 분류만 기록합니다.</div><div class="devRow">${feelButtons}</div><div class="devInline"><input type="text" maxlength="${FEEL_NOTE_TEXT_LIMIT}" data-m10-feel-note placeholder="예: 두 번째 보상에서 전부 무늬 카드"><button type="button" data-m10-feel-type="memo">메모 추가</button></div><div class="devHint" data-m10-feel-status>체감 기록 · 표본 런을 먼저 시작</div>`;
   }
   function renderPlaytestLauncher(runtimeRoot=defaultRoot){
     if(!isDeveloperMode(runtimeRoot))return false;const doc=runtimeRoot?.document,panel=doc?.querySelector?.('#trickDevPanel');if(!panel)return false;
-    let group=panel.querySelector?.('[data-m10-playtest-launcher]');if(!group){group=doc.createElement('div');group.className='devGroup';group.setAttribute('data-m10-playtest-launcher','true');group.innerHTML=playtestLauncherHtml();const message=panel.querySelector?.('#trickDevMessage');panel.insertBefore(group,message||null);group.addEventListener?.('click',event=>{const button=event.target?.closest?.('[data-m10-playtest-preset]');if(!button)return;const result=startPlaytestPreset(runtimeRoot,button.dataset.m10PlaytestPreset);const messageNode=panel.querySelector?.('#trickDevMessage');if(messageNode)messageNode.textContent=result.ok?`${result.label} 시작 · 지역은 직접 선택`:`M10 표본 시작 실패 · ${result.reason}`;const status=group.querySelector?.('[data-m10-playtest-status]');if(status)status.textContent=playtestStatusText(activeRun(runtimeRoot))})}
-    const status=group.querySelector?.('[data-m10-playtest-status]');if(status)status.textContent=playtestStatusText(activeRun(runtimeRoot));return true;
+    let group=panel.querySelector?.('[data-m10-playtest-launcher]');if(!group){group=doc.createElement('div');group.className='devGroup';group.setAttribute('data-m10-playtest-launcher','true');group.innerHTML=playtestLauncherHtml();const message=panel.querySelector?.('#trickDevMessage');panel.insertBefore(group,message||null);group.addEventListener?.('click',event=>{
+      const presetButton=event.target?.closest?.('[data-m10-playtest-preset]');if(presetButton){const result=startPlaytestPreset(runtimeRoot,presetButton.dataset.m10PlaytestPreset);const messageNode=panel.querySelector?.('#trickDevMessage');if(messageNode)messageNode.textContent=result.ok?`${result.label} 시작 · 지역은 직접 선택`:`M10 표본 시작 실패 · ${result.reason}`;const status=group.querySelector?.('[data-m10-playtest-status]');if(status)status.textContent=playtestStatusText(activeRun(runtimeRoot));const feelStatus=group.querySelector?.('[data-m10-feel-status]');if(feelStatus)feelStatus.textContent=feelStatusText(activeRun(runtimeRoot));return}
+      const feelButton=event.target?.closest?.('[data-m10-feel-type]');if(!feelButton)return;const input=group.querySelector?.('[data-m10-feel-note]'),result=addPlaytestFeelNote(activeRun(runtimeRoot),feelButton.dataset.m10FeelType,input?.value||'',runtimeRoot),messageNode=panel.querySelector?.('#trickDevMessage');if(messageNode)messageNode.textContent=result.ok?`체감 기록 · ${result.entry.label}${result.entry.note?` · ${result.entry.note}`:''}`:`체감 기록 실패 · ${result.reason}`;if(result.ok&&input)input.value='';const feelStatus=group.querySelector?.('[data-m10-feel-status]');if(feelStatus)feelStatus.textContent=feelStatusText(activeRun(runtimeRoot))
+    })}
+    const status=group.querySelector?.('[data-m10-playtest-status]');if(status)status.textContent=playtestStatusText(activeRun(runtimeRoot));const feelStatus=group.querySelector?.('[data-m10-feel-status]');if(feelStatus)feelStatus.textContent=feelStatusText(activeRun(runtimeRoot));return true;
   }
   function installPlaytestLauncherWhenReady(runtimeRoot=defaultRoot){
     if(!isDeveloperMode(runtimeRoot))return false;let attempts=0;const attempt=()=>{if(renderPlaytestLauncher(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25)};attempt();return true;
@@ -128,5 +165,5 @@
   function installWhenReady(runtimeRoot=defaultRoot){let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<120)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[m10] 빌드 감사 설치 실패')};if(typeof document!=='undefined'&&document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else setTimeout(attempt,0);return true}
   function resetBrowserInstallForTests(){browserInstalled=false}
 
-  return{STAGE,VERSION,PLAYTEST_PRESETS,activeRun,isDeveloperMode,playtestPreset,playtestSummary,pairKeyForRegionIds,comparePlaytestTarget,cardId,cardDefinition,cardEffects,isEffectCard,tagsForCard,deckSummary,regionSummary,fieldSummary,identitySummary,buildRunAudit,auditRows,enrichResult,renderAuditRows,startPlaytestPreset,playtestStatusText,playtestLauncherHtml,renderPlaytestLauncher,installPlaytestLauncherWhenReady,finalizeRunResult,wrapFinishRun,wrapLoseRun,installBrowser,installWhenReady,resetBrowserInstallForTests};
+  return{STAGE,VERSION,PLAYTEST_PRESETS,FEEL_NOTE_TYPES,FEEL_NOTE_LIMIT,FEEL_NOTE_TEXT_LIMIT,activeRun,isDeveloperMode,playtestPreset,feelNoteType,normalizeFeelNoteText,feelNoteCounts,playtestFeelNotes,playtestSummary,pairKeyForRegionIds,comparePlaytestTarget,addPlaytestFeelNote,cardId,cardDefinition,cardEffects,isEffectCard,tagsForCard,deckSummary,regionSummary,fieldSummary,identitySummary,buildRunAudit,auditRows,enrichResult,renderAuditRows,startPlaytestPreset,playtestStatusText,feelStatusText,playtestLauncherHtml,renderPlaytestLauncher,installPlaytestLauncherWhenReady,finalizeRunResult,wrapFinishRun,wrapLoseRun,installBrowser,installWhenReady,resetBrowserInstallForTests};
 });
