@@ -26,11 +26,16 @@ function runState(){
     fieldLoadout:{owned:['wide_table','loaded_table'],queuedFieldId:'loaded_table',history:[
       {action:'consume',from:'wide_table',to:null},{action:'consume',from:'wide_table',to:null},{action:'consume',from:'loaded_table',to:null}
     ]},
-    runFlow:{visitedRegionIds:['region_casino','region_theater'],completedRegionIds:['region_casino'],visitedRegionBranches:[
+    runFlow:{phase:'region',visitedRegionIds:['region_casino','region_theater'],completedRegionIds:['region_casino'],visitedRegionBranches:[
       {regionId:'region_casino',branchId:'vip_room',branchLabel:'VIP 룸',tags:['chip','risk']},
       {regionId:'region_theater',branchId:'grand_stage',branchLabel:'대극장',tags:['field','showdown']}
     ]}
   };
+}
+
+function attachPlaytest(run,overrides={}){
+  run.m10Playtest={presetId:'m10-04',label:'표본 4 · 변칙',starterId:'trickster',traitId:'suit_collector',targetRegionIds:['region_theater','region_casino'],targetRegionNames:['유랑극장','침몰 카지노'],feelNotes:[],...overrides};
+  return run;
 }
 
 test('M10 덱 요약은 순수/효과와 시스템 태그 분포를 함께 기록한다',()=>{
@@ -70,12 +75,23 @@ test('M10 대표 5런 프리셋은 6지역과 4스타터를 분산 커버한다'
   assert.equal(Audit.playtestPreset('missing'),null);
 });
 
-test('M10 DEV 런처는 지역을 직접 선택한다는 조건과 다섯 표본 버튼을 표시한다',()=>{
+test('M10 DEV 런처는 지역 직접 선택 조건과 표본·체감 기록 도구를 표시한다',()=>{
   const html=Audit.playtestLauncherHtml();
   assert.match(html,/지역 선택은 직접/);
   for(const preset of Audit.PLAYTEST_PRESETS)assert.match(html,new RegExp(`data-m10-playtest-preset="${preset.id}"`));
+  for(const type of Audit.FEEL_NOTE_TYPES)assert.match(html,new RegExp(`data-m10-feel-type="${type.id}"`));
+  assert.match(html,/data-m10-feel-note/);
+  assert.match(html,new RegExp(`maxlength="${Audit.FEEL_NOTE_TEXT_LIMIT}"`));
   assert.equal(Audit.isDeveloperMode({location:{search:'?dev=1'}}),true);
   assert.equal(Audit.isDeveloperMode({location:{search:'?dev=0'}}),false);
+});
+
+test('M10 체감 분류는 빠른 5종과 자유 메모를 고정한다',()=>{
+  assert.deepEqual(Audit.FEEL_NOTE_TYPES.map(type=>type.id),['no_choice','auto_pick','build_pivot','pure_card','field_impact','memo']);
+  assert.equal(Audit.feelNoteType('build_pivot').label,'빌드 전환');
+  assert.equal(Audit.feelNoteType('missing'),null);
+  assert.equal(Audit.normalizeFeelNoteText('  두   번째\n보상  '),'두 번째 보상');
+  assert.equal(Audit.normalizeFeelNoteText('가'.repeat(300)).length,Audit.FEEL_NOTE_TEXT_LIMIT);
 });
 
 test('M10 DEV 표본 시작은 스타터와 특성만 고정하고 지역 방문은 강제하지 않는다',()=>{
@@ -95,14 +111,41 @@ test('M10 DEV 표본 시작은 스타터와 특성만 고정하고 지역 방문
   assert.equal(root.run.deck.length,12);
   assert.equal(root.run.deck.filter(card=>Cards.isPureCard(card)).length,8);
   assert.deepEqual(root.run.m10Playtest.targetRegionIds,['region_frontier','region_casino']);
+  assert.deepEqual(root.run.m10Playtest.feelNotes,[]);
   assert.deepEqual(root.run.runFlow.visitedRegionIds,[]);
   assert.equal(root.screen,'mapScreen');
   assert.equal(root.rendered,true);
   const summary=Audit.buildRunAudit(root.run,{...root,RunFlowV2:{REGION_PROFILES:{}}});
   assert.equal(summary.playtest.presetId,'m10-02');
   assert.deepEqual(summary.playtest.targetRegionIds,['region_frontier','region_casino']);
+  assert.deepEqual(summary.playtest.feelNotes,[]);
   assert.equal(summary.playtest.matchedTargetRegions,null);
   assert.match(Audit.playtestStatusText(root.run),/방문 0\/2/);
+  assert.match(Audit.feelStatusText(root.run),/체감 기록 0\/40/);
+});
+
+test('M10 체감 기록은 분류·메모와 당시 지역/덱/단계를 함께 저장한다',()=>{
+  const run=attachPlaytest(runState()),root={console:{info(){}}};
+  const result=Audit.addPlaytestFeelNote(run,'build_pivot','  두   번째 보상에서 방향 전환  ',root);
+  assert.equal(result.ok,true);
+  assert.equal(result.entry.type,'build_pivot');
+  assert.equal(result.entry.label,'빌드 전환');
+  assert.equal(result.entry.note,'두 번째 보상에서 방향 전환');
+  assert.deepEqual(result.entry.visitedRegionIds,['region_casino','region_theater']);
+  assert.equal(result.entry.deckSize,5);
+  assert.equal(result.entry.phase,'region');
+  run.runFlow.visitedRegionIds.push('region_frontier');
+  assert.deepEqual(run.m10Playtest.feelNotes[0].visitedRegionIds,['region_casino','region_theater']);
+  assert.match(Audit.feelStatusText(run),/빌드 전환 1/);
+});
+
+test('M10 자유 메모는 빈 문자열을 거부하고 기록 수를 40건으로 제한한다',()=>{
+  const run=attachPlaytest(runState());
+  assert.equal(Audit.addPlaytestFeelNote(run,'memo','').reason,'empty_note');
+  assert.equal(Audit.addPlaytestFeelNote(run,'missing','x').reason,'unknown_type');
+  assert.equal(Audit.addPlaytestFeelNote(runState(),'memo','x').reason,'no_playtest');
+  run.m10Playtest.feelNotes=Array.from({length:Audit.FEEL_NOTE_LIMIT},()=>({type:'memo',label:'자유 메모',note:'x'}));
+  assert.equal(Audit.addPlaytestFeelNote(run,'memo','한도 초과').reason,'note_limit');
 });
 
 test('M10 표본 목표 비교는 지역 순서를 무시하고 일치·불일치·미판정을 구분한다',()=>{
@@ -131,9 +174,11 @@ test('M10 필드 요약은 보유/대기/실제 사용 필드를 구분하고 �
   assert.deepEqual(summary.usedFieldIds,['wide_table','loaded_table']);
 });
 
-test('M10 런 감사 결과는 정체성·필드·지역·덱과 표본 목표 일치 여부를 결과에 저장한다',()=>{
-  const run=runState(),root=runtime(),result={victory:true};run.runResult=result;
-  run.m10Playtest={presetId:'m10-04',label:'표본 4 · 변칙',starterId:'trickster',traitId:'suit_collector',targetRegionIds:['region_theater','region_casino'],targetRegionNames:['유랑극장','침몰 카지노']};
+test('M10 런 감사 결과는 정체성·필드·지역·덱·표본 목표·체감 메모를 결과에 저장한다',()=>{
+  const run=attachPlaytest(runState(),{feelNotes:[
+    {type:'no_choice',label:'고를 카드 없음',note:'세 번째 보상',visitedRegionIds:['region_casino'],deckSize:13,phase:'region'},
+    {type:'pure_card',label:'순수 카드 체감',note:'후반에도 유효',visitedRegionIds:['region_casino','region_theater'],deckSize:15,phase:'region'}
+  ]}),root=runtime(),result={victory:true};run.runResult=result;
   const summary=Audit.enrichResult(run,result,root);
   assert.equal(summary.version,'M10-1');
   assert.equal(summary.identity.starterName,'승부사');
@@ -142,15 +187,21 @@ test('M10 런 감사 결과는 정체성·필드·지역·덱과 표본 목표 �
   assert.equal(summary.deck.total,5);
   assert.equal(summary.playtest.presetId,'m10-04');
   assert.equal(summary.playtest.matchedTargetRegions,true);
+  assert.equal(summary.playtest.feelNotes.length,2);
+  assert.deepEqual(summary.playtest.feelCounts,{no_choice:1,pure_card:1});
+  assert.notEqual(summary.playtest.feelNotes,run.m10Playtest.feelNotes);
   assert.equal(result.buildAudit,summary);
   assert.equal(run.runResult.buildAudit,summary);
   const rows=Audit.auditRows(summary);
-  assert.equal(rows.length,3);
+  assert.equal(rows.length,4);
   assert(rows[0].includes('wide_table'));
   assert(rows[1].includes('침몰 카지노 → 유랑극장'));
   assert(rows[1].includes('목표 유랑극장 → 침몰 카지노'));
   assert(rows[1].includes('목표 일치'));
   assert(rows[2].includes('순수 2 / 효과 3'));
+  assert(rows[3].includes('체감 · 2건'));
+  assert(rows[3].includes('고를 카드 없음 1'));
+  assert(rows[3].includes('순수 카드 체감 1'));
 });
 
 test('M10 결과 행은 목표와 다른 지역쌍을 명시적으로 경고한다',()=>{
