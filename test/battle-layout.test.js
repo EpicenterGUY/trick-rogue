@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const BattleLayout = require('../battle-layout.js');
+const LoaderChain = require('../runtime-loader-chain.js');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
@@ -87,15 +88,9 @@ test('전장 카드 확대 보정은 모바일 범위에만 적용한다', () =>
 });
 
 test('브라우저 부트스트랩은 상태→계약·금기→빌드 시너지→런 구조→경로 규칙→맵 생성→런 결과→전투 레이아웃 순서를 유지한다', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'enemy-behavior.js'), 'utf8');
-  assert.match(source, /function loadBattleLayout\(\)/);
-  assert.match(source, /battle-layout\.js/);
-  assert.match(source, /trick-battle-layout-runtime/);
-  assert.match(source, /function loadStatusSystem\(\)\{[\s\S]*?loadScript\('status-system\.js','trick-status-system-runtime'\)[\s\S]*?loadContracts\(\)/);
-  assert.match(source, /function loadContracts\(\)\{[\s\S]*?loadScript\('contracts\.js','trick-contract-system-runtime'\)[\s\S]*?loadBuildSynergies\(\)/);
-  assert.match(source, /function loadBuildSynergies\(\)\{[\s\S]*?loadScript\('build-synergies\.js','trick-build-synergy-runtime'\)[\s\S]*?loadRunStructure\(\)/);
-  assert.match(source, /function loadRunStructure\(\)\{[\s\S]*?loadScript\('run-structure\.js','trick-run-structure-runtime'\)[\s\S]*?loadRunPaths\(\)/);
-  assert.match(source, /function loadRunPaths\(\)\{[\s\S]*?loadScript\('run-paths\.js','trick-run-paths-runtime'\)[\s\S]*?loadRunMapGeneration\(\)/);
-  assert.match(source, /function loadRunMapGeneration\(\)\{[\s\S]*?loadScript\('run-map-generation\.js','trick-run-map-generation-runtime'\)[\s\S]*?loadRunResults\(\)/);
-  assert.match(source, /function loadRunResults\(\)\{[\s\S]*?loadScript\('run-results\.js','trick-run-results-runtime'\)[\s\S]*?loadBattleLayout\(\)/);
+  const names = LoaderChain.ENTRIES.map(entry => entry.globalName);
+  const start = names.indexOf('StatusSystem');
+  const expected = ['StatusSystem','ContractSystem','BuildSynergySystem','RunStructure','RunPaths','RunMapGeneration','RunResults','ShowdownAdvantage','ChipEconomy','ShowdownResolution','ShowdownHighRoll','EncounterTempo','DeckBoundaries','EnemyInformation','TrickOutcomePreview','RunStartV2','RunFlowV2','RunMinigames','RunEvents','ContentExpansion9C','CasinoRegionM9','RedWardRegionM9','ScrapMarketRegionM9','RunEconomyV2','BattleRewardMarket','ShowdownSlotManipulation','FoldExperiment','RunPersistence','BattleLayout'];
+  assert.deepEqual(names.slice(start,start+expected.length), expected);
+  assert.deepEqual(LoaderChain.entry('BattleLayout'),{globalName:'BattleLayout',src:'battle-layout.js',dataset:'trick-battle-layout-runtime',after:null});
 });
