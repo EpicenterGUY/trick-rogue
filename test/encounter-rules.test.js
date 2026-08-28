@@ -1,12 +1,11 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
 const CardEffects=require('../effects.js');
 const CombatEffects=require('../combat-effects.js');
 const BattleCore=require('../battle-core.js');
 const BattleEvents=require('../battle-events.js');
 const EncounterRules=require('../encounter-rules.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 function state(type='battle',hp=100,maxHp=100){
   return{
@@ -137,7 +136,8 @@ test('damageEnemy 어댑터는 보스 HP 감소 직후 현재 페이즈를 동�
 });
 
 test('적 행동 부트스트랩은 기존 AI와 전투 규칙 런타임을 순서대로 로드한다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert.match(source,/loadScript\('enemy-behavior-core\.js','trick-enemy-behavior-core',loadEncounterRules\)/);
-  assert.match(source,/loadScript\('encounter-rules\.js','trick-encounter-rules-runtime',loadRunFields\)/);
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  assert.deepEqual(names.slice(0,3),['EnemyBehavior','EncounterRules','TrumpFields']);
+  assert.deepEqual(LoaderChain.entry('EnemyBehavior'),{globalName:'EnemyBehavior',src:'enemy-behavior-core.js',dataset:'trick-enemy-behavior-core',after:null});
+  assert.deepEqual(LoaderChain.entry('EncounterRules'),{globalName:'EncounterRules',src:'encounter-rules.js',dataset:'trick-encounter-rules-runtime',after:null});
 });
