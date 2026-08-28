@@ -101,7 +101,19 @@ test('M10 DEV 표본 시작은 스타터와 특성만 고정하고 지역 방문
   const summary=Audit.buildRunAudit(root.run,{...root,RunFlowV2:{REGION_PROFILES:{}}});
   assert.equal(summary.playtest.presetId,'m10-02');
   assert.deepEqual(summary.playtest.targetRegionIds,['region_frontier','region_casino']);
+  assert.equal(summary.playtest.matchedTargetRegions,null);
   assert.match(Audit.playtestStatusText(root.run),/방문 0\/2/);
+});
+
+test('M10 표본 목표 비교는 지역 순서를 무시하고 일치·불일치·미판정을 구분한다',()=>{
+  const target={presetId:'m10-x',targetRegionIds:['region_theater','region_casino'],targetRegionNames:['유랑극장','침몰 카지노']};
+  assert.equal(Audit.pairKeyForRegionIds(target.targetRegionIds),'region_casino+region_theater');
+  const matched=Audit.comparePlaytestTarget(target,{pairKey:'region_casino+region_theater'});
+  assert.equal(matched.targetPairKey,'region_casino+region_theater');
+  assert.equal(matched.actualPairKey,'region_casino+region_theater');
+  assert.equal(matched.matchedTargetRegions,true);
+  assert.equal(Audit.comparePlaytestTarget(target,{pairKey:'region_casino+region_frontier'}).matchedTargetRegions,false);
+  assert.equal(Audit.comparePlaytestTarget(target,{pairKey:null}).matchedTargetRegions,null);
 });
 
 test('M10 지역 요약은 두 지역 조합 키와 선택 분기를 보존한다',()=>{
@@ -119,7 +131,7 @@ test('M10 필드 요약은 보유/대기/실제 사용 필드를 구분하고 �
   assert.deepEqual(summary.usedFieldIds,['wide_table','loaded_table']);
 });
 
-test('M10 런 감사 결과는 정체성·필드·지역·덱을 한 객체로 묶고 결과에 저장한다',()=>{
+test('M10 런 감사 결과는 정체성·필드·지역·덱과 표본 목표 일치 여부를 결과에 저장한다',()=>{
   const run=runState(),root=runtime(),result={victory:true};run.runResult=result;
   run.m10Playtest={presetId:'m10-04',label:'표본 4 · 변칙',starterId:'trickster',traitId:'suit_collector',targetRegionIds:['region_theater','region_casino'],targetRegionNames:['유랑극장','침몰 카지노']};
   const summary=Audit.enrichResult(run,result,root);
@@ -129,6 +141,7 @@ test('M10 런 감사 결과는 정체성·필드·지역·덱을 한 객체로 �
   assert.equal(summary.regions.pairKey,'region_casino+region_theater');
   assert.equal(summary.deck.total,5);
   assert.equal(summary.playtest.presetId,'m10-04');
+  assert.equal(summary.playtest.matchedTargetRegions,true);
   assert.equal(result.buildAudit,summary);
   assert.equal(run.runResult.buildAudit,summary);
   const rows=Audit.auditRows(summary);
@@ -136,7 +149,16 @@ test('M10 런 감사 결과는 정체성·필드·지역·덱을 한 객체로 �
   assert(rows[0].includes('wide_table'));
   assert(rows[1].includes('침몰 카지노 → 유랑극장'));
   assert(rows[1].includes('목표 유랑극장 → 침몰 카지노'));
+  assert(rows[1].includes('목표 일치'));
   assert(rows[2].includes('순수 2 / 효과 3'));
+});
+
+test('M10 결과 행은 목표와 다른 지역쌍을 명시적으로 경고한다',()=>{
+  const run=runState();run.m10Playtest={presetId:'m10-01',label:'표본 1 · 정석',targetRegionIds:['region_theater','region_observatory'],targetRegionNames:['유랑극장','안개 관측소']};
+  const summary=Audit.buildRunAudit(run,runtime());
+  assert.equal(summary.playtest.matchedTargetRegions,false);
+  assert(Audit.auditRows(summary)[1].includes('목표 불일치'));
+  assert.match(Audit.playtestStatusText(run),/목표 불일치/);
 });
 
 test('M10 종료 래퍼는 동기/비동기 결과 모두 buildAudit를 남긴다',async()=>{

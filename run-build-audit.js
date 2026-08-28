@@ -29,6 +29,11 @@
     const state=runState?.m10Playtest;if(!state||typeof state!=='object')return null;
     return{presetId:state.presetId||null,label:state.label||null,starterId:state.starterId||null,traitId:state.traitId||null,targetRegionIds:[...(state.targetRegionIds||[])],targetRegionNames:[...(state.targetRegionNames||[])]};
   }
+  function pairKeyForRegionIds(ids){return Array.isArray(ids)&&ids.length>=2?[...ids.slice(0,2)].sort().join('+'):null}
+  function comparePlaytestTarget(playtest,regions){
+    if(!playtest)return null;const targetPairKey=pairKeyForRegionIds(playtest.targetRegionIds),actualPairKey=regions?.pairKey||null;
+    return{...playtest,targetPairKey,actualPairKey,matchedTargetRegions:actualPairKey&&targetPairKey?actualPairKey===targetPairKey:null};
+  }
   function cardId(card){return card?.cardId||card?.definitionId||card?.definition?.id||card?.named?.id||null}
   function cardDefinition(card,runtimeRoot=defaultRoot){
     if(card?.definition&&typeof card.definition==='object')return card.definition;
@@ -62,7 +67,7 @@
     const flow=runState?.runFlow||{},profiles=runtimeRoot?.RunFlowV2?.REGION_PROFILES||{};
     const visitedRegionIds=Array.isArray(flow.visitedRegionIds)?[...flow.visitedRegionIds]:[],completedRegionIds=Array.isArray(flow.completedRegionIds)?[...flow.completedRegionIds]:[];
     const visitedRegionBranches=Array.isArray(flow.visitedRegionBranches)?flow.visitedRegionBranches.map(entry=>({...entry,tags:[...(entry?.tags||[])]})):[];
-    const regionNames=visitedRegionIds.map(id=>profiles?.[id]?.name||id),pairKey=visitedRegionIds.length>=2?[...visitedRegionIds.slice(0,2)].sort().join('+'):null;
+    const regionNames=visitedRegionIds.map(id=>profiles?.[id]?.name||id),pairKey=pairKeyForRegionIds(visitedRegionIds);
     return{visitedRegionIds,completedRegionIds,visitedRegionBranches,regionNames,pairKey};
   }
   function fieldSummary(runState){
@@ -71,13 +76,13 @@
     return{ownedFieldIds:Array.isArray(state.owned)?[...state.owned]:[],queuedFieldId:state.queuedFieldId||null,usedFieldIds};
   }
   function identitySummary(runState){return{starterId:runState?.starterId||runState?.identity?.starterId||null,starterName:runState?.starter?.name||runState?.char?.name||null,traitId:runState?.traitId||runState?.identity?.traitId||null,traitName:runState?.trait?.name||null}}
-  function buildRunAudit(runState,runtimeRoot=defaultRoot){return{version:VERSION,identity:identitySummary(runState),fields:fieldSummary(runState),regions:regionSummary(runState,runtimeRoot),deck:deckSummary(runState,runtimeRoot),playtest:playtestSummary(runState)}}
+  function buildRunAudit(runState,runtimeRoot=defaultRoot){const regions=regionSummary(runState,runtimeRoot),playtest=comparePlaytestTarget(playtestSummary(runState),regions);return{version:VERSION,identity:identitySummary(runState),fields:fieldSummary(runState),regions,deck:deckSummary(runState,runtimeRoot),playtest}}
   function auditRows(summary){
     const identity=summary?.identity||{},fields=summary?.fields||{},regions=summary?.regions||{},deck=summary?.deck||{},playtest=summary?.playtest||null,top=(deck.topSystemTags||[]).slice(0,5).map(entry=>`${entry.tag} ${entry.count}`).join(' · ')||'없음';
-    const branches=(regions.visitedRegionBranches||[]).map(entry=>entry.branchLabel||entry.branchId).join(' → ')||'미선택',usedFields=(fields.usedFieldIds||[]).join(', ')||'없음',target=playtest?.targetRegionNames?.length?` · 목표 ${playtest.targetRegionNames.join(' → ')}`:'';
+    const branches=(regions.visitedRegionBranches||[]).map(entry=>entry.branchLabel||entry.branchId).join(' → ')||'미선택',usedFields=(fields.usedFieldIds||[]).join(', ')||'없음',target=playtest?.targetRegionNames?.length?` · 목표 ${playtest.targetRegionNames.join(' → ')}`:'',match=playtest?.matchedTargetRegions===true?' · 목표 일치':playtest?.matchedTargetRegions===false?' · 목표 불일치':'';
     return[
       `M10 정체성 · ${identity.starterName||identity.starterId||'미상'} / ${identity.traitName||identity.traitId||'미상'} · 사용 필드 ${usedFields}`,
-      `M10 지역 · ${(regions.regionNames||regions.visitedRegionIds||[]).join(' → ')||'미방문'}${target} · 분기 ${branches}`,
+      `M10 지역 · ${(regions.regionNames||regions.visitedRegionIds||[]).join(' → ')||'미방문'}${target}${match} · 분기 ${branches}`,
       `M10 덱 · ${deck.total||0}장 · 순수 ${deck.pure||0} / 효과 ${deck.effect||0} · 주요 태그 ${top}`
     ];
   }
@@ -101,8 +106,8 @@
   }
   function playtestStatusText(runState){
     const state=playtestSummary(runState);if(!state)return'M10 표본 미선택';
-    const visited=Array.isArray(runState?.runFlow?.visitedRegionIds)?runState.runFlow.visitedRegionIds:[],target=(state.targetRegionNames||state.targetRegionIds||[]).join(' → ')||'미지정';
-    return`${state.label||state.presetId||'M10 표본'} · 목표 ${target} · 방문 ${visited.length}/2`;
+    const visited=Array.isArray(runState?.runFlow?.visitedRegionIds)?runState.runFlow.visitedRegionIds:[],target=(state.targetRegionNames||state.targetRegionIds||[]).join(' → ')||'미지정',actualPairKey=pairKeyForRegionIds(visited),targetPairKey=pairKeyForRegionIds(state.targetRegionIds),match=actualPairKey?(actualPairKey===targetPairKey?' · 목표 일치':' · 목표 불일치'):'';
+    return`${state.label||state.presetId||'M10 표본'} · 목표 ${target} · 방문 ${visited.length}/2${match}`;
   }
   function playtestLauncherHtml(){
     const buttons=PLAYTEST_PRESETS.map(preset=>`<button type="button" data-m10-playtest-preset="${preset.id}">${preset.label}<br><span>${preset.targetRegionNames.join(' + ')}</span></button>`).join('');
@@ -123,5 +128,5 @@
   function installWhenReady(runtimeRoot=defaultRoot){let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<120)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[m10] 빌드 감사 설치 실패')};if(typeof document!=='undefined'&&document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else setTimeout(attempt,0);return true}
   function resetBrowserInstallForTests(){browserInstalled=false}
 
-  return{STAGE,VERSION,PLAYTEST_PRESETS,activeRun,isDeveloperMode,playtestPreset,playtestSummary,cardId,cardDefinition,cardEffects,isEffectCard,tagsForCard,deckSummary,regionSummary,fieldSummary,identitySummary,buildRunAudit,auditRows,enrichResult,renderAuditRows,startPlaytestPreset,playtestStatusText,playtestLauncherHtml,renderPlaytestLauncher,installPlaytestLauncherWhenReady,finalizeRunResult,wrapFinishRun,wrapLoseRun,installBrowser,installWhenReady,resetBrowserInstallForTests};
+  return{STAGE,VERSION,PLAYTEST_PRESETS,activeRun,isDeveloperMode,playtestPreset,playtestSummary,pairKeyForRegionIds,comparePlaytestTarget,cardId,cardDefinition,cardEffects,isEffectCard,tagsForCard,deckSummary,regionSummary,fieldSummary,identitySummary,buildRunAudit,auditRows,enrichResult,renderAuditRows,startPlaytestPreset,playtestStatusText,playtestLauncherHtml,renderPlaytestLauncher,installPlaytestLauncherWhenReady,finalizeRunResult,wrapFinishRun,wrapLoseRun,installBrowser,installWhenReady,resetBrowserInstallForTests};
 });
