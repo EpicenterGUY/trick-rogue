@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const UI=require('../game-ui.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 function docWithInfo(text){return{getElementById(id){return id==='drawInfo'?{textContent:text}:null}}}
 
@@ -30,18 +31,11 @@ test('전역 UI 스타일은 시작/맵/전투 덱/모달/8장 마켓을 한 패
 });
 
 test('브라우저 로더는 BattleLayout → M5 텔레메트리 → M9 기존지역 → GameUI 순서로 설치한다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert.match(source,/game-ui\.js/);
-  assert.match(source,/trick-game-ui-runtime/);
-  assert.match(source,/run-balance-telemetry\.js/);
-  assert.match(source,/trick-run-balance-telemetry-runtime/);
-  assert.match(source,/legacy-regions-m9\.js/);
-  assert.match(source,/trick-legacy-regions-m9-runtime/);
-  assert.match(source,/function loadBattleLayoutFinal\(\)\{\s*if\(root\.BattleLayout\)\{loadRunBalanceTelemetry\(\);return;\}/);
-  assert.match(source,/loadScript\('battle-layout\.js','trick-battle-layout-runtime'\)/);
-  assert.match(source,/addEventListener\?\.\('load',loadRunBalanceTelemetry/);
-  assert.match(source,/function loadRunBalanceTelemetry\(\)[\s\S]*?loadLegacyRegionsM9/);
-  assert.match(source,/function loadLegacyRegionsM9\(\)[\s\S]*?loadGameUi/);
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  const tail=names.slice(names.indexOf('BattleLayout'));
+  assert.deepEqual(tail,['BattleLayout','RunBalanceTelemetry','LegacyRegionsM9','GameUI']);
+  assert.equal(LoaderChain.entry('GameUI').src,'game-ui.js');
+  assert.equal(LoaderChain.entry('GameUI').dataset,'trick-game-ui-runtime');
 });
 
 
