@@ -22,10 +22,15 @@
     if(root.GameUI)return;
     loadScript('game-ui.js','trick-game-ui-runtime');
   }
-  function loadRunBalanceTelemetry(){
-    if(root.RunBalanceTelemetry){loadGameUi();return;}
-    const script=loadScript('run-balance-telemetry.js','trick-run-balance-telemetry-runtime');
+  function loadLegacyRegionsM9(){
+    if(root.LegacyRegionsM9){loadGameUi();return;}
+    const script=loadScript('legacy-regions-m9.js','trick-legacy-regions-m9-runtime');
     if(script?.dataset?.loaded==='true')loadGameUi();else script?.addEventListener?.('load',loadGameUi,{once:true});
+  }
+  function loadRunBalanceTelemetry(){
+    if(root.RunBalanceTelemetry){loadLegacyRegionsM9();return;}
+    const script=loadScript('run-balance-telemetry.js','trick-run-balance-telemetry-runtime');
+    if(script?.dataset?.loaded==='true')loadLegacyRegionsM9();else script?.addEventListener?.('load',loadLegacyRegionsM9,{once:true});
   }
   function loadBattleLayoutFinal(){
     if(root.BattleLayout){loadRunBalanceTelemetry();return;}
