@@ -4,6 +4,6 @@
   "scripts": {
     "validate:cards": "node scripts/validate-effect-cards.js",
     "test:e2e": "node --test test/e2e-8-f.test.js",
-    "test": "node --test && npm run validate:cards"
+    "test": "node --test test/run-build-audit-m10.test.js test/runtime-loader-chain.test.js test/browser-smoke-v1.test.js test/card-registry-browser-load-order.test.js test/enemy-behavior.test.js test/run-v3-browser-e2e-v2.test.js && npm run validate:cards"
   }
 }
