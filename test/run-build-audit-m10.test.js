@@ -39,7 +39,8 @@ test('M10 덱 요약은 순수/효과와 시스템 태그 분포를 함께 기�
   assert.equal(summary.systemTagCounts['칩'],2);
   assert.equal(summary.systemTagCounts['손패'],2);
   assert.equal(summary.systemTagCounts['직접 피해'],1);
-  assert.deepEqual(summary.topSystemTags[0],{tag:'손패',count:2});
+  assert.equal(summary.topSystemTags[0].count,2);
+  assert.deepEqual(new Set(summary.topSystemTags.filter(entry=>entry.count===2).map(entry=>entry.tag)),new Set(['칩','손패']));
   assert.equal(summary.cardCounts['core.test'],2);
 });
 
