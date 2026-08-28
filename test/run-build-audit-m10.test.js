@@ -1,6 +1,8 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const Audit=require('../run-build-audit.js');
+const Cards=require('../cards.js');
+const RunStartV2=require('../run-start-v2.js');
 
 function runtime(){
   return{
@@ -42,6 +44,20 @@ test('M10 덱 요약은 순수/효과와 시스템 태그 분포를 함께 기�
   assert.equal(summary.topSystemTags[0].count,2);
   assert.deepEqual(new Set(summary.topSystemTags.filter(entry=>entry.count===2).map(entry=>entry.tag)),new Set(['칩','손패']));
   assert.equal(summary.cardCounts['core.test'],2);
+});
+
+test('M10 덱 분류는 실제 카드 생성기의 순수 카드 판정과 네 스타터 8+4 구성을 보존한다',()=>{
+  for(const starterId of ['common','gambler','trickster','survivor']){
+    let uid=0;
+    const deck=RunStartV2.buildStarterDeck(starterId,Cards,{newUid(){uid+=1;return`${starterId}-${uid}`}});
+    assert.equal(deck.length,12);
+    assert.equal(deck.filter(card=>Cards.isPureCard(card)).length,8);
+    const summary=Audit.deckSummary({deck},Cards);
+    assert.equal(summary.total,12);
+    assert.equal(summary.pure,8);
+    assert.equal(summary.effect,4);
+    assert.equal(summary.pure+summary.effect,summary.total);
+  }
 });
 
 test('M10 지역 요약은 두 지역 조합 키와 선택 분기를 보존한다',()=>{
