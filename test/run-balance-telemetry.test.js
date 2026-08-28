@@ -96,11 +96,12 @@ test('winBattle 바깥 래퍼는 기존 칩 리셋보다 먼저 통계를 아카
   assert.equal(root.run.balanceTelemetry.chip.spentOnExchanges,4);
 });
 
-test('M5 텔레메트리는 배틀 레이아웃 뒤에 로드되고 기존 지역 M9 보강 뒤 GameUI로 이어진다',()=>{
+test('M5 텔레메트리는 배틀 레이아웃 뒤에 로드되고 M10 빌드 감사·기존 지역 M9 보강 뒤 GameUI로 이어진다',()=>{
   const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
   const start=names.indexOf('BattleLayout');
-  assert.deepEqual(names.slice(start,start+4),['BattleLayout','RunBalanceTelemetry','LegacyRegionsM9','GameUI']);
+  assert.deepEqual(names.slice(start,start+5),['BattleLayout','RunBalanceTelemetry','RunBuildAudit','LegacyRegionsM9','GameUI']);
   assert.equal(LoaderChain.entry('RunBalanceTelemetry').src,'run-balance-telemetry.js');
   assert.equal(LoaderChain.entry('RunBalanceTelemetry').dataset,'trick-run-balance-telemetry-runtime');
+  assert.equal(LoaderChain.entry('RunBuildAudit').src,'run-build-audit.js');
   assert.equal(LoaderChain.entry('LegacyRegionsM9').src,'legacy-regions-m9.js');
 });
