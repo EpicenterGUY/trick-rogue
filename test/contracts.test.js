@@ -1,8 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
 const Contracts=require('../contracts.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 function advantage(player=false,enemy=false){return{mode:'explicit',automaticSuitComparison:false,multiplier:1.25,playerActive:player,enemyActive:enemy,playerSource:player?'test':null,enemySource:enemy?'test':null}}
 function battle({wins=0,losses=0,draws=0,playerAdvantage=false,enemyAdvantage=false}={}){
@@ -112,10 +111,8 @@ test('금기 패널티는 최종 쇼다운 위력을 0 아래로 내리지 않�
 });
 
 test('브라우저 부트스트랩은 상태 시스템 뒤 계약·금기를 로드하고 빌드 시너지로 넘긴다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert.match(source,/function loadContracts\(\)/);
-  assert.match(source,/loadScript\('contracts\.js','trick-contract-system-runtime'\)/);
-  assert.match(source,/if\(root\.StatusSystem\)\{loadContracts\(\);return;\}/);
-  assert.match(source,/if\(root\.ContractSystem\)\{loadBuildSynergies\(\);return;\}/);
-  assert.match(source,/function loadContracts\(\)\{[\s\S]*?loadScript\('contracts\.js','trick-contract-system-runtime'\)[\s\S]*?loadBuildSynergies\(\)/);
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  const start=names.indexOf('StatusSystem');
+  assert.deepEqual(names.slice(start,start+3),['StatusSystem','ContractSystem','BuildSynergySystem']);
+  assert.deepEqual(LoaderChain.entry('ContractSystem'),{globalName:'ContractSystem',src:'contracts.js',dataset:'trick-contract-system-runtime',after:null});
 });
