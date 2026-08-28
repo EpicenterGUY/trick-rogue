@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const Chips=require('../chip-economy.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 function state(balance=0){
   const battle={
@@ -191,10 +192,9 @@ test('7.5-I 교환 UI 설명은 버림이 아니라 덱 맨 아래 이동과 트
 });
 
 test('적 행동 부트스트랩은 우세 뒤, 전투 레이아웃 전에 칩 경제를 로드한다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert(source.includes("loadScript('chip-economy.js','trick-chip-economy-runtime')"));
-  assert(source.includes("if(root.ChipEconomy){loadBattleLayoutFile();return;}"));
-  assert(source.includes("if(script?.dataset?.loaded==='true')loadBattleLayoutFile();else script?.addEventListener?.('load',loadBattleLayoutFile,{once:true});"));
-  assert(source.includes("if(root.ShowdownAdvantage){loadBattleLayoutRuntime();return;}"));
-  assert(source.includes("loadScript('battle-layout.js','trick-battle-layout-runtime')"));
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  const start=names.indexOf('ShowdownAdvantage');
+  assert.deepEqual(names.slice(start,start+4),['ShowdownAdvantage','ChipEconomy','ShowdownResolution','ShowdownHighRoll']);
+  assert.deepEqual(LoaderChain.entry('ChipEconomy'),{globalName:'ChipEconomy',src:'chip-economy.js',dataset:'trick-chip-economy-runtime',after:null});
+  assert(LoaderChain.indexOf('ChipEconomy')<LoaderChain.indexOf('BattleLayout'));
 });
