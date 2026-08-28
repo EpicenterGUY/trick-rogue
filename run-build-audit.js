@@ -10,9 +10,25 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(defaultRoot,CardSystemTags){
   const STAGE='M10-1';
   const VERSION='M10-1';
+  const PLAYTEST_PRESETS=Object.freeze([
+    Object.freeze({id:'m10-01',label:'표본 1 · 정석',starterId:'common',traitId:'foresight',targetRegionIds:Object.freeze(['region_theater','region_observatory']),targetRegionNames:Object.freeze(['유랑극장','안개 관측소'])}),
+    Object.freeze({id:'m10-02',label:'표본 2 · 승부사',starterId:'gambler',traitId:'empty_pocket',targetRegionIds:Object.freeze(['region_frontier','region_casino']),targetRegionNames:Object.freeze(['황야 전선','침몰 카지노'])}),
+    Object.freeze({id:'m10-03',label:'표본 3 · 생존자',starterId:'survivor',traitId:'comeback',targetRegionIds:Object.freeze(['region_red_ward','region_scrap_market']),targetRegionNames:Object.freeze(['붉은 병동','폐품 시장'])}),
+    Object.freeze({id:'m10-04',label:'표본 4 · 변칙',starterId:'trickster',traitId:'suit_collector',targetRegionIds:Object.freeze(['region_theater','region_casino']),targetRegionNames:Object.freeze(['유랑극장','침몰 카지노'])}),
+    Object.freeze({id:'m10-05',label:'표본 5 · 정석',starterId:'common',traitId:'pure_mind',targetRegionIds:Object.freeze(['region_observatory','region_scrap_market']),targetRegionNames:Object.freeze(['안개 관측소','폐품 시장'])})
+  ]);
   let browserInstalled=false;
 
   function activeRun(runtimeRoot=defaultRoot){if(runtimeRoot?.run)return runtimeRoot.run;try{if(typeof run!=='undefined'&&run)return run}catch(_error){}return null}
+  function isDeveloperMode(runtimeRoot=defaultRoot){
+    const search=String(runtimeRoot?.location?.search||'');
+    try{return new URLSearchParams(search).get('dev')==='1'}catch(_error){return/(?:^|[?&])dev=1(?:&|$)/.test(search)}
+  }
+  function playtestPreset(id){return PLAYTEST_PRESETS.find(preset=>preset.id===id)||null}
+  function playtestSummary(runState){
+    const state=runState?.m10Playtest;if(!state||typeof state!=='object')return null;
+    return{presetId:state.presetId||null,label:state.label||null,starterId:state.starterId||null,traitId:state.traitId||null,targetRegionIds:[...(state.targetRegionIds||[])],targetRegionNames:[...(state.targetRegionNames||[])]};
+  }
   function cardId(card){return card?.cardId||card?.definitionId||card?.definition?.id||card?.named?.id||null}
   function cardDefinition(card,runtimeRoot=defaultRoot){
     if(card?.definition&&typeof card.definition==='object')return card.definition;
@@ -55,13 +71,13 @@
     return{ownedFieldIds:Array.isArray(state.owned)?[...state.owned]:[],queuedFieldId:state.queuedFieldId||null,usedFieldIds};
   }
   function identitySummary(runState){return{starterId:runState?.starterId||runState?.identity?.starterId||null,starterName:runState?.starter?.name||runState?.char?.name||null,traitId:runState?.traitId||runState?.identity?.traitId||null,traitName:runState?.trait?.name||null}}
-  function buildRunAudit(runState,runtimeRoot=defaultRoot){return{version:VERSION,identity:identitySummary(runState),fields:fieldSummary(runState),regions:regionSummary(runState,runtimeRoot),deck:deckSummary(runState,runtimeRoot)}}
+  function buildRunAudit(runState,runtimeRoot=defaultRoot){return{version:VERSION,identity:identitySummary(runState),fields:fieldSummary(runState),regions:regionSummary(runState,runtimeRoot),deck:deckSummary(runState,runtimeRoot),playtest:playtestSummary(runState)}}
   function auditRows(summary){
-    const identity=summary?.identity||{},fields=summary?.fields||{},regions=summary?.regions||{},deck=summary?.deck||{},top=(deck.topSystemTags||[]).slice(0,5).map(entry=>`${entry.tag} ${entry.count}`).join(' · ')||'없음';
-    const branches=(regions.visitedRegionBranches||[]).map(entry=>entry.branchLabel||entry.branchId).join(' → ')||'미선택',usedFields=(fields.usedFieldIds||[]).join(', ')||'없음';
+    const identity=summary?.identity||{},fields=summary?.fields||{},regions=summary?.regions||{},deck=summary?.deck||{},playtest=summary?.playtest||null,top=(deck.topSystemTags||[]).slice(0,5).map(entry=>`${entry.tag} ${entry.count}`).join(' · ')||'없음';
+    const branches=(regions.visitedRegionBranches||[]).map(entry=>entry.branchLabel||entry.branchId).join(' → ')||'미선택',usedFields=(fields.usedFieldIds||[]).join(', ')||'없음',target=playtest?.targetRegionNames?.length?` · 목표 ${playtest.targetRegionNames.join(' → ')}`:'';
     return[
       `M10 정체성 · ${identity.starterName||identity.starterId||'미상'} / ${identity.traitName||identity.traitId||'미상'} · 사용 필드 ${usedFields}`,
-      `M10 지역 · ${(regions.regionNames||regions.visitedRegionIds||[]).join(' → ')||'미방문'} · 분기 ${branches}`,
+      `M10 지역 · ${(regions.regionNames||regions.visitedRegionIds||[]).join(' → ')||'미방문'}${target} · 분기 ${branches}`,
       `M10 덱 · ${deck.total||0}장 · 순수 ${deck.pure||0} / 효과 ${deck.effect||0} · 주요 태그 ${top}`
     ];
   }
@@ -73,12 +89,39 @@
     list.querySelectorAll?.('[data-m10-build-audit]')?.forEach?.(node=>node.remove?.());const buttons=list.querySelectorAll?[...list.querySelectorAll('button')]:[],before=buttons.find(button=>(button.textContent||'').includes('새 런'))||null;
     for(const text of auditRows(summary)){const row=doc.createElement('div');row.className='choice';row.setAttribute('data-m10-build-audit','true');const bold=doc.createElement('b');bold.textContent=text;row.appendChild(bold);list.insertBefore(row,before)}return true;
   }
+  function startPlaytestPreset(runtimeRoot=defaultRoot,presetId){
+    const preset=playtestPreset(presetId);if(!preset)return{ok:false,reason:'unknown_preset'};
+    const api=runtimeRoot?.RunStartV2;if(typeof runtimeRoot?.beginRun!=='function'||typeof api?.applyIdentityToRun!=='function')return{ok:false,reason:'runtime_not_ready'};
+    runtimeRoot.beginRun();const runState=activeRun(runtimeRoot);if(!runState)return{ok:false,reason:'run_not_created'};
+    const cardsApi=typeof api.cardsApiFor==='function'?api.cardsApiFor(runtimeRoot):runtimeRoot;
+    try{api.applyIdentityToRun(runState,{starterId:preset.starterId,traitId:preset.traitId},cardsApi,runtimeRoot)}catch(error){runtimeRoot?.console?.warn?.('[m10] 표본 런 시작 실패',error);return{ok:false,reason:'identity_apply_failed'}}
+    runState.m10Playtest={presetId:preset.id,label:preset.label,starterId:preset.starterId,traitId:preset.traitId,targetRegionIds:[...preset.targetRegionIds],targetRegionNames:[...preset.targetRegionNames]};
+    try{runtimeRoot?.showScreen?.('mapScreen');runtimeRoot?.renderMap?.()}catch(_error){}
+    return{ok:true,presetId:preset.id,label:preset.label,targetRegionIds:[...preset.targetRegionIds],targetRegionNames:[...preset.targetRegionNames]};
+  }
+  function playtestStatusText(runState){
+    const state=playtestSummary(runState);if(!state)return'M10 표본 미선택';
+    const visited=Array.isArray(runState?.runFlow?.visitedRegionIds)?runState.runFlow.visitedRegionIds:[],target=(state.targetRegionNames||state.targetRegionIds||[]).join(' → ')||'미지정';
+    return`${state.label||state.presetId||'M10 표본'} · 목표 ${target} · 방문 ${visited.length}/2`;
+  }
+  function playtestLauncherHtml(){
+    const buttons=PLAYTEST_PRESETS.map(preset=>`<button type="button" data-m10-playtest-preset="${preset.id}">${preset.label}<br><span>${preset.targetRegionNames.join(' + ')}</span></button>`).join('');
+    return`<b>M10 대표 5런</b><div class="devHint">스타터·특성만 고정합니다. 지역 선택은 직접 진행해 체감 판정을 보존합니다.</div><div class="devRow">${buttons}</div><div class="devHint" data-m10-playtest-status>M10 표본 미선택</div>`;
+  }
+  function renderPlaytestLauncher(runtimeRoot=defaultRoot){
+    if(!isDeveloperMode(runtimeRoot))return false;const doc=runtimeRoot?.document,panel=doc?.querySelector?.('#trickDevPanel');if(!panel)return false;
+    let group=panel.querySelector?.('[data-m10-playtest-launcher]');if(!group){group=doc.createElement('div');group.className='devGroup';group.setAttribute('data-m10-playtest-launcher','true');group.innerHTML=playtestLauncherHtml();const message=panel.querySelector?.('#trickDevMessage');panel.insertBefore(group,message||null);group.addEventListener?.('click',event=>{const button=event.target?.closest?.('[data-m10-playtest-preset]');if(!button)return;const result=startPlaytestPreset(runtimeRoot,button.dataset.m10PlaytestPreset);const messageNode=panel.querySelector?.('#trickDevMessage');if(messageNode)messageNode.textContent=result.ok?`${result.label} 시작 · 지역은 직접 선택`:`M10 표본 시작 실패 · ${result.reason}`;const status=group.querySelector?.('[data-m10-playtest-status]');if(status)status.textContent=playtestStatusText(activeRun(runtimeRoot))})}
+    const status=group.querySelector?.('[data-m10-playtest-status]');if(status)status.textContent=playtestStatusText(activeRun(runtimeRoot));return true;
+  }
+  function installPlaytestLauncherWhenReady(runtimeRoot=defaultRoot){
+    if(!isDeveloperMode(runtimeRoot))return false;let attempts=0;const attempt=()=>{if(renderPlaytestLauncher(runtimeRoot))return;if(attempts++<80)setTimeout(attempt,25)};attempt();return true;
+  }
   function finalizeRunResult(runtimeRoot,result){const runState=activeRun(runtimeRoot);if(!runState)return result;const summary=enrichResult(runState,result,runtimeRoot);renderAuditRows(runtimeRoot,summary);runtimeRoot?.console?.info?.('[M10 build audit]',summary);return result}
   function wrapFinishRun(runtimeRoot=defaultRoot){const original=runtimeRoot?.finishRun;if(typeof original!=='function'||original.__m10BuildAudit)return false;function wrapped(){const result=original.apply(this,arguments);if(result&&typeof result.then==='function')return result.then(value=>finalizeRunResult(runtimeRoot,value));return finalizeRunResult(runtimeRoot,result)}wrapped.__m10BuildAudit=true;wrapped.__original=original;runtimeRoot.finishRun=wrapped;return true}
   function wrapLoseRun(runtimeRoot=defaultRoot){const original=runtimeRoot?.loseRun;if(typeof original!=='function'||original.__m10BuildAudit)return false;function wrapped(){const result=original.apply(this,arguments);if(result&&typeof result.then==='function')return result.then(value=>finalizeRunResult(runtimeRoot,value));return finalizeRunResult(runtimeRoot,result)}wrapped.__m10BuildAudit=true;wrapped.__original=original;runtimeRoot.loseRun=wrapped;return true}
-  function installBrowser(runtimeRoot=defaultRoot){if(browserInstalled)return true;if(!runtimeRoot?.RunFlowV2||!runtimeRoot?.RunBalanceTelemetry||!runtimeRoot?.CardSystemTags)return false;if(typeof runtimeRoot.finishRun!=='function'||typeof runtimeRoot.loseRun!=='function')return false;wrapFinishRun(runtimeRoot);wrapLoseRun(runtimeRoot);browserInstalled=true;return true}
+  function installBrowser(runtimeRoot=defaultRoot){if(browserInstalled){installPlaytestLauncherWhenReady(runtimeRoot);return true}if(!runtimeRoot?.RunFlowV2||!runtimeRoot?.RunBalanceTelemetry||!runtimeRoot?.CardSystemTags)return false;if(typeof runtimeRoot.finishRun!=='function'||typeof runtimeRoot.loseRun!=='function')return false;wrapFinishRun(runtimeRoot);wrapLoseRun(runtimeRoot);browserInstalled=true;installPlaytestLauncherWhenReady(runtimeRoot);return true}
   function installWhenReady(runtimeRoot=defaultRoot){let attempts=0;const attempt=()=>{if(installBrowser(runtimeRoot))return;if(attempts++<120)setTimeout(attempt,25);else runtimeRoot?.console?.warn?.('[m10] 빌드 감사 설치 실패')};if(typeof document!=='undefined'&&document.readyState==='loading')document.addEventListener('DOMContentLoaded',attempt,{once:true});else setTimeout(attempt,0);return true}
   function resetBrowserInstallForTests(){browserInstalled=false}
 
-  return{STAGE,VERSION,activeRun,cardId,cardDefinition,cardEffects,isEffectCard,tagsForCard,deckSummary,regionSummary,fieldSummary,identitySummary,buildRunAudit,auditRows,enrichResult,renderAuditRows,finalizeRunResult,wrapFinishRun,wrapLoseRun,installBrowser,installWhenReady,resetBrowserInstallForTests};
+  return{STAGE,VERSION,PLAYTEST_PRESETS,activeRun,isDeveloperMode,playtestPreset,playtestSummary,cardId,cardDefinition,cardEffects,isEffectCard,tagsForCard,deckSummary,regionSummary,fieldSummary,identitySummary,buildRunAudit,auditRows,enrichResult,renderAuditRows,startPlaytestPreset,playtestStatusText,playtestLauncherHtml,renderPlaytestLauncher,installPlaytestLauncherWhenReady,finalizeRunResult,wrapFinishRun,wrapLoseRun,installBrowser,installWhenReady,resetBrowserInstallForTests};
 });
