@@ -8,6 +8,7 @@ const BattleEvents=require('../battle-events.js');
 const Relics=require('../relics.js');
 const Contracts=require('../contracts.js');
 const Synergies=require('../build-synergies.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 function runState({relics=[],contracts=[],taboos=[]}={}){return{relics:relics.map(id=>Relics.makeRelic(id)),contracts:[...contracts],taboos:[...taboos]}}
 function battleState(){return{setIndex:1,trick:1,phase:'trick',hand:[],slots:[],enemySlots:[],chip:0,statuses:{player:{shield:0,regen:0,vulnerable:0,bleed:0},enemy:{shield:0,regen:0,vulnerable:0,bleed:0}},reservations:[],history:CardEffects.newHistory(),setHistory:{wins:0,losses:0,draws:0},advantage:null,advantageState:{player:false,enemy:false,playerSource:null,enemySource:null,grantedSet:null}}}
@@ -49,5 +50,8 @@ test('시너지 요약과 브라우저 UI는 활성 수를 맵과 전투에서 �
 });
 
 test('브라우저 부트스트랩은 계약·금기 뒤 빌드 시너지를 로드하고 7-1 런 구조로 이어진다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');assert.match(source,/function loadBuildSynergies\(\)/);assert.match(source,/build-synergies\.js/);assert.match(source,/trick-build-synergy-runtime/);assert.match(source,/function loadContracts\(\)\{[\s\S]*?loadScript\('contracts\.js','trick-contract-system-runtime'\)[\s\S]*?loadBuildSynergies\(\)/);assert.match(source,/function loadBuildSynergies\(\)\{[\s\S]*?loadScript\('build-synergies\.js','trick-build-synergy-runtime'\)[\s\S]*?loadRunStructure\(\)/);
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  const start=names.indexOf('ContractSystem');
+  assert.deepEqual(names.slice(start,start+3),['ContractSystem','BuildSynergySystem','RunStructure']);
+  assert.deepEqual(LoaderChain.entry('BuildSynergySystem'),{globalName:'BuildSynergySystem',src:'build-synergies.js',dataset:'trick-build-synergy-runtime',after:null});
 });
