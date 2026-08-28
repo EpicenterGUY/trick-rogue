@@ -4,6 +4,6 @@
   "scripts": {
     "validate:cards": "node scripts/validate-effect-cards.js",
     "test:e2e": "node --test test/e2e-8-f.test.js",
-    "test": "node --test test/[o-p]*.test.js && npm run validate:cards"
+    "test": "node --test test/red*.test.js test/relic*.test.js test/reward*.test.js test/river*.test.js test/rules*.test.js && npm run validate:cards"
   }
 }
