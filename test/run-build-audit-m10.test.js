@@ -11,7 +11,7 @@ function runtime(){
       'core.damage':{id:'core.damage',effects:[{trigger:'on_play',action:'damage_enemy',value:3}]}
     },
     RunFlowV2:{REGION_PROFILES:{
-      region_theater:{name:'유랑극장'},region_casino:{name:'침몰 카지노'}
+      region_theater:{name:'유랑극장'},region_observatory:{name:'안개 관측소'},region_frontier:{name:'황야 전선'},region_casino:{name:'침몰 카지노'},region_red_ward:{name:'붉은 병동'},region_scrap_market:{name:'폐품 시장'}
     }}
   };
 }
@@ -60,6 +60,50 @@ test('M10 덱 분류는 실제 카드 생성기의 순수 카드 판정과 네 �
   }
 });
 
+test('M10 대표 5런 프리셋은 6지역과 4스타터를 분산 커버한다',()=>{
+  assert.equal(Audit.PLAYTEST_PRESETS.length,5);
+  const regions=new Set(Audit.PLAYTEST_PRESETS.flatMap(preset=>preset.targetRegionIds));
+  assert.deepEqual([...regions].sort(),['region_theater','region_observatory','region_frontier','region_casino','region_red_ward','region_scrap_market'].sort());
+  assert.deepEqual([...new Set(Audit.PLAYTEST_PRESETS.map(preset=>preset.starterId))].sort(),['common','gambler','trickster','survivor'].sort());
+  assert.equal(new Set(Audit.PLAYTEST_PRESETS.map(preset=>preset.traitId)).size,5);
+  assert.equal(Audit.playtestPreset('m10-02').starterId,'gambler');
+  assert.equal(Audit.playtestPreset('missing'),null);
+});
+
+test('M10 DEV 런처는 지역을 직접 선택한다는 조건과 다섯 표본 버튼을 표시한다',()=>{
+  const html=Audit.playtestLauncherHtml();
+  assert.match(html,/지역 선택은 직접/);
+  for(const preset of Audit.PLAYTEST_PRESETS)assert.match(html,new RegExp(`data-m10-playtest-preset="${preset.id}"`));
+  assert.equal(Audit.isDeveloperMode({location:{search:'?dev=1'}}),true);
+  assert.equal(Audit.isDeveloperMode({location:{search:'?dev=0'}}),false);
+});
+
+test('M10 DEV 표본 시작은 스타터와 특성만 고정하고 지역 방문은 강제하지 않는다',()=>{
+  let uid=0;
+  const root={
+    ...Cards,
+    RunStartV2,
+    beginRun(){this.run={hp:1,maxHp:1,gold:0,deck:[],runFlow:{visitedRegionIds:[],completedRegionIds:[],visitedRegionBranches:[]}};return this.run},
+    newUid(){uid+=1;return`dev-${uid}`},
+    showScreen(screen){this.screen=screen},
+    renderMap(){this.rendered=true}
+  };
+  const result=Audit.startPlaytestPreset(root,'m10-02');
+  assert.equal(result.ok,true);
+  assert.equal(root.run.starterId,'gambler');
+  assert.equal(root.run.traitId,'empty_pocket');
+  assert.equal(root.run.deck.length,12);
+  assert.equal(root.run.deck.filter(card=>Cards.isPureCard(card)).length,8);
+  assert.deepEqual(root.run.m10Playtest.targetRegionIds,['region_frontier','region_casino']);
+  assert.deepEqual(root.run.runFlow.visitedRegionIds,[]);
+  assert.equal(root.screen,'mapScreen');
+  assert.equal(root.rendered,true);
+  const summary=Audit.buildRunAudit(root.run,{...root,RunFlowV2:{REGION_PROFILES:{}}});
+  assert.equal(summary.playtest.presetId,'m10-02');
+  assert.deepEqual(summary.playtest.targetRegionIds,['region_frontier','region_casino']);
+  assert.match(Audit.playtestStatusText(root.run),/방문 0\/2/);
+});
+
 test('M10 지역 요약은 두 지역 조합 키와 선택 분기를 보존한다',()=>{
   const source=runState(),summary=Audit.regionSummary(source,runtime());
   assert.deepEqual(summary.regionNames,['침몰 카지노','유랑극장']);
@@ -77,18 +121,21 @@ test('M10 필드 요약은 보유/대기/실제 사용 필드를 구분하고 �
 
 test('M10 런 감사 결과는 정체성·필드·지역·덱을 한 객체로 묶고 결과에 저장한다',()=>{
   const run=runState(),root=runtime(),result={victory:true};run.runResult=result;
+  run.m10Playtest={presetId:'m10-04',label:'표본 4 · 변칙',starterId:'trickster',traitId:'suit_collector',targetRegionIds:['region_theater','region_casino'],targetRegionNames:['유랑극장','침몰 카지노']};
   const summary=Audit.enrichResult(run,result,root);
   assert.equal(summary.version,'M10-1');
   assert.equal(summary.identity.starterName,'승부사');
   assert.equal(summary.identity.traitName,'빈손주의');
   assert.equal(summary.regions.pairKey,'region_casino+region_theater');
   assert.equal(summary.deck.total,5);
+  assert.equal(summary.playtest.presetId,'m10-04');
   assert.equal(result.buildAudit,summary);
   assert.equal(run.runResult.buildAudit,summary);
   const rows=Audit.auditRows(summary);
   assert.equal(rows.length,3);
   assert(rows[0].includes('wide_table'));
   assert(rows[1].includes('침몰 카지노 → 유랑극장'));
+  assert(rows[1].includes('목표 유랑극장 → 침몰 카지노'));
   assert(rows[2].includes('순수 2 / 효과 3'));
 });
 
