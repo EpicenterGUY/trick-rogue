@@ -30,10 +30,10 @@ test('전역 UI 스타일은 시작/맵/전투 덱/모달/8장 마켓을 한 패
   assert.match(UI.STYLE_TEXT,/DECK|battlePile/);
 });
 
-test('브라우저 로더는 BattleLayout → M5 텔레메트리 → M9 기존지역 → GameUI 순서로 설치한다',()=>{
+test('브라우저 로더는 BattleLayout → M5 텔레메트리 → M10 빌드 감사 → M9 기존지역 → GameUI 순서로 설치한다',()=>{
   const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
   const tail=names.slice(names.indexOf('BattleLayout'));
-  assert.deepEqual(tail,['BattleLayout','RunBalanceTelemetry','LegacyRegionsM9','GameUI']);
+  assert.deepEqual(tail,['BattleLayout','RunBalanceTelemetry','RunBuildAudit','LegacyRegionsM9','GameUI']);
   assert.equal(LoaderChain.entry('GameUI').src,'game-ui.js');
   assert.equal(LoaderChain.entry('GameUI').dataset,'trick-game-ui-runtime');
 });
