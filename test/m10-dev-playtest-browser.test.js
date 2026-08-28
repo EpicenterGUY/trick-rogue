@@ -8,7 +8,7 @@ const ENABLED=process.env.TRICK_BROWSER_SMOKE==='1';
 
 if(!ENABLED){
   test('M10 DEV 플레이테스트 모바일 브라우저 스모크',{skip:'TRICK_BROWSER_SMOKE=1 전용'},()=>{});
-}else test('M10 DEV 패널에서 대표런·체감 메모·15조합 시작이 실제 클릭으로 동작한다',{timeout:30000},async()=>{
+}else test('M10 DEV 패널에서 대표런·체감 메모·15조합·결과 커버리지가 실제 브라우저 체인으로 동작한다',{timeout:30000},async()=>{
   const chrome=findChrome();
   assert.ok(chrome,'Chrome/Chromium executable is required for M10 DEV browser smoke');
   const {server,url}=await startStaticServer();
@@ -60,6 +60,22 @@ if(!ENABLED){
     assert.deepEqual(pair.target,['region_red_ward','region_scrap_market']);
     assert.deepEqual(pair.visited,[],'15-pair launcher must also preserve manual region choice');
     assert.equal(pair.feelCount,0,'new sample run starts with a fresh feel-note list');
+
+    const finalized=await evaluate(cdp,"(()=>{const ids=[...run.m10Playtest.targetRegionIds];run.runFlow.visitedRegionIds=[...ids];run.runFlow.completedRegionIds=[...ids];run.runComplete=true;run.runStage=8;run.actId='final';const result=finishRun();const audit=run.runResult?.buildAudit?.playtest||null;const coverage=RunBuildAudit.loadCoverage(globalThis);const entry=coverage.pairs?.[RunBuildAudit.pairKeyForRegionIds(ids)]||null;return{outcome:result?.outcome||null,victory:result?.victory,matched:audit?.matchedTargetRegions,completed:audit?.completedTargetRegions,coverageRecorded:audit?.coverage?.recorded===true,coverageCompleted:audit?.coverage?.completed||0,coverageTotal:audit?.coverage?.total||0,runs:entry?.runs||0,wins:entry?.wins||0,losses:entry?.losses||0,lastOutcome:entry?.lastOutcome||null,m10Rows:document.querySelectorAll('#modal [data-m10-build-audit]').length,title:document.querySelector('#modal h2')?.textContent||''};})()");
+    assert.equal(finalized.outcome,'clear');
+    assert.equal(finalized.victory,true);
+    assert.equal(finalized.matched,true);
+    assert.equal(finalized.completed,true);
+    assert.equal(finalized.coverageRecorded,true);
+    assert.equal(finalized.coverageCompleted,1);
+    assert.equal(finalized.coverageTotal,15);
+    assert.equal(finalized.runs,1);
+    assert.equal(finalized.wins,1);
+    assert.equal(finalized.losses,0);
+    assert.equal(finalized.lastOutcome,'승리');
+    assert.ok(finalized.m10Rows>=4,'result modal should render M10 audit rows');
+    assert.equal(finalized.title,'런 클리어');
+    assert.match(await evaluate(cdp,"document.querySelector('[data-m10-coverage-status]')?.textContent||''"),/1\/15/);
 
     assert.deepEqual(runtimeErrors,[],'M10 DEV browser runtime exceptions should be empty');
   }finally{
