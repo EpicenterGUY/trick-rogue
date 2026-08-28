@@ -1,8 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
 const Telemetry=require('../run-balance-telemetry.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 function battle({type='battle',chip=0}={}){
   return{
@@ -98,12 +97,10 @@ test('winBattle 바깥 래퍼는 기존 칩 리셋보다 먼저 통계를 아카
 });
 
 test('M5 텔레메트리는 배틀 레이아웃 뒤에 로드되고 기존 지역 M9 보강 뒤 GameUI로 이어진다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert.match(source,/run-balance-telemetry\.js/);
-  assert.match(source,/trick-run-balance-telemetry-runtime/);
-  assert.match(source,/legacy-regions-m9\.js/);
-  assert.match(source,/trick-legacy-regions-m9-runtime/);
-  assert.match(source,/function loadBattleLayoutFinal\(\)[\s\S]*?loadRunBalanceTelemetry/);
-  assert.match(source,/function loadRunBalanceTelemetry\(\)\{[\s\S]*?loadLegacyRegionsM9/);
-  assert.match(source,/function loadLegacyRegionsM9\(\)\{[\s\S]*?loadGameUi/);
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  const start=names.indexOf('BattleLayout');
+  assert.deepEqual(names.slice(start,start+4),['BattleLayout','RunBalanceTelemetry','LegacyRegionsM9','GameUI']);
+  assert.equal(LoaderChain.entry('RunBalanceTelemetry').src,'run-balance-telemetry.js');
+  assert.equal(LoaderChain.entry('RunBalanceTelemetry').dataset,'trick-run-balance-telemetry-runtime');
+  assert.equal(LoaderChain.entry('LegacyRegionsM9').src,'legacy-regions-m9.js');
 });
