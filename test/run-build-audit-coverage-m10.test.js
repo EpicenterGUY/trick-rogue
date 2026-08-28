@@ -1,6 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const Audit=require('../run-build-audit.js');
+const RunResults=require('../run-results.js');
 
 function memoryStorage(seed={}){
   const data=new Map(Object.entries(seed));
@@ -137,4 +138,19 @@ test('M10 커버리지 요약은 15개 조합별 최근 결과와 누적 체감 
   assert.equal(row.losses,1);
   assert.equal(row.totalFeelNotes,5);
   assert.equal(row.lastOutcome,'패배');
+});
+
+test('M10 커버리지는 RunResults의 clear/defeat 결과를 실제 승리/패배로 누적한다',()=>{
+  const target=Audit.REGION_PAIR_TARGETS[10],storage=memoryStorage(),root={localStorage:storage,RunFlowV2:{REGION_PROFILES:{}}};
+  const clearRun=playtestRun(target,true),clearSummary=Audit.buildRunAudit(clearRun,root),clearResult=RunResults.recordRunResult(clearRun,'clear',{runtimeRoot:root});
+  assert.equal(clearResult.victory,true);
+  assert.equal(Audit.recordCoverage(root,clearRun,clearSummary,clearResult).ok,true);
+  const defeatRun=playtestRun(target,true),defeatSummary=Audit.buildRunAudit(defeatRun,root),defeatResult=RunResults.recordRunResult(defeatRun,'defeat',{runtimeRoot:root});
+  assert.equal(defeatResult.victory,false);
+  assert.equal(Audit.recordCoverage(root,defeatRun,defeatSummary,defeatResult).ok,true);
+  const entry=Audit.loadCoverage(root).pairs[target.pairKey];
+  assert.equal(entry.runs,2);
+  assert.equal(entry.wins,1);
+  assert.equal(entry.losses,1);
+  assert.equal(entry.lastOutcome,'패배');
 });
