@@ -25,6 +25,7 @@ test('7-4 런 결과 요약은 진행·덱·빌드·시드 정보를 한 모델�
   const summary=RunResults.buildRunSummary(sampleRun(),{outcome:'clear',runtimeRoot:runtime});
   assert.equal(summary.version,'7-4');
   assert.equal(summary.outcome,'clear');
+  assert.equal(summary.victory,true);
   assert.equal(summary.actsCompleted,2);
   assert.equal(summary.nodesCompleted,5);
   assert.equal(summary.routeLength,5);
@@ -48,6 +49,7 @@ test('패배 요약은 현재 미완료 액트를 완료 액트 수에 더하지
   const run=sampleRun();run.runComplete=false;
   const summary=RunResults.buildRunSummary(run,{outcome:'defeat',runtimeRoot:runtime});
   assert.equal(summary.cleared,false);
+  assert.equal(summary.victory,false);
   assert.equal(summary.actsCompleted,1);
   assert.equal(summary.nodesCompleted,5);
 });
@@ -67,6 +69,7 @@ test('finishRun 어댑터는 기존 프로토타입 종료창 대신 공통 런 
   RunResults.wrapFinishRun(root);
   const result=root.finishRun();
   assert.equal(result.outcome,'clear');
+  assert.equal(result.victory,true);
   assert.equal(calls.includes('legacy'),false);
   assert.match(calls.at(-1),/런 클리어/);
   assert.equal(root.run.runResultHistory.length,1);
@@ -79,8 +82,10 @@ test('loseRun 어댑터는 기존 패배 처리를 유지한 뒤 같은 결과 �
   const result=root.loseRun();
   assert.equal(calls[0],'legacy-defeat');
   assert.equal(result.outcome,'defeat');
+  assert.equal(result.victory,false);
   assert.match(calls.at(-1),/런 종료/);
   assert.equal(run.runResult.outcome,'defeat');
+  assert.equal(run.runResult.victory,false);
 });
 
 test('completeNode 어댑터는 실제 액트 전환 뒤 다음 액트 안내창을 띄운다',()=>{
