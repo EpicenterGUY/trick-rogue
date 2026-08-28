@@ -3,7 +3,7 @@
   if(typeof module!=='undefined')module.exports=api;
   root.RuntimeLoaderChain=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
-  const VERSION='M9-LOADER-1';
+  const VERSION='M10-LOADER-1';
   const ENTRIES=Object.freeze([
     ['EnemyBehavior','enemy-behavior-core.js','trick-enemy-behavior-core'],
     ['EncounterRules','encounter-rules.js','trick-encounter-rules-runtime'],
@@ -41,6 +41,7 @@
     ['RunPersistence','run-persistence.js','trick-run-persistence-runtime','relic_reward_wrap'],
     ['BattleLayout','battle-layout.js','trick-battle-layout-runtime'],
     ['RunBalanceTelemetry','run-balance-telemetry.js','trick-run-balance-telemetry-runtime'],
+    ['RunBuildAudit','run-build-audit.js','trick-run-build-audit-runtime'],
     ['LegacyRegionsM9','legacy-regions-m9.js','trick-legacy-regions-m9-runtime'],
     ['GameUI','game-ui.js','trick-game-ui-runtime']
   ].map(([globalName,src,dataset,after])=>Object.freeze({globalName,src,dataset,after:after||null})));
