@@ -1,12 +1,45 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
 const Chain=require('../runtime-loader-chain.js');
+
+function traceBrowserLoaderRequests(){
+  const requested=[];
+  const document={
+    querySelector(){return null},
+    createElement(tag){
+      assert.equal(tag,'script');
+      const listeners={};
+      return{
+        dataset:{},src:'',async:true,
+        setAttribute(){},
+        addEventListener(type,listener){listeners[type]=listener},
+        dispatch(type){listeners[type]?.()}
+      };
+    },
+    head:{
+      appendChild(script){
+        requested.push(script.src);
+        script.dispatch('load');
+      }
+    }
+  };
+  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
+  vm.runInNewContext(source,{document},{filename:'enemy-behavior.js'});
+  return requested;
+}
 
 test('브라우저 런타임 로더 매니페스트는 중복 없이 유효하다',()=>{
   assert.equal(Chain.VERSION,'M9-LOADER-1');
   assert.deepEqual(Chain.validate(),[]);
   assert.equal(Chain.ENTRIES[0].globalName,'EnemyBehavior');
   assert.equal(Chain.ENTRIES.at(-1).globalName,'GameUI');
+});
+
+test('실제 브라우저 로더 요청 순서는 매니페스트와 완전히 일치한다',()=>{
+  assert.deepEqual(traceBrowserLoaderRequests(),Chain.ENTRIES.map(entry=>entry.src));
 });
 
 test('RUN V3 후반 로더 순서는 콘텐츠 → 신규 지역 → 경제 → UI를 보존한다',()=>{
