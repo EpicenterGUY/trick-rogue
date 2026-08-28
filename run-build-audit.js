@@ -20,7 +20,12 @@
     const id=cardId(card);return id?runtimeRoot?.CARD_DEFINITION_BY_ID?.[id]||null:null;
   }
   function cardEffects(card,runtimeRoot=defaultRoot){const definition=cardDefinition(card,runtimeRoot);return definition?.effects||card?.effects||[]}
-  function isEffectCard(card,runtimeRoot=defaultRoot){return!!cardId(card)||(Array.isArray(cardEffects(card,runtimeRoot))&&cardEffects(card,runtimeRoot).length>0)}
+  function isEffectCard(card,runtimeRoot=defaultRoot){
+    if(typeof runtimeRoot?.isPureCard==='function'){
+      try{if(runtimeRoot.isPureCard(card))return false}catch(_error){}
+    }
+    return!!cardId(card)||(Array.isArray(cardEffects(card,runtimeRoot))&&cardEffects(card,runtimeRoot).length>0);
+  }
   function tagsForCard(card,runtimeRoot=defaultRoot){
     if(!isEffectCard(card,runtimeRoot))return[];
     const definition=cardDefinition(card,runtimeRoot)||card;
