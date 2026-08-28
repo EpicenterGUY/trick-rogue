@@ -39,7 +39,7 @@
     const deck=Array.isArray(runState.deck)?runState.deck:[],actHistory=Array.isArray(runState.actHistory)?runState.actHistory:[],build=buildCounts(runState,runtimeRoot);
     const clearedCurrent=outcome==='clear'&&runState.runComplete===true;
     return{
-      version:RESULT_VERSION,outcome,cleared:outcome==='clear',runSeed:Number.isFinite(runState.runSeed)?runState.runSeed:null,
+      version:RESULT_VERSION,outcome,cleared:outcome==='clear',victory:outcome==='clear',runSeed:Number.isFinite(runState.runSeed)?runState.runSeed:null,
       actId:runState.actId||null,actIndex:Number(runState.actIndex)||null,actName:runState.actName||'',
       actsCompleted:actHistory.length+(clearedCurrent?1:0),nodesCompleted:completedNodeCount(runState),routeLength:Array.isArray(runState.routeHistory)?runState.routeHistory.length:0,
       hp:Number(runState.hp)||0,maxHp:Number(runState.maxHp)||0,gold:Number(runState.gold)||0,
