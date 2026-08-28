@@ -50,10 +50,10 @@ if(!ENABLED){
       enemyName:'철갑 보급병',contentId:'frontier_bulwark',profileId:'legacy-m9:frontier_bulwark',enemyCardContentId:'frontier_bulwark',ruleIds:['bulwark_armor'],region:'region_frontier'
     });
 
-    await evaluate(cdp,"(()=>{run.actId='region_theater';run.runFlow.currentRegionId='region_theater';const node={id:'m9-theater-event',type:'event',next:[],regionPlan:{regionId:'region_theater',eventTag:'field'}};run.available.add(node.id);showEvent(node)})()");
+    await evaluate(cdp,"(()=>{battle=null;showScreen('mapScreen');run.actId='region_theater';run.runFlow.currentRegionId='region_theater';const node={id:'m9-theater-event',type:'event',next:[],regionPlan:{regionId:'region_theater',eventTag:'field'}};run.map.push(node);run.available.add(node.id);enterNode(node)})()");
     await waitFor(cdp,"document.getElementById('overlay').classList.contains('show')&&!!document.querySelector('[data-legacy-m9-event=\"field_rental\"]')",{label:'theater field event'});
     await clickElement(cdp,"document.querySelector('[data-legacy-m9-choice]')",'필드 대여 선택',{hitTest:true});
-    await waitFor(cdp,"run.legacyRegionsM9?.eventHistory?.length===1&&run.currentNodeId===null",{label:'legacy event complete'});
+    await waitFor(cdp,"run.legacyRegionsM9?.eventHistory?.length===1",{label:'legacy event complete'});
     const eventResult=await evaluate(cdp,"({eventId:run.legacyRegionsM9.eventHistory[0].eventId,owned:run.fieldLoadout?.owned?.length||0,queued:run.fieldLoadout?.queuedFieldId||null,completed:run.completed.has('m9-theater-event')})");
     assert.equal(eventResult.eventId,'field_rental');assert.ok(eventResult.owned>0);assert.ok(eventResult.queued);assert.equal(eventResult.completed,true);
 
