@@ -1,10 +1,9 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
 const Tempo=require('../encounter-tempo.js');
 const BattleCore=require('../battle-core.js');
 const Resolution=require('../showdown-resolution.js');
+const LoaderChain=require('../runtime-loader-chain.js');
 
 const cards=(ranks,suits=['S','H','D','C','S'])=>ranks.map((rank,index)=>({rank,suit:suits[index]}));
 
@@ -113,13 +112,9 @@ test('강한 일반 적은 좋은 첫 쇼다운 차이 피해 25에 처치되고
 });
 
 test('7.5-E 런타임은 쇼다운 계산과 Q 고점 판정 뒤, 후속 규칙 체인을 거쳐 전투 레이아웃 전에 로드된다',()=>{
-  const source=fs.readFileSync(path.join(__dirname,'..','enemy-behavior.js'),'utf8');
-  assert(source.includes("loadScript('showdown-highroll.js','trick-showdown-highroll-runtime')"));
-  assert(source.includes("if(root.ShowdownResolution){loadShowdownHighRoll();return;}"));
-  assert(source.includes("if(root.ShowdownHighRoll){loadEncounterTempo();return;}"));
-  assert(source.includes("loadScript('encounter-tempo.js','trick-encounter-tempo-runtime')"));
-  assert(source.includes("if(root.EncounterTempo){loadDeckBoundaries();return;}"));
-  assert(source.includes("loadScript('deck-boundaries.js','trick-deck-boundaries-runtime')"));
-  assert(source.includes("loadScript('enemy-information.js','trick-enemy-information-runtime')"));
-  assert(source.includes("loadScript('battle-layout.js','trick-battle-layout-runtime')"));
+  const names=LoaderChain.ENTRIES.map(entry=>entry.globalName);
+  const start=names.indexOf('ShowdownResolution');
+  const expected=['ShowdownResolution','ShowdownHighRoll','EncounterTempo','DeckBoundaries','EnemyInformation','TrickOutcomePreview','RunStartV2','RunFlowV2','RunMinigames','RunEvents','ContentExpansion9C','CasinoRegionM9','RedWardRegionM9','ScrapMarketRegionM9','RunEconomyV2','BattleRewardMarket','ShowdownSlotManipulation','FoldExperiment','RunPersistence','BattleLayout'];
+  assert.deepEqual(names.slice(start,start+expected.length),expected);
+  assert.deepEqual(LoaderChain.entry('EncounterTempo'),{globalName:'EncounterTempo',src:'encounter-tempo.js',dataset:'trick-encounter-tempo-runtime',after:null});
 });
