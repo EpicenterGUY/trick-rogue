@@ -42,14 +42,14 @@ test('최종 관문 보상은 방문한 두 지역 태그 합집합을 theme 풀
 
   const reverse=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.reverse']);
   const guard=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['pack01.emergency_guard']);
-  const scout=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.scout']);
+  const draw=Economy.candidateFromDefinition(Cards.CARD_DEFINITION_BY_ID['core.draw']);
 
   assert.ok(Economy.candidateAffinity(reverse,sourceRegionIds)>0,'유랑극장 성향 카드가 관문 theme에 포함');
   assert.ok(Economy.candidateAffinity(guard,sourceRegionIds)>0,'황야 전선 성향 카드가 관문 theme에 포함');
-  assert.equal(Economy.candidateAffinity(scout,sourceRegionIds),0,'두 방문 지역과 무관한 카드는 neutral');
+  assert.equal(Economy.candidateAffinity(draw,sourceRegionIds),0,'두 방문 지역과 무관한 카드는 neutral');
   assert.ok(pools.theme.some(item=>item.definitionId==='core.reverse'));
   assert.ok(pools.theme.some(item=>item.definitionId==='pack01.emergency_guard'));
-  assert.ok(pools.neutral.some(item=>item.definitionId==='core.scout'));
+  assert.ok(pools.neutral.some(item=>item.definitionId==='core.draw'));
 });
 
 test('최종 관문에서 theme 추첨된 카드는 실제 방문 지역 태그와 matchedTags를 유지한다',()=>{
