@@ -22,6 +22,12 @@
   document.write('<script src="card-packs/pack04.js" data-trick-pack04-bootstrap="true"><\/script>');
 })(typeof globalThis!=='undefined'?globalThis:this);
 
+(function(root){
+  if(typeof module!=='undefined'||typeof document==='undefined'||root.EFFECT70_BATCH1_CARDS||document.querySelector('script[data-trick-effect70-batch1-bootstrap]'))return;
+  if(document.readyState!=='loading')return;
+  document.write('<script src="card-packs/effect70-batch1.js" data-trick-effect70-batch1-bootstrap="true"><\/script>');
+})(typeof globalThis!=='undefined'?globalThis:this);
+
 (function(root,factory){
   const api=factory(
     typeof module!=='undefined'?require('./pack01.js'):root.PACK01_CARDS,
@@ -29,14 +35,15 @@
     typeof module!=='undefined'?require('./pack03.js'):root.PACK03_CARDS,
     typeof module!=='undefined'?require('./boss-signatures.js'):root.BOSS_SIGNATURE_CARDS,
     typeof module!=='undefined'?require('./pack04.js'):root.PACK04_CARDS,
+    typeof module!=='undefined'?require('./effect70-batch1.js'):root.EFFECT70_BATCH1_CARDS,
     typeof module!=='undefined'?require('../card-system-tags.js'):root.CardSystemTags
   );
   if(typeof module!=='undefined')module.exports=api;
   Object.assign(root,api);
   if(typeof module!=='undefined')require('../card-personality-runtime.js');
-})(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS,PACK03_CARDS,BOSS_SIGNATURE_CARDS,PACK04_CARDS,SystemTags){
+})(typeof globalThis!=='undefined'?globalThis:this,function(PACK01_CARDS,PACK02_CARDS,PACK03_CARDS,BOSS_SIGNATURE_CARDS,PACK04_CARDS,EFFECT70_BATCH1_CARDS,SystemTags){
   const decorate=typeof SystemTags?.decorateDefinition==='function'?card=>SystemTags.decorateDefinition(card):card=>card;
-  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[]),...(PACK03_CARDS||[]),...(BOSS_SIGNATURE_CARDS||[]),...(PACK04_CARDS||[])].map(decorate));
+  const EFFECT_CARD_DEFINITIONS=Object.freeze([...(PACK01_CARDS||[]),...(PACK02_CARDS||[]),...(PACK03_CARDS||[]),...(BOSS_SIGNATURE_CARDS||[]),...(PACK04_CARDS||[]),...(EFFECT70_BATCH1_CARDS||[])].map(decorate));
   const EFFECT_CARD_IDS=Object.freeze(EFFECT_CARD_DEFINITIONS.map(card=>card.id));
 
   // 프로토타입 규칙: 효과 카드는 팩/지역으로 활성화하거나 제한하지 않는다.
